@@ -68,4 +68,18 @@ class UsuarioModel
         $stmt = $this->pdo->prepare("DELETE FROM usuarios WHERE id_usuario = :id");
         return $stmt->execute([':id' => $id]);
     }
+
+    public function obtenerPorUsuario($usuario) {
+    $sql = "SELECT u.*, r.nombre_rol 
+            FROM usuarios u
+            JOIN roles r ON u.id_rol = r.id_rol
+            WHERE u.usuario = :usuario1 OR u.correo = :usuario2
+            LIMIT 1";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([
+        'usuario1' => $usuario,
+        'usuario2' => $usuario
+    ]);
+    return $stmt->fetch();
+}
 }

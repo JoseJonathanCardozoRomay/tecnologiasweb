@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/../../includes/verificar_sesion.php'; ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
