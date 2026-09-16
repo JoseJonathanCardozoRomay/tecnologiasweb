@@ -4,7 +4,7 @@ require_once '../config/conexion.php';
 require_once '../models/UsuarioModel.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../views/login.php');
+    header('Location: ../views/login/login.php');
     exit;
 }
 
@@ -36,7 +36,7 @@ if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaIn
             header('Location: ../views/estudiante/panel.php'); // aún no existe
             break;
         default:
-            header('Location: ../views/login.php');
+            header('Location: ../views/login/login.php');
     }
     exit;
 
@@ -47,6 +47,6 @@ if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaIn
             ->execute([$usuario['id_usuario'], $_SERVER['REMOTE_ADDR']]);
     }
     $_SESSION['login_error'] = 'Usuario o contraseña incorrectos, o cuenta inactiva.';
-    header('Location: ../views/login.php');
+    header('Location: ../views/login/login.php');
     exit;
 }
