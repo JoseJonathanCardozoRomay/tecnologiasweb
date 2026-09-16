@@ -1,48 +1,37 @@
--- =========================================================
--- SISTEMA WEB DE APOYO ACADÉMICO PARA TUTORÍAS
--- Script de creación de base de datos y tablas (MySQL 8.0 / MariaDB)
--- =========================================================
-
-CREATE DATABASE IF NOT EXISTS tutorias_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- 1. Eliminar base vieja y crearla limpia
+DROP DATABASE IF EXISTS tutorias_db;
+CREATE DATABASE tutorias_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tutorias_db;
 
--- ---------------------------------------------------------
--- Roles del sistema
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS roles (
+-- 2. Roles del sistema
+CREATE TABLE roles (
   id_rol INT AUTO_INCREMENT PRIMARY KEY,
-  nombre_rol VARCHAR(30) NOT NULL UNIQUE  -- administrador, tutor, estudiante
+  nombre_rol VARCHAR(30) NOT NULL UNIQUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Usuarios (tabla base para el login)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS usuarios (
+-- 3. Usuarios (con telefono incluido)
+CREATE TABLE usuarios (
   id_usuario INT AUTO_INCREMENT PRIMARY KEY,
   id_rol INT NOT NULL,
   nombre VARCHAR(100) NOT NULL,
   apellido VARCHAR(100) NOT NULL,
   correo VARCHAR(150) NOT NULL UNIQUE,
   usuario VARCHAR(50) NOT NULL UNIQUE,
-  contrasena_hash VARCHAR(255) NOT NULL,     -- Generado con password_hash() en PHP
+  contrasena_hash VARCHAR(255) NOT NULL,
   telefono VARCHAR(20),
   estado ENUM('activo','inactivo') NOT NULL DEFAULT 'activo',
   fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Carreras (para clasificar estudiantes y materias)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS carreras (
+-- 4. Carreras
+CREATE TABLE carreras (
   id_carrera INT AUTO_INCREMENT PRIMARY KEY,
   nombre_carrera VARCHAR(150) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Estudiantes (extiende usuarios)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS estudiantes (
+-- 5. Estudiantes
+CREATE TABLE estudiantes (
   id_estudiante INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL UNIQUE,
   id_carrera INT NOT NULL,
@@ -52,10 +41,8 @@ CREATE TABLE IF NOT EXISTS estudiantes (
   CONSTRAINT fk_estudiantes_carreras FOREIGN KEY (id_carrera) REFERENCES carreras(id_carrera) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Tutores (extiende usuarios)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS tutores (
+-- 6. Tutores
+CREATE TABLE tutores (
   id_tutor INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL UNIQUE,
   especialidad VARCHAR(150),
@@ -63,20 +50,16 @@ CREATE TABLE IF NOT EXISTS tutores (
   CONSTRAINT fk_tutores_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Materias que pueden ser tutoradas
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS materias (
+-- 7. Materias
+CREATE TABLE materias (
   id_materia INT AUTO_INCREMENT PRIMARY KEY,
   nombre_materia VARCHAR(150) NOT NULL,
   id_carrera INT,
   CONSTRAINT fk_materias_carreras FOREIGN KEY (id_carrera) REFERENCES carreras(id_carrera) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Relación N:M: materias que domina cada tutor
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS tutor_materia (
+-- 8. Relación Tutor - Materia
+CREATE TABLE tutor_materia (
   id_tutor INT NOT NULL,
   id_materia INT NOT NULL,
   PRIMARY KEY (id_tutor, id_materia),
@@ -84,10 +67,8 @@ CREATE TABLE IF NOT EXISTS tutor_materia (
   CONSTRAINT fk_tm_materia FOREIGN KEY (id_materia) REFERENCES materias(id_materia) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Disponibilidad horaria de cada tutor
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS disponibilidad_tutor (
+-- 9. Disponibilidad horaria
+CREATE TABLE disponibilidad_tutor (
   id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,
   id_tutor INT NOT NULL,
   dia_semana ENUM('Lunes','Martes','Miercoles','Jueves','Viernes','Sabado') NOT NULL,
@@ -96,10 +77,8 @@ CREATE TABLE IF NOT EXISTS disponibilidad_tutor (
   CONSTRAINT fk_disp_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Tutorías (sesiones agendadas)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS tutorias (
+-- 10. Tutorías
+CREATE TABLE tutorias (
   id_tutoria INT AUTO_INCREMENT PRIMARY KEY,
   id_estudiante INT NOT NULL,
   id_tutor INT NOT NULL,
@@ -119,10 +98,8 @@ CREATE TABLE IF NOT EXISTS tutorias (
   INDEX idx_tutoria_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Evaluación/retroalimentación de la tutoría (insumo para reportes)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS evaluaciones_tutoria (
+-- 11. Evaluaciones
+CREATE TABLE evaluaciones_tutoria (
   id_evaluacion INT AUTO_INCREMENT PRIMARY KEY,
   id_tutoria INT NOT NULL UNIQUE,
   calificacion TINYINT NOT NULL CHECK (calificacion BETWEEN 1 AND 5),
@@ -131,10 +108,8 @@ CREATE TABLE IF NOT EXISTS evaluaciones_tutoria (
   CONSTRAINT fk_evaluaciones_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------
--- Registro de accesos (auditoría de login)
--- ---------------------------------------------------------
-CREATE TABLE IF NOT EXISTS registro_accesos (
+-- 12. Registro de accesos
+CREATE TABLE registro_accesos (
   id_acceso INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NULL,
   fecha_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -146,59 +121,33 @@ CREATE TABLE IF NOT EXISTS registro_accesos (
 -- =========================================================
 -- Datos semilla iniciales
 -- =========================================================
-
--- Roles del sistema
-INSERT INTO roles (id_rol, nombre_rol) VALUES 
-(1, 'administrador'), 
-(2, 'tutor'), 
-(3, 'estudiante')
-ON DUPLICATE KEY UPDATE nombre_rol = VALUES(nombre_rol);
-
--- Carreras
-INSERT INTO carreras (id_carrera, nombre_carrera) VALUES 
-(1, 'Ingeniería de Sistemas')
-ON DUPLICATE KEY UPDATE nombre_carrera = VALUES(nombre_carrera);
-
--- Materias
+INSERT INTO roles (id_rol, nombre_rol) VALUES (1, 'administrador'), (2, 'tutor'), (3, 'estudiante');
+INSERT INTO carreras (id_carrera, nombre_carrera) VALUES (1, 'Ingeniería de Sistemas');
 INSERT INTO materias (id_materia, nombre_materia, id_carrera) VALUES
 (1, 'Base de Datos I', 1),
 (2, 'Programación I', 1),
-(3, 'Tecnología Web I', 1)
-ON DUPLICATE KEY UPDATE nombre_materia = VALUES(nombre_materia);
+(3, 'Tecnología Web I', 1);
 
--- Usuarios iniciales con contraseña: password (hash bcrypt real)
--- 1. Administrador (admin / password)
+-- Admin (admin / password)
 INSERT INTO usuarios (id_usuario, id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado) VALUES
-(1, 1, 'Admin', 'Sistema', 'admin@tutorias.local', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000001', 'activo')
-ON DUPLICATE KEY UPDATE usuario = VALUES(usuario);
+(1, 1, 'Admin', 'Sistema', 'admin@tutorias.local', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000001', 'activo');
 
--- 2. Tutor de prueba (tutor1 / password)
+-- Tutor (tutor1 / password)
 INSERT INTO usuarios (id_usuario, id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado) VALUES
-(2, 2, 'Carlos', 'Docente', 'tutor@tutorias.local', 'tutor1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000002', 'activo')
-ON DUPLICATE KEY UPDATE usuario = VALUES(usuario);
+(2, 2, 'Carlos', 'Docente', 'tutor@tutorias.local', 'tutor1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000002', 'activo');
 
 INSERT INTO tutores (id_tutor, id_usuario, especialidad, biografia) VALUES
-(1, 2, 'Desarrollo Web y Bases de Datos', 'Docente tutor especializado en desarrollo backend y arquitecturas web.')
-ON DUPLICATE KEY UPDATE especialidad = VALUES(especialidad);
+(1, 2, 'Desarrollo Web y Bases de Datos', 'Docente tutor especializado en desarrollo backend y arquitecturas web.');
 
--- Materias asignadas al tutor
-INSERT INTO tutor_materia (id_tutor, id_materia) VALUES
-(1, 1),
-(1, 3)
-ON DUPLICATE KEY UPDATE id_tutor = VALUES(id_tutor);
-
--- Disponibilidad horaria del tutor
+INSERT INTO tutor_materia (id_tutor, id_materia) VALUES (1, 1), (1, 3);
 INSERT INTO disponibilidad_tutor (id_disponibilidad, id_tutor, dia_semana, hora_inicio, hora_fin) VALUES
 (1, 1, 'Lunes', '14:00:00', '18:00:00'),
 (2, 1, 'Miercoles', '14:00:00', '18:00:00'),
-(3, 1, 'Viernes', '09:00:00', '12:00:00')
-ON DUPLICATE KEY UPDATE dia_semana = VALUES(dia_semana);
+(3, 1, 'Viernes', '09:00:00', '12:00:00');
 
--- 3. Estudiante de prueba (estudiante1 / password)
+-- Estudiante (estudiante1 / password)
 INSERT INTO usuarios (id_usuario, id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado) VALUES
-(3, 3, 'Maria', 'Estudiante', 'estudiante@tutorias.local', 'estudiante1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000003', 'activo')
-ON DUPLICATE KEY UPDATE usuario = VALUES(usuario);
+(3, 3, 'Maria', 'Estudiante', 'estudiante@tutorias.local', 'estudiante1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000003', 'activo');
 
 INSERT INTO estudiantes (id_estudiante, id_usuario, id_carrera, semestre, registro_universitario) VALUES
-(1, 3, 1, 4, 'RU-2026-98765')
-ON DUPLICATE KEY UPDATE semestre = VALUES(semestre);
+(1, 3, 1, 4, 'RU-2026-98765');
