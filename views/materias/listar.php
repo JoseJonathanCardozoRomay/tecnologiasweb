@@ -1,0 +1,110 @@
+<?php
+require_once __DIR__ . '/../../includes/verificar_sesion.php';
+$tituloPagina = 'Gestión de Materias - Sistema de Tutorías';
+include __DIR__ . '/../layouts/header.php';
+?>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+  <div>
+    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
+      <i class="bi bi-journal-bookmark-fill text-primary"></i>
+      <span>Materias Académicas</span>
+      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= count($materias) ?></span>
+    </h2>
+    <p class="text-muted mb-0">Catálogo de asignaturas disponibles para tutorías académicas.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="carreras_listar.php" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-3">
+      <i class="bi bi-mortarboard"></i>
+      <span>Ver Carreras</span>
+    </a>
+    <a href="materias_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
+      <i class="bi bi-plus-circle-fill"></i>
+      <span class="fw-semibold">Nueva Materia</span>
+    </a>
+  </div>
+</div>
+
+<div class="card card-custom shadow-sm overflow-hidden">
+  <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+    <div class="input-group" style="max-width: 320px;">
+      <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="text" id="buscadorMaterias" class="form-control bg-light border-start-0" placeholder="Buscar materia o carrera...">
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="tablaMaterias">
+      <thead class="table-light text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+        <tr>
+          <th class="ps-4">ID</th>
+          <th>Nombre de la Materia</th>
+          <th>Carrera Universitaria</th>
+          <th>Tutores Asignados</th>
+          <th class="text-end pe-4">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($materias as $m): ?>
+          <tr>
+            <td class="ps-4 text-muted fw-semibold">#<?= htmlspecialchars($m['id_materia']) ?></td>
+            <td>
+              <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                <i class="bi bi-book text-primary opacity-75"></i>
+                <?= htmlspecialchars($m['nombre_materia']) ?>
+              </div>
+            </td>
+            <td>
+              <?php if (!empty($m['nombre_carrera'])): ?>
+                <span class="badge bg-light text-dark border px-3 py-1">
+                  <i class="bi bi-mortarboard me-1 text-primary"></i><?= htmlspecialchars($m['nombre_carrera']) ?>
+                </span>
+              <?php else: ?>
+                <span class="text-muted small italic">Sin carrera asignada</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <span class="badge bg-info bg-opacity-10 text-info-emphasis border border-info-subtle px-2 py-1">
+                <i class="bi bi-person-video3 me-1"></i><?= $m['total_tutores'] ?> tutor(es)
+              </span>
+            </td>
+            <td class="text-end pe-4">
+              <div class="btn-group" role="group">
+                <a href="materias_editar.php?id=<?= $m['id_materia'] ?>" class="btn btn-outline-primary btn-sm rounded-start-2" title="Editar">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <button type="button" class="btn btn-outline-danger btn-sm rounded-end-2" 
+                        onclick="confirmarEliminacion('materias_eliminar.php?id=<?= $m['id_materia'] ?>', 'Se eliminará la materia <?= htmlspecialchars($m['nombre_materia']) ?> del catálogo.')"
+                        title="Eliminar">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (empty($materias)): ?>
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted">
+              <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+              No hay materias registradas aún.
+            </td>
+          </tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Filtro de búsqueda en vivo
+  document.getElementById('buscadorMaterias')?.addEventListener('keyup', function() {
+    const valor = this.value.toLowerCase();
+    const filas = document.querySelectorAll('#tablaMaterias tbody tr');
+    filas.forEach(fila => {
+      const texto = fila.textContent.toLowerCase();
+      fila.style.display = texto.includes(valor) ? '' : 'none';
+    });
+  });
+</script>
+
+<?php include __DIR__ . '/../layouts/footer.php'; ?>
