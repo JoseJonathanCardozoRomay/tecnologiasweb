@@ -79,30 +79,40 @@ $nombreSesion = $_SESSION['nombre'] ?? 'Usuario';
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white-50 d-flex align-items-center gap-1" href="#" onclick="Swal.fire('Próximo Módulo', 'Módulo de Gestión General de Tutorías en desarrollo', 'info');">
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'tutores') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/tutores_listar.php">
+              <i class="bi bi-person-video3"></i> Tutores
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'estudiantes') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/estudiantes_listar.php">
+              <i class="bi bi-mortarboard-fill"></i> Estudiantes
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'tutorias') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/tutorias_listar.php">
               <i class="bi bi-calendar-check-fill"></i> Tutorías
             </a>
           </li>
         <?php elseif ($rolSesion === 'tutor'): ?>
           <li class="nav-item">
-            <a class="nav-link active d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-calendar-range"></i> Mis Horarios
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'tutor/panel') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/views/tutor/panel.php">
+              <i class="bi bi-speedometer2"></i> Mi Panel
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white-50 d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-card-checklist"></i> Sesiones Asignadas
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'disponibilidad') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/tutores_disponibilidad.php">
+              <i class="bi bi-clock-history"></i> Mis Horarios y Materias
             </a>
           </li>
         <?php elseif ($rolSesion === 'estudiante'): ?>
           <li class="nav-item">
-            <a class="nav-link active d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-search"></i> Buscar Tutorías
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'estudiante/panel') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/views/estudiante/panel.php">
+              <i class="bi bi-calendar2-check"></i> Mis Tutorías
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white-50 d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-clock-history"></i> Mis Solicitudes
+            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'solicitar') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/tutorias_solicitar.php">
+              <i class="bi bi-calendar-plus"></i> Solicitar Tutoría
             </a>
           </li>
         <?php endif; ?>
