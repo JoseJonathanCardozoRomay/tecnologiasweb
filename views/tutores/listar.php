@@ -9,7 +9,7 @@ include __DIR__ . '/../layouts/header.php';
     <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
       <i class="bi bi-person-video3 text-primary"></i>
       <span>Docentes Tutores Académicos</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= count($tutores) ?></span>
+      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
     </h2>
     <p class="text-muted mb-0">Cuerpo docente capacitado para brindar asesorías y reforzamiento académico.</p>
   </div>
@@ -22,15 +22,25 @@ include __DIR__ . '/../layouts/header.php';
 </div>
 
 <div class="card card-custom shadow-sm overflow-hidden">
+  <div class="card-header bg-white py-3 border-0">
+    <form method="GET" class="input-group" style="max-width: 320px;">
+      <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
+      <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
+      <input type="hidden" name="pagina" value="1">
+      <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar tutor...">
+      <button class="btn btn-primary" type="submit">Buscar</button>
+    </form>
+  </div>
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
         <tr>
-          <th class="ps-4">Tutor Docente</th>
-          <th>Especialidad</th>
+          <?php encabezadoOrdenable('Tutor Docente', 'nombre', $ordenActual, $dirActual, 'ps-4'); ?>
+          <?php encabezadoOrdenable('Especialidad', 'especialidad', $ordenActual, $dirActual); ?>
           <th>Contacto</th>
-          <th>Materias</th>
-          <th>Horarios</th>
+          <?php encabezadoOrdenable('Materias', 'materias', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Horarios', 'horarios', $ordenActual, $dirActual); ?>
           <th class="text-end pe-4">Acciones</th>
         </tr>
       </thead>
@@ -81,13 +91,18 @@ include __DIR__ . '/../layouts/header.php';
           <tr>
             <td colspan="6" class="text-center py-5 text-muted">
               <i class="bi bi-person-x fs-1 d-block mb-2 text-secondary"></i>
-              No hay tutores registrados en el sistema.
+              <?php if ($q !== ''): ?>
+                Sin resultados para tu búsqueda. <a href="<?= urlLista(['q' => null, 'pagina' => 1]) ?>">Limpiar búsqueda</a>
+              <?php else: ?>
+                No hay registros.
+              <?php endif; ?>
             </td>
           </tr>
         <?php endif; ?>
       </tbody>
     </table>
   </div>
+  <?php include __DIR__ . '/../partials/paginacion.php'; ?>
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

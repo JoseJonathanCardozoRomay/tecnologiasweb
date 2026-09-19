@@ -21,6 +21,61 @@ class EstudianteModel
         return $this->pdo->query($sql)->fetchAll();
     }
 
+    public function obtenerTodosOrdenados($orden, $dir)
+    {
+        $columnas = [
+            'nombre' => 'u.nombre',
+            'registro' => 'e.registro_universitario',
+            'carrera' => 'c.nombre_carrera',
+            'semestre' => 'e.semestre',
+            'tutorias' => 'total_tutorias',
+        ];
+        $orden = $columnas[$orden] ?? $columnas['nombre'];
+        $dir = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+        $sql = "SELECT e.id_estudiante, e.id_usuario, e.id_carrera, e.semestre, e.registro_universitario,
+                       u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado,
+                       c.nombre_carrera,
+                       (SELECT COUNT(*) FROM tutorias t WHERE t.id_estudiante = e.id_estudiante) AS total_tutorias
+                FROM estudiantes e
+                INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+                INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+                ORDER BY {$orden} {$dir}";
+        return $this->pdo->query($sql)->fetchAll();
+    }
+
+    public function obtenerPaginadas($q, $orden, $dir, $limite, $offset)
+    {
+        $columnas = ['nombre' => 'u.nombre', 'registro' => 'e.registro_universitario', 'carrera' => 'c.nombre_carrera', 'semestre' => 'e.semestre', 'tutorias' => 'total_tutorias'];
+        $ordenSql = $columnas[$orden] ?? $columnas['nombre'];
+        $dirSql = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+        $sql = "SELECT e.id_estudiante, e.id_usuario, e.id_carrera, e.semestre, e.registro_universitario,
+                       u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado, c.nombre_carrera,
+                       (SELECT COUNT(*) FROM tutorias t WHERE t.id_estudiante = e.id_estudiante) AS total_tutorias
+                FROM estudiantes e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+                INNER JOIN carreras c ON e.id_carrera = c.id_carrera";
+        $params = [];
+        if ($q !== '') {
+            $sql .= " WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.correo, u.usuario, e.registro_universitario, c.nombre_carrera) LIKE :q ESCAPE '\\\\'";
+            $params[':q'] = valorBusquedaLike($q);
+        }
+        $sql .= " ORDER BY {$ordenSql} {$dirSql} LIMIT :limite OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        if ($q !== '') $stmt->bindValue(':q', $params[':q'], PDO::PARAM_STR);
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function contar($q = '')
+    {
+        $sql = 'SELECT COUNT(*) FROM estudiantes e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario INNER JOIN carreras c ON e.id_carrera = c.id_carrera';
+        $stmt = $this->pdo->prepare($q !== '' ? $sql . " WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.correo, u.usuario, e.registro_universitario, c.nombre_carrera) LIKE :q ESCAPE '\\\\'" : $sql);
+        if ($q !== '') $stmt->bindValue(':q', valorBusquedaLike($q), PDO::PARAM_STR);
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
     public function obtenerPorId($id_estudiante)
     {
         $sql = "SELECT e.*, u.nombre, u.apellido, u.correo, u.telefono, u.usuario, c.nombre_carrera
@@ -31,6 +86,20 @@ class EstudianteModel
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':id' => $id_estudiante]);
         return $stmt->fetch();
+    }
+
+    public function existeRegistroUniversitario($ru, $excluirId = null)
+    {
+        $sql = 'SELECT 1 FROM estudiantes WHERE registro_universitario = :ru';
+        $params = [':ru' => $ru];
+        if ($excluirId !== null) {
+            $sql .= ' AND id_estudiante <> :excluir_id';
+            $params[':excluir_id'] = $excluirId;
+        }
+        $sql .= ' LIMIT 1';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
     }
 
     public function obtenerPorUsuario($id_usuario)

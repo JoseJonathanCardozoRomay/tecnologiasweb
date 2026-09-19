@@ -20,6 +20,59 @@ class TutorModel
         return $this->pdo->query($sql)->fetchAll();
     }
 
+    public function obtenerTodosOrdenados($orden, $dir)
+    {
+        $columnas = [
+            'nombre' => 'u.nombre',
+            'especialidad' => 't.especialidad',
+            'materias' => 'total_materias',
+            'horarios' => 'total_horarios',
+        ];
+        $orden = $columnas[$orden] ?? $columnas['nombre'];
+        $dir = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+        $sql = "SELECT t.id_tutor, t.id_usuario, t.especialidad, t.biografia,
+                       u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado,
+                       (SELECT COUNT(*) FROM tutor_materia tm WHERE tm.id_tutor = t.id_tutor) AS total_materias,
+                       (SELECT COUNT(*) FROM disponibilidad_tutor dt WHERE dt.id_tutor = t.id_tutor) AS total_horarios
+                FROM tutores t
+                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                ORDER BY {$orden} {$dir}";
+        return $this->pdo->query($sql)->fetchAll();
+    }
+
+    public function obtenerPaginadas($q, $orden, $dir, $limite, $offset)
+    {
+        $columnas = ['nombre' => 'u.nombre', 'especialidad' => 't.especialidad', 'materias' => 'total_materias', 'horarios' => 'total_horarios'];
+        $ordenSql = $columnas[$orden] ?? $columnas['nombre'];
+        $dirSql = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+        $sql = "SELECT t.id_tutor, t.id_usuario, t.especialidad, t.biografia,
+                       u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado,
+                       (SELECT COUNT(*) FROM tutor_materia tm WHERE tm.id_tutor = t.id_tutor) AS total_materias,
+                       (SELECT COUNT(*) FROM disponibilidad_tutor dt WHERE dt.id_tutor = t.id_tutor) AS total_horarios
+                FROM tutores t INNER JOIN usuarios u ON t.id_usuario = u.id_usuario";
+        $params = [];
+        if ($q !== '') {
+            $sql .= " WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.correo, u.usuario, t.especialidad) LIKE :q ESCAPE '\\\\'";
+            $params[':q'] = valorBusquedaLike($q);
+        }
+        $sql .= " ORDER BY {$ordenSql} {$dirSql} LIMIT :limite OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        if ($q !== '') $stmt->bindValue(':q', $params[':q'], PDO::PARAM_STR);
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function contar($q = '')
+    {
+        $sql = 'SELECT COUNT(*) FROM tutores t INNER JOIN usuarios u ON t.id_usuario = u.id_usuario';
+        $stmt = $this->pdo->prepare($q !== '' ? $sql . " WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.correo, u.usuario, t.especialidad) LIKE :q ESCAPE '\\\\'" : $sql);
+        if ($q !== '') $stmt->bindValue(':q', valorBusquedaLike($q), PDO::PARAM_STR);
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
     public function obtenerPorId($id_tutor)
     {
         $sql = "SELECT t.*, u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado

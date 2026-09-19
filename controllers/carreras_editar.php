@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
+require_once __DIR__ . '/../includes/validador.php';
 
 $carreraModel = new CarreraModel($pdo);
 
@@ -14,10 +15,16 @@ if (!$id) {
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nombre = trim($_POST['nombre_carrera'] ?? '');
+    $nombre = normalizarTexto($_POST['nombre_carrera'] ?? '');
 
-    if (empty($nombre)) {
-        $errores[] = "El nombre de la carrera no puede estar vacío.";
+    if ($nombre === '') {
+        $errores[] = 'El nombre de la carrera es obligatorio.';
+    } elseif (($error = validarLongitud($nombre, 3, 150, 'nombre de la carrera')) !== null) {
+        $errores[] = $error;
+    } elseif (!preg_match('/^[\p{L}\p{N}\s.\-\/()&]+$/u', $nombre)) {
+        $errores[] = 'El nombre de la carrera contiene caracteres no permitidos.';
+    } elseif ($carreraModel->existeNombre($nombre, $id)) {
+        $errores[] = 'Ya existe una carrera con ese nombre.';
     }
 
     if (empty($errores)) {
@@ -26,7 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: carreras_listar.php");
             exit;
         } catch (PDOException $e) {
-            $errores[] = "Error al actualizar la carrera: " . $e->getMessage();
+            error_log($e->getMessage());
+            $errores[] = $e->getCode() === '23000'
+                ? 'Ya existe una carrera con ese nombre.'
+                : 'No se pudo actualizar la carrera.';
         }
     }
 }

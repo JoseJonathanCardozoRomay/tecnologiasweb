@@ -9,7 +9,7 @@ include __DIR__ . '/../layouts/header.php';
     <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
       <i class="bi bi-journal-bookmark-fill text-primary"></i>
       <span>Materias Académicas</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= count($materias) ?></span>
+      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
     </h2>
     <p class="text-muted mb-0">Catálogo de asignaturas disponibles para tutorías académicas.</p>
   </div>
@@ -27,20 +27,24 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
-    <div class="input-group" style="max-width: 320px;">
+    <form method="GET" class="input-group" style="max-width: 320px;">
+      <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
+      <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
+      <input type="hidden" name="pagina" value="1">
       <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-      <input type="text" id="buscadorMaterias" class="form-control bg-light border-start-0" placeholder="Buscar materia o carrera...">
-    </div>
+      <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar materia o carrera...">
+      <button class="btn btn-primary" type="submit">Buscar</button>
+    </form>
   </div>
 
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" id="tablaMaterias">
       <thead class="table-light text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
         <tr>
-          <th class="ps-4">ID</th>
-          <th>Nombre de la Materia</th>
-          <th>Carrera Universitaria</th>
-          <th>Tutores Asignados</th>
+          <?php encabezadoOrdenable('ID', 'id', $ordenActual, $dirActual, 'ps-4'); ?>
+          <?php encabezadoOrdenable('Nombre de la Materia', 'nombre', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Carrera Universitaria', 'carrera', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Tutores Asignados', 'tutores', $ordenActual, $dirActual); ?>
           <th class="text-end pe-4">Acciones</th>
         </tr>
       </thead>
@@ -86,7 +90,11 @@ include __DIR__ . '/../layouts/header.php';
           <tr>
             <td colspan="5" class="text-center py-5 text-muted">
               <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
-              No hay materias registradas aún.
+              <?php if ($q !== ''): ?>
+                Sin resultados para tu búsqueda. <a href="<?= urlLista(['q' => null, 'pagina' => 1]) ?>">Limpiar búsqueda</a>
+              <?php else: ?>
+                No hay registros.
+              <?php endif; ?>
             </td>
           </tr>
         <?php endif; ?>
@@ -95,16 +103,6 @@ include __DIR__ . '/../layouts/header.php';
   </div>
 </div>
 
-<script>
-  // Filtro de búsqueda en vivo
-  document.getElementById('buscadorMaterias')?.addEventListener('keyup', function() {
-    const valor = this.value.toLowerCase();
-    const filas = document.querySelectorAll('#tablaMaterias tbody tr');
-    filas.forEach(fila => {
-      const texto = fila.textContent.toLowerCase();
-      fila.style.display = texto.includes(valor) ? '' : 'none';
-    });
-  });
-</script>
+<?php include __DIR__ . '/../partials/paginacion.php'; ?>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

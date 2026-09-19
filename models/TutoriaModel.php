@@ -44,6 +44,103 @@ class TutoriaModel
         return $stmt->fetchAll();
     }
 
+    public function obtenerTodasOrdenadas($filtro_estado, $filtro_periodo, $orden, $dir)
+    {
+        $columnas = [
+            'fecha' => 'tu.fecha',
+            'materia' => 'm.nombre_materia',
+            'estudiante' => 'ue.nombre',
+            'tutor' => 'ut.nombre',
+            'estado' => 'tu.estado',
+        ];
+        $orden = $columnas[$orden] ?? $columnas['fecha'];
+        $dir = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+        $sql = "SELECT tu.*,
+                       ue.nombre AS est_nombre, ue.apellido AS est_apellido, ue.correo AS est_correo,
+                       ut.nombre AS tut_nombre, ut.apellido AS tut_apellido, ut.correo AS tut_correo,
+                       m.nombre_materia, c.nombre_carrera,
+                       ev.calificacion, ev.comentario AS ev_comentario
+                FROM tutorias tu
+                INNER JOIN estudiantes e ON tu.id_estudiante = e.id_estudiante
+                INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
+                INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
+                INNER JOIN usuarios ut ON t.id_usuario = ut.id_usuario
+                INNER JOIN materias m ON tu.id_materia = m.id_materia
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+                LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria";
+        $params = [];
+        $condiciones = [];
+        if (!empty($filtro_estado)) {
+            $condiciones[] = 'tu.estado = :estado';
+            $params[':estado'] = $filtro_estado;
+        }
+        if (!empty($filtro_periodo)) {
+            $condiciones[] = 'tu.periodo = :periodo';
+            $params[':periodo'] = $filtro_periodo;
+        }
+        if (!empty($condiciones)) {
+            $sql .= ' WHERE ' . implode(' AND ', $condiciones);
+        }
+        $sql .= " ORDER BY {$orden} {$dir}";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function obtenerPaginadas($q, $filtro_estado, $filtro_periodo, $orden, $dir, $limite, $offset)
+    {
+        $columnas = ['fecha' => 'tu.fecha', 'materia' => 'm.nombre_materia', 'estudiante' => 'ue.nombre', 'tutor' => 'ut.nombre', 'estado' => 'tu.estado'];
+        $ordenSql = $columnas[$orden] ?? $columnas['fecha'];
+        $dirSql = strtolower($dir) === 'asc' ? 'ASC' : 'DESC';
+        $sql = "SELECT tu.*, ue.nombre AS est_nombre, ue.apellido AS est_apellido, ue.correo AS est_correo,
+                       ut.nombre AS tut_nombre, ut.apellido AS tut_apellido, ut.correo AS tut_correo,
+                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario
+                FROM tutorias tu INNER JOIN estudiantes e ON tu.id_estudiante = e.id_estudiante
+                INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
+                INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
+                INNER JOIN usuarios ut ON t.id_usuario = ut.id_usuario
+                INNER JOIN materias m ON tu.id_materia = m.id_materia
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+                LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria";
+        $condiciones = [];
+        $params = [];
+        if ($filtro_estado !== null) { $condiciones[] = 'tu.estado = :estado'; $params[':estado'] = $filtro_estado; }
+        if ($filtro_periodo !== '') { $condiciones[] = 'tu.periodo = :periodo'; $params[':periodo'] = $filtro_periodo; }
+        if ($q !== '') {
+            $condiciones[] = "CONCAT_WS(' ', ue.nombre, ue.apellido, ut.nombre, ut.apellido, m.nombre_materia, c.nombre_carrera, tu.periodo, tu.estado) LIKE :q ESCAPE '\\\\'";
+            $params[':q'] = valorBusquedaLike($q);
+        }
+        if ($condiciones) $sql .= ' WHERE ' . implode(' AND ', $condiciones);
+        $sql .= " ORDER BY {$ordenSql} {$dirSql} LIMIT :limite OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $clave => $valor) $stmt->bindValue($clave, $valor, PDO::PARAM_STR);
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function contar($q = '', $filtro_estado = null, $filtro_periodo = '')
+    {
+        $sql = "SELECT COUNT(*) FROM tutorias tu
+                INNER JOIN estudiantes e ON tu.id_estudiante = e.id_estudiante
+                INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
+                INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
+                INNER JOIN usuarios ut ON t.id_usuario = ut.id_usuario
+                INNER JOIN materias m ON tu.id_materia = m.id_materia
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera";
+        $condiciones = [];
+        $params = [];
+        if ($filtro_estado !== null) { $condiciones[] = 'tu.estado = :estado'; $params[':estado'] = $filtro_estado; }
+        if ($filtro_periodo !== '') { $condiciones[] = 'tu.periodo = :periodo'; $params[':periodo'] = $filtro_periodo; }
+        if ($q !== '') { $condiciones[] = "CONCAT_WS(' ', ue.nombre, ue.apellido, ut.nombre, ut.apellido, m.nombre_materia, c.nombre_carrera, tu.periodo, tu.estado) LIKE :q ESCAPE '\\\\'"; $params[':q'] = valorBusquedaLike($q); }
+        if ($condiciones) $sql .= ' WHERE ' . implode(' AND ', $condiciones);
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $clave => $valor) $stmt->bindValue($clave, $valor, PDO::PARAM_STR);
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
     public function obtenerPorId($id_tutoria)
     {
         $sql = "SELECT tu.*,
@@ -84,6 +181,31 @@ class TutoriaModel
         return $stmt->fetchAll();
     }
 
+    public function obtenerPorEstudiantePaginadas($id_estudiante, $limite, $offset)
+    {
+        $sql = "SELECT tu.*, ut.nombre AS tut_nombre, ut.apellido AS tut_apellido, ut.correo AS tut_correo,
+                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario
+                FROM tutorias tu INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
+                INNER JOIN usuarios ut ON t.id_usuario = ut.id_usuario
+                INNER JOIN materias m ON tu.id_materia = m.id_materia
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+                LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria
+                WHERE tu.id_estudiante = :id_est ORDER BY tu.fecha DESC, tu.hora_inicio DESC LIMIT :limite OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_est', $id_estudiante, PDO::PARAM_INT);
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function contarPorEstudiante($id_estudiante)
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM tutorias WHERE id_estudiante = :id_est');
+        $stmt->execute([':id_est' => $id_estudiante]);
+        return (int) $stmt->fetchColumn();
+    }
+
     public function obtenerPorTutor($id_tutor)
     {
         $sql = "SELECT tu.*,
@@ -101,6 +223,53 @@ class TutoriaModel
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':id_tutor' => $id_tutor]);
         return $stmt->fetchAll();
+    }
+
+    public function obtenerPorTutorPaginadas($id_tutor, $limite, $offset)
+    {
+        $sql = "SELECT tu.*, ue.nombre AS est_nombre, ue.apellido AS est_apellido, ue.correo AS est_correo,
+                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario
+                FROM tutorias tu INNER JOIN estudiantes e ON tu.id_estudiante = e.id_estudiante
+                INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
+                INNER JOIN materias m ON tu.id_materia = m.id_materia
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+                LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria
+                WHERE tu.id_tutor = :id_tutor ORDER BY tu.fecha DESC, tu.hora_inicio DESC LIMIT :limite OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':id_tutor', $id_tutor, PDO::PARAM_INT);
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function contarPorTutor($id_tutor)
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM tutorias WHERE id_tutor = :id_tutor');
+        $stmt->execute([':id_tutor' => $id_tutor]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function obtenerMetricasPorTutor($id_tutor)
+    {
+        $stmt = $this->pdo->prepare("SELECT
+            SUM(estado = 'pendiente') AS pendientes,
+            SUM(estado = 'confirmada') AS confirmadas,
+            SUM(estado = 'realizada') AS realizadas
+            FROM tutorias WHERE id_tutor = :id_tutor");
+        $stmt->execute([':id_tutor' => $id_tutor]);
+        return $stmt->fetch();
+    }
+
+    public function obtenerMetricasPorEstudiante($id_estudiante)
+    {
+        $stmt = $this->pdo->prepare("SELECT
+            SUM(estado = 'pendiente') AS pendientes,
+            SUM(estado = 'confirmada') AS confirmadas,
+            SUM(estado = 'realizada') AS realizadas
+            FROM tutorias WHERE id_estudiante = :id_estudiante");
+        $stmt->execute([':id_estudiante' => $id_estudiante]);
+        return $stmt->fetch();
     }
 
     public function crear($datos)

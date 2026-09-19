@@ -32,7 +32,7 @@ include __DIR__ . '/../layouts/header.php';
 
         <div class="mb-4">
           <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de la Carrera *</label>
-          <input type="text" name="nombre_carrera" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($carrera_actual['nombre_carrera']) ?>" required>
+          <input type="text" name="nombre_carrera" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre_carrera'] ?? $carrera_actual['nombre_carrera']) ?>" maxlength="150" required>
         </div>
 
         <div class="d-flex justify-content-end gap-2 pt-3 border-top">

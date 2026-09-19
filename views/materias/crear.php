@@ -30,7 +30,7 @@ include __DIR__ . '/../layouts/header.php';
       <form method="POST" autocomplete="off">
         <div class="mb-4">
           <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de la Materia *</label>
-          <input type="text" name="nombre_materia" class="form-control rounded-3 py-2" placeholder="Ej: Redes de Computadoras, Algoritmos..." required autofocus>
+          <input type="text" name="nombre_materia" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre_materia'] ?? '') ?>" maxlength="150" placeholder="Ej: Redes de Computadoras, Algoritmos..." required autofocus>
         </div>
 
         <div class="mb-4">
@@ -41,7 +41,7 @@ include __DIR__ . '/../layouts/header.php';
           <select name="id_carrera" class="form-select rounded-3 py-2">
             <option value="">-- Selecciona una carrera (Opcional) --</option>
             <?php foreach ($carreras as $c): ?>
-              <option value="<?= $c['id_carrera'] ?>">
+              <option value="<?= $c['id_carrera'] ?>" <?= (($_POST['id_carrera'] ?? '') == $c['id_carrera']) ? 'selected' : '' ?>>
                 <?= htmlspecialchars($c['nombre_carrera']) ?>
               </option>
             <?php endforeach; ?>

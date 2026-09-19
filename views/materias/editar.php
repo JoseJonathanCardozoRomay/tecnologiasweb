@@ -32,7 +32,7 @@ include __DIR__ . '/../layouts/header.php';
 
         <div class="mb-4">
           <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de la Materia *</label>
-          <input type="text" name="nombre_materia" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($materia_actual['nombre_materia']) ?>" required>
+          <input type="text" name="nombre_materia" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre_materia'] ?? $materia_actual['nombre_materia']) ?>" maxlength="150" required>
         </div>
 
         <div class="mb-4">
@@ -40,7 +40,7 @@ include __DIR__ . '/../layouts/header.php';
           <select name="id_carrera" class="form-select rounded-3 py-2">
             <option value="">-- Sin carrera asignada --</option>
             <?php foreach ($carreras as $c): ?>
-              <option value="<?= $c['id_carrera'] ?>" <?= ($c['id_carrera'] == $materia_actual['id_carrera']) ? 'selected' : '' ?>>
+              <option value="<?= $c['id_carrera'] ?>" <?= (($_POST['id_carrera'] ?? $materia_actual['id_carrera']) == $c['id_carrera']) ? 'selected' : '' ?>>
                 <?= htmlspecialchars($c['nombre_carrera']) ?>
               </option>
             <?php endforeach; ?>

@@ -44,28 +44,33 @@ include __DIR__ . '/../layouts/header.php';
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre *</label>
-            <input type="text" name="nombre" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre'] ?? '') ?>" required>
+            <input type="text" name="nombre" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre'] ?? '') ?>" maxlength="100" required>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Apellido *</label>
-            <input type="text" name="apellido" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['apellido'] ?? '') ?>" required>
+            <input type="text" name="apellido" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['apellido'] ?? '') ?>" maxlength="100" required>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Correo Electrónico *</label>
-            <input type="email" name="correo" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['correo'] ?? '') ?>" placeholder="ejemplo@upds.edu.bo" required>
+            <input type="email" name="correo" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['correo'] ?? '') ?>" maxlength="150" placeholder="ejemplo@upds.edu.bo" required>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de Usuario *</label>
-            <input type="text" name="usuario" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>" placeholder="usuario123" required>
+            <input type="text" name="usuario" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>" minlength="4" maxlength="50" pattern="[a-z0-9._-]+" placeholder="usuario123" required>
           </div>
 
           <div class="col-md-12">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Contraseña Inicial *</label>
-            <input type="password" name="clave" class="form-control rounded-3 py-2" minlength="6" placeholder="Mínimo 6 caracteres" required>
+            <input type="password" name="clave" class="form-control rounded-3 py-2" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" placeholder="Mínimo 8 caracteres, una letra y un número" required>
             <div class="form-text">La contraseña se guardará encriptada con Bcrypt de forma segura.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Teléfono</label>
+            <input type="tel" name="telefono" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['telefono'] ?? '') ?>" maxlength="15" pattern="\d{7,15}">
           </div>
         </div>
 

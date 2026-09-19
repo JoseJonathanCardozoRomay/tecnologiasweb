@@ -65,6 +65,10 @@ include __DIR__ . '/../layouts/header.php';
   </a>
   <form method="GET" class="ms-md-auto">
     <input type="hidden" name="estado" value="<?= htmlspecialchars($filtroEstado ?? '') ?>">
+    <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
+    <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
+    <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
+    <input type="hidden" name="pagina" value="1">
     <select name="periodo" class="form-select form-select-sm" onchange="this.form.submit()">
       <option value="">Todos los periodos</option>
       <?php foreach ($periodos as $periodo): ?><option value="<?= htmlspecialchars($periodo) ?>" <?= $filtroPeriodo === $periodo ? 'selected' : '' ?>><?= htmlspecialchars($periodo) ?></option><?php endforeach; ?>
@@ -74,23 +78,29 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0">
-    <div class="input-group" style="max-width: 320px;">
+    <form method="GET" class="input-group" style="max-width: 320px;">
       <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-      <input type="text" id="buscadorTutorias" class="form-control bg-light border-start-0" placeholder="Buscar por alumno, materia...">
-    </div>
+      <input type="hidden" name="estado" value="<?= htmlspecialchars($filtroEstado ?? '') ?>">
+      <input type="hidden" name="periodo" value="<?= htmlspecialchars($filtroPeriodo) ?>">
+      <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
+      <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
+      <input type="hidden" name="pagina" value="1">
+      <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar por alumno, materia...">
+      <button class="btn btn-primary" type="submit">Buscar</button>
+    </form>
   </div>
 
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" id="tablaTutorias">
       <thead class="table-light text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
         <tr>
-          <th class="ps-4">Fecha y Horario</th>
+          <?php encabezadoOrdenable('Fecha y Horario', 'fecha', $ordenActual, $dirActual, 'ps-4'); ?>
           <th>Periodo</th>
-          <th>Materia y Carrera</th>
-          <th>Estudiante</th>
-          <th>Docente Tutor</th>
+          <?php encabezadoOrdenable('Materia y Carrera', 'materia', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Estudiante', 'estudiante', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Docente Tutor', 'tutor', $ordenActual, $dirActual); ?>
           <th>Modalidad</th>
-          <th>Estado</th>
+          <?php encabezadoOrdenable('Estado', 'estado', $ordenActual, $dirActual); ?>
           <th class="text-end pe-4">Acciones</th>
         </tr>
       </thead>
@@ -178,25 +188,18 @@ include __DIR__ . '/../layouts/header.php';
           <tr>
             <td colspan="8" class="text-center py-5 text-muted">
               <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
-              No hay tutorías registradas con el criterio seleccionado.
+              <?php if ($q !== ''): ?>
+                Sin resultados para tu búsqueda. <a href="<?= urlLista(['q' => null, 'pagina' => 1]) ?>">Limpiar búsqueda</a>
+              <?php else: ?>
+                No hay registros.
+              <?php endif; ?>
             </td>
           </tr>
         <?php endif; ?>
       </tbody>
     </table>
   </div>
+  <?php include __DIR__ . '/../partials/paginacion.php'; ?>
 </div>
-
-<script>
-  // Buscador en vivo
-  document.getElementById('buscadorTutorias')?.addEventListener('keyup', function() {
-    const valor = this.value.toLowerCase();
-    const filas = document.querySelectorAll('#tablaTutorias tbody tr');
-    filas.forEach(fila => {
-      const texto = fila.textContent.toLowerCase();
-      fila.style.display = texto.includes(valor) ? '' : 'none';
-    });
-  });
-</script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

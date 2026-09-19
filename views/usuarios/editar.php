@@ -53,22 +53,33 @@ include __DIR__ . '/../layouts/header.php';
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre *</label>
-            <input type="text" name="nombre" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($usuario_actual['nombre']) ?>" required>
+            <input type="text" name="nombre" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre'] ?? $usuario_actual['nombre']) ?>" maxlength="100" required>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Apellido *</label>
-            <input type="text" name="apellido" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($usuario_actual['apellido']) ?>" required>
+            <input type="text" name="apellido" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['apellido'] ?? $usuario_actual['apellido']) ?>" maxlength="100" required>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Correo Electrónico *</label>
-            <input type="email" name="correo" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($usuario_actual['correo']) ?>" required>
+            <input type="email" name="correo" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['correo'] ?? $usuario_actual['correo']) ?>" maxlength="150" required>
           </div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de Usuario *</label>
-            <input type="text" name="usuario" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($usuario_actual['usuario']) ?>" required>
+            <input type="text" name="usuario" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['usuario'] ?? $usuario_actual['usuario']) ?>" minlength="4" maxlength="50" pattern="[a-z0-9._-]+" required>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Teléfono</label>
+            <input type="tel" name="telefono" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['telefono'] ?? ($usuario_actual['telefono'] ?? '')) ?>" maxlength="15" pattern="\d{7,15}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Nueva contraseña</label>
+            <input type="password" name="clave" class="form-control rounded-3 py-2" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" placeholder="Dejar vacío para conservarla">
           </div>
         </div>
 

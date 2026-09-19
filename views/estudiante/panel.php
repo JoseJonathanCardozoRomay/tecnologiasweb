@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../models/EstudianteModel.php';
 require_once __DIR__ . '/../../models/TutoriaModel.php';
 require_once __DIR__ . '/../../models/CarreraModel.php';
+require_once __DIR__ . '/../../includes/lista_helper.php';
 
 $estudianteModel = new EstudianteModel($pdo);
 $tutoriaModel = new TutoriaModel($pdo);
@@ -20,11 +21,14 @@ if (!$estudiante) {
 }
 
 $idEstudiante = $estudiante['id_estudiante'];
-$misTutorias = $tutoriaModel->obtenerPorEstudiante($idEstudiante);
+$totalRegistros = $tutoriaModel->contarPorEstudiante($idEstudiante);
+$pag = paginacionCalcular($totalRegistros, paginacionParametros(10));
+$misTutorias = $tutoriaModel->obtenerPorEstudiantePaginadas($idEstudiante, $pag['por_pagina'], $pag['offset']);
+$metricasEstudiante = $tutoriaModel->obtenerMetricasPorEstudiante($idEstudiante);
 
-$pendientes = count(array_filter($misTutorias, fn($t) => $t['estado'] === 'pendiente'));
-$confirmadas = count(array_filter($misTutorias, fn($t) => $t['estado'] === 'confirmada'));
-$realizadas = count(array_filter($misTutorias, fn($t) => $t['estado'] === 'realizada'));
+$pendientes = (int) ($metricasEstudiante['pendientes'] ?? 0);
+$confirmadas = (int) ($metricasEstudiante['confirmadas'] ?? 0);
+$realizadas = (int) ($metricasEstudiante['realizadas'] ?? 0);
 
 $tituloPagina = 'Portal del Estudiante - Tutorías UPDS';
 include __DIR__ . '/../layouts/header.php';
@@ -201,6 +205,7 @@ include __DIR__ . '/../layouts/header.php';
           </tbody>
         </table>
       </div>
+      <?php $mostrarSelector = false; include __DIR__ . '/../partials/paginacion.php'; ?>
     </div>
   </div>
 </div>

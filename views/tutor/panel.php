@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../includes/verificar_sesion.php';
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../models/TutorModel.php';
 require_once __DIR__ . '/../../models/TutoriaModel.php';
+require_once __DIR__ . '/../../includes/lista_helper.php';
 
 $tutorModel = new TutorModel($pdo);
 $tutoriaModel = new TutoriaModel($pdo);
@@ -17,13 +18,16 @@ if (!$tutor) {
 }
 
 $idTutor = $tutor['id_tutor'];
-$misTutorias = $tutoriaModel->obtenerPorTutor($idTutor);
+$totalRegistros = $tutoriaModel->contarPorTutor($idTutor);
+$pag = paginacionCalcular($totalRegistros, paginacionParametros(10));
+$misTutorias = $tutoriaModel->obtenerPorTutorPaginadas($idTutor, $pag['por_pagina'], $pag['offset']);
+$metricasTutor = $tutoriaModel->obtenerMetricasPorTutor($idTutor);
 $misMaterias = $tutorModel->obtenerMaterias($idTutor);
 $misHorarios = $tutorModel->obtenerDisponibilidad($idTutor);
 
-$pendientes = count(array_filter($misTutorias, fn($t) => $t['estado'] === 'pendiente'));
-$confirmadas = count(array_filter($misTutorias, fn($t) => $t['estado'] === 'confirmada'));
-$realizadas = count(array_filter($misTutorias, fn($t) => $t['estado'] === 'realizada'));
+$pendientes = (int) ($metricasTutor['pendientes'] ?? 0);
+$confirmadas = (int) ($metricasTutor['confirmadas'] ?? 0);
+$realizadas = (int) ($metricasTutor['realizadas'] ?? 0);
 
 $tituloPagina = 'Panel del Docente Tutor - UPDS';
 include __DIR__ . '/../layouts/header.php';
@@ -168,6 +172,7 @@ include __DIR__ . '/../layouts/header.php';
           </tbody>
         </table>
       </div>
+      <?php $mostrarSelector = false; include __DIR__ . '/../partials/paginacion.php'; ?>
     </div>
   </div>
 </div>

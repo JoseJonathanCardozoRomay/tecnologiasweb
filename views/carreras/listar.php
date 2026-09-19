@@ -9,7 +9,7 @@ include __DIR__ . '/../layouts/header.php';
     <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
       <i class="bi bi-mortarboard text-primary"></i>
       <span>Carreras Universitarias</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= count($carreras) ?></span>
+      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
     </h2>
     <p class="text-muted mb-0">Programas académicos de la Universidad Privada Domingo Savio.</p>
   </div>
@@ -26,14 +26,24 @@ include __DIR__ . '/../layouts/header.php';
 </div>
 
 <div class="card card-custom shadow-sm overflow-hidden">
+  <div class="card-header bg-white py-3 border-0">
+    <form method="GET" class="input-group" style="max-width: 320px;">
+      <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
+      <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
+      <input type="hidden" name="pagina" value="1">
+      <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar carrera...">
+      <button class="btn btn-primary" type="submit">Buscar</button>
+    </form>
+  </div>
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
         <tr>
-          <th class="ps-4">ID</th>
-          <th>Nombre de la Carrera</th>
-          <th>Total Materias</th>
-          <th>Estudiantes Inscritos</th>
+          <?php encabezadoOrdenable('ID', 'id', $ordenActual, $dirActual, 'ps-4'); ?>
+          <?php encabezadoOrdenable('Nombre de la Carrera', 'nombre', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Total Materias', 'materias', $ordenActual, $dirActual); ?>
+          <?php encabezadoOrdenable('Estudiantes Inscritos', 'estudiantes', $ordenActual, $dirActual); ?>
           <th class="text-end pe-4">Acciones</th>
         </tr>
       </thead>
@@ -75,13 +85,18 @@ include __DIR__ . '/../layouts/header.php';
           <tr>
             <td colspan="5" class="text-center py-5 text-muted">
               <i class="bi bi-mortarboard fs-1 d-block mb-2 text-secondary"></i>
-              No hay carreras registradas aún.
+              <?php if ($q !== ''): ?>
+                Sin resultados para tu búsqueda. <a href="<?= urlLista(['q' => null, 'pagina' => 1]) ?>">Limpiar búsqueda</a>
+              <?php else: ?>
+                No hay registros.
+              <?php endif; ?>
             </td>
           </tr>
         <?php endif; ?>
       </tbody>
     </table>
   </div>
+  <?php include __DIR__ . '/../partials/paginacion.php'; ?>
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
