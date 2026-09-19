@@ -307,6 +307,51 @@ class TutoriaModel
         ]);
     }
 
+    public function hayCruceTutor($idTutor, $fecha, $ini, $fin, $excluirId = null)
+    {
+        $sql = "SELECT 1 FROM tutorias WHERE id_tutor = :id AND fecha = :fecha AND estado IN ('pendiente','confirmada') AND hora_inicio < :fin AND hora_fin > :ini";
+        $params = [':id' => $idTutor, ':fecha' => $fecha, ':ini' => $ini, ':fin' => $fin];
+        if ($excluirId !== null) { $sql .= ' AND id_tutoria <> :excluir'; $params[':excluir'] = $excluirId; }
+        $stmt = $this->pdo->prepare($sql); $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function hayCruceEstudiante($idEstudiante, $fecha, $ini, $fin, $excluirId = null)
+    {
+        $sql = "SELECT 1 FROM tutorias WHERE id_estudiante = :id AND fecha = :fecha AND estado IN ('pendiente','confirmada') AND hora_inicio < :fin AND hora_fin > :ini";
+        $params = [':id' => $idEstudiante, ':fecha' => $fecha, ':ini' => $ini, ':fin' => $fin];
+        if ($excluirId !== null) { $sql .= ' AND id_tutoria <> :excluir'; $params[':excluir'] = $excluirId; }
+        $stmt = $this->pdo->prepare($sql); $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function contarActivasPorEstudiante($idEstudiante)
+    {
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM tutorias WHERE id_estudiante = :id AND estado IN ('pendiente','confirmada') AND fecha >= CURDATE()");
+        $stmt->execute([':id' => $idEstudiante]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function crearSinCruces($datos)
+    {
+        try {
+            $this->pdo->beginTransaction();
+            $bloqueo = $this->pdo->prepare('SELECT id_tutor FROM tutores WHERE id_tutor = :id FOR UPDATE');
+            $bloqueo->execute([':id' => $datos['id_tutor']]);
+            if (!$bloqueo->fetchColumn()) { $this->pdo->rollBack(); return ['ok' => false, 'error' => 'El tutor seleccionado no existe.']; }
+            if ($this->hayCruceTutor($datos['id_tutor'], $datos['fecha'], $datos['hora_inicio'], $datos['hora_fin'])) { $this->pdo->rollBack(); return ['ok' => false, 'error' => 'El tutor ya tiene una tutoría en ese horario.']; }
+            if ($this->hayCruceEstudiante($datos['id_estudiante'], $datos['fecha'], $datos['hora_inicio'], $datos['hora_fin'])) { $this->pdo->rollBack(); return ['ok' => false, 'error' => 'El estudiante ya tiene una tutoría en ese horario.']; }
+            if ($this->contarActivasPorEstudiante($datos['id_estudiante']) >= TUTORIA_MAX_ACTIVAS) { $this->pdo->rollBack(); return ['ok' => false, 'error' => 'El estudiante alcanzó el máximo de ' . TUTORIA_MAX_ACTIVAS . ' tutorías activas.']; }
+            $this->crear($datos);
+            $this->pdo->commit();
+            return ['ok' => true, 'error' => null];
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            error_log($e->getMessage());
+            return ['ok' => false, 'error' => 'No se pudo agendar la sesión.'];
+        }
+    }
+
     public function actualizarEstado($id_tutoria, $nuevo_estado, $observaciones = null)
     {
         if ($observaciones !== null) {

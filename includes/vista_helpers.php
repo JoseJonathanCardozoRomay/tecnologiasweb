@@ -45,3 +45,11 @@ function avatar($nombre, $apellido = '', $rol = '')
     return '<span class="avatar ' . $claseRol . '" aria-hidden="true">'
         . htmlspecialchars($iniciales, ENT_QUOTES, 'UTF-8') . '</span>';
 }
+
+function rol_badge($rol)
+{
+    $rol = (string) $rol;
+    $mapa = ['administrador' => ['role-admin', 'Administrador'], 'tutor' => ['role-tutor', 'Tutor'], 'estudiante' => ['role-student', 'Estudiante']];
+    [$clase, $etiqueta] = $mapa[$rol] ?? ['status-neutral', ucfirst($rol)];
+    return '<span class="role-badge ' . $clase . '">' . htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') . '</span>';
+}

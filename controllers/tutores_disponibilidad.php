@@ -50,8 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!empty($dia) && !empty($inicio) && !empty($fin)) {
             if ($inicio < $fin) {
-                $tutorModel->agregarDisponibilidad($idTutor, $dia, $inicio, $fin);
-                flash_set('success', 'Horario agregado correctamente.');
+                if ($tutorModel->agregarDisponibilidad($idTutor, $dia, $inicio, $fin)) {
+                    flash_set('success', 'Horario agregado correctamente.');
+                } else {
+                    $errores[] = 'El horario se solapa con otro bloque existente.';
+                }
             } else {
                 $errores[] = "La hora de fin debe ser mayor a la hora de inicio.";
             }

@@ -38,6 +38,10 @@ if ($idTutoria && in_array($nuevoEstado, $estadosValidos, true)) {
             flash_set('danger', 'No tienes permiso para cambiar el estado de esta tutoría.');
         } elseif ($rol === 'administrador' && !in_array($nuevoEstado, $transiciones[$actual['estado']] ?? [], true)) {
             flash_set('danger', 'La transición de estado no es válida.');
+        } elseif ($nuevoEstado === 'confirmada' && strtotime($actual['fecha'] . ' ' . $actual['hora_inicio']) <= time()) {
+            flash_set('danger', 'No se puede confirmar una tutoría cuyo inicio ya pasó.');
+        } elseif ($nuevoEstado === 'realizada' && strtotime($actual['fecha'] . ' ' . $actual['hora_inicio']) > time()) {
+            flash_set('danger', 'No se puede marcar como realizada una tutoría que aún no inició.');
         } else {
             $tutoriaModel->actualizarEstado($idTutoria, $nuevoEstado, $observaciones);
             flash_set('success', 'Estado de tutoría actualizado.');

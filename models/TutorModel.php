@@ -148,6 +148,20 @@ class TutorModel
         return $stmt->fetchAll();
     }
 
+    public function tutorDictaMateria($idTutor, $idMateria)
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM tutor_materia WHERE id_tutor = :tutor AND id_materia = :materia');
+        $stmt->execute([':tutor' => $idTutor, ':materia' => $idMateria]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function tieneDisponibilidad($idTutor, $dia, $inicio, $fin)
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM disponibilidad_tutor WHERE id_tutor = :tutor AND dia_semana = :dia AND hora_inicio <= :inicio AND hora_fin >= :fin');
+        $stmt->execute([':tutor' => $idTutor, ':dia' => $dia, ':inicio' => $inicio, ':fin' => $fin]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     // Horarios de disponibilidad
     public function obtenerDisponibilidad($id_tutor)
     {
@@ -160,6 +174,10 @@ class TutorModel
 
     public function agregarDisponibilidad($id_tutor, $dia_semana, $hora_inicio, $hora_fin)
     {
+        if ($hora_fin <= $hora_inicio) return false;
+        $cruce = $this->pdo->prepare('SELECT 1 FROM disponibilidad_tutor WHERE id_tutor = :tutor AND dia_semana = :dia AND hora_inicio < :fin AND hora_fin > :inicio');
+        $cruce->execute([':tutor' => $id_tutor, ':dia' => $dia_semana, ':inicio' => $hora_inicio, ':fin' => $hora_fin]);
+        if ($cruce->fetchColumn()) return false;
         $stmt = $this->pdo->prepare("INSERT INTO disponibilidad_tutor (id_tutor, dia_semana, hora_inicio, hora_fin) 
                                      VALUES (:id_tutor, :dia, :inicio, :fin)");
         return $stmt->execute([

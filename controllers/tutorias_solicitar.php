@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/EstudianteModel.php';
 require_once __DIR__ . '/../includes/flash.php';
+require_once __DIR__ . '/../includes/reglas_tutoria.php';
 
 $idUsuario = $_SESSION['id_usuario'] ?? 0;
 $rolSesion = $_SESSION['rol'] ?? '';
@@ -49,11 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$materiaModel->obtenerPorId((int) $datos['id_materia']) || !$tutorModel->obtenerPorId((int) $datos['id_tutor'])) $errores[] = 'La materia o el tutor seleccionado no es válido.';
 
     if (!$errores) {
+        $errores = array_merge($errores, validarSolicitudTutoria($pdo, $datos, $estudianteModel->obtenerPorId($idEstudiante)));
+    }
+    if (!$errores) {
         try {
-            $tutoriaModel->crear($datos);
+            $resultado = $tutoriaModel->crearSinCruces($datos);
+            if (!$resultado['ok']) {
+                $errores[] = $resultado['error'];
+            } else {
             flash_set('success', 'Solicitud registrada.');
             header('Location: ' . ($rolSesion === 'estudiante' ? '/views/estudiante/panel.php' : 'tutorias_listar.php'));
             exit;
+            }
         } catch (PDOException $e) {
             error_log($e->getMessage());
             $errores[] = 'No se pudo agendar la sesión.';
@@ -61,7 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$materias = $materiaModel->obtenerTodas();
+$materias = $rolSesion === 'estudiante'
+    ? $materiaModel->obtenerDisponiblesParaCarrera($estudiante['id_carrera'] ?? 0)
+    : $materiaModel->obtenerTodasConTutorActivo();
 $tutores = $tutorModel->obtenerTodos();
 $estudiantes = $rolSesion === 'administrador' ? $estudianteModel->obtenerTodos() : [];
 $periodos = array_values(array_unique(array_merge(

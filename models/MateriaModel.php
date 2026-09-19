@@ -97,6 +97,19 @@ class MateriaModel
         return $stmt->fetchAll();
     }
 
+    public function obtenerDisponiblesParaCarrera($idCarrera)
+    {
+        $sql = "SELECT m.id_materia, m.nombre_materia, m.id_carrera, c.nombre_carrera FROM materias m LEFT JOIN carreras c ON c.id_carrera = m.id_carrera WHERE (m.id_carrera = :carrera OR m.id_carrera IS NULL) AND EXISTS (SELECT 1 FROM tutor_materia tm INNER JOIN tutores t ON t.id_tutor = tm.id_tutor INNER JOIN usuarios u ON u.id_usuario = t.id_usuario WHERE tm.id_materia = m.id_materia AND u.estado = 'activo') ORDER BY m.nombre_materia";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':carrera' => $idCarrera]);
+        return $stmt->fetchAll();
+    }
+
+    public function obtenerTodasConTutorActivo()
+    {
+        return $this->pdo->query("SELECT m.id_materia, m.nombre_materia, m.id_carrera, c.nombre_carrera FROM materias m LEFT JOIN carreras c ON c.id_carrera = m.id_carrera WHERE EXISTS (SELECT 1 FROM tutor_materia tm INNER JOIN tutores t ON t.id_tutor = tm.id_tutor INNER JOIN usuarios u ON u.id_usuario = t.id_usuario WHERE tm.id_materia = m.id_materia AND u.estado = 'activo') ORDER BY m.nombre_materia")->fetchAll();
+    }
+
     public function crear($datos)
     {
         $stmt = $this->pdo->prepare("INSERT INTO materias (nombre_materia, id_carrera) VALUES (:nombre, :id_carrera)");

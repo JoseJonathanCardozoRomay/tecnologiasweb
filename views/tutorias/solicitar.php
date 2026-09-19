@@ -47,10 +47,10 @@ include __DIR__ . '/../layouts/header.php';
           <!-- Materia -->
           <div class="col-md-12">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Materia Académica *</label>
-            <select name="id_materia" class="form-select rounded-3 py-2" required>
+            <select name="id_materia" id="id_materia" class="form-select rounded-3 py-2" required>
               <option value="" disabled selected>Selecciona la materia que deseas reforzar...</option>
               <?php foreach ($materias as $m): ?>
-                <option value="<?= $m['id_materia'] ?>" <?= (isset($_POST['id_materia']) && $_POST['id_materia'] == $m['id_materia']) ? 'selected' : '' ?>>
+                <option value="<?= htmlspecialchars($m['id_materia']) ?>" <?= (isset($_POST['id_materia']) && $_POST['id_materia'] == $m['id_materia']) ? 'selected' : '' ?>>
                   <?= htmlspecialchars($m['nombre_materia']) ?> (<?= htmlspecialchars($m['nombre_carrera'] ?? 'General') ?>)
                 </option>
               <?php endforeach; ?>
@@ -62,7 +62,7 @@ include __DIR__ . '/../layouts/header.php';
             <select name="periodo" class="form-select rounded-3 py-2" required>
               <?php $periodoActual = $_POST['periodo'] ?? 'I-' . date('Y'); ?>
               <?php foreach ($periodos as $periodo): ?>
-                <option value="<?= $periodo ?>" <?= $periodoActual === $periodo ? 'selected' : '' ?>><?= $periodo ?></option>
+                <option value="<?= htmlspecialchars($periodo, ENT_QUOTES, 'UTF-8') ?>" <?= $periodoActual === $periodo ? 'selected' : '' ?>><?= htmlspecialchars($periodo, ENT_QUOTES, 'UTF-8') ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -70,7 +70,7 @@ include __DIR__ . '/../layouts/header.php';
           <!-- Tutor -->
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Docente Tutor *</label>
-            <select name="id_tutor" class="form-select rounded-3 py-2" required>
+            <select name="id_tutor" id="id_tutor" data-seleccionado="<?= htmlspecialchars($_POST['id_tutor'] ?? '', ENT_QUOTES, 'UTF-8') ?>" class="form-select rounded-3 py-2" required>
               <option value="" disabled selected>Selecciona al tutor académico...</option>
               <?php foreach ($tutores as $t): ?>
                 <option value="<?= $t['id_tutor'] ?>" <?= (isset($_POST['id_tutor']) && $_POST['id_tutor'] == $t['id_tutor']) ? 'selected' : '' ?>>
@@ -78,12 +78,14 @@ include __DIR__ . '/../layouts/header.php';
                 </option>
               <?php endforeach; ?>
             </select>
+            <div id="horarios-tutor" class="form-text mt-1" aria-live="polite"></div>
           </div>
 
           <!-- Fecha -->
           <div class="col-md-4">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Fecha de la Sesión *</label>
-            <input type="date" name="fecha" class="form-control rounded-3 py-2" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($_POST['fecha'] ?? date('Y-m-d')) ?>" required>
+            <input type="date" name="fecha" id="fecha" class="form-control rounded-3 py-2" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($_POST['fecha'] ?? date('Y-m-d')) ?>" required>
+            <div id="nombre-dia" class="form-text mt-1" aria-live="polite"></div>
           </div>
 
           <!-- Hora Inicio -->
@@ -132,4 +134,33 @@ include __DIR__ . '/../layouts/header.php';
   </div>
 </div>
 
+<script>
+(() => {
+  const materia = document.getElementById('id_materia');
+  const tutor = document.getElementById('id_tutor');
+  const horarios = document.getElementById('horarios-tutor');
+  const fecha = document.getElementById('fecha');
+  const nombreDia = document.getElementById('nombre-dia');
+  let tutores = [];
+  const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+  const actualizarDia = () => { if (!fecha.value) return nombreDia.textContent = ''; const d = new Date(fecha.value + 'T12:00:00'); nombreDia.textContent = 'Día: ' + dias[d.getDay()]; };
+  const mostrarHorarios = () => { const actual = tutores.find(t => String(t.id_tutor) === tutor.value); horarios.textContent = actual ? (actual.horarios || []).map(h => h.dia_semana + ' ' + String(h.hora_inicio).slice(0, 5) + '-' + String(h.hora_fin).slice(0, 5)).join(' · ') || 'Sin horarios registrados.' : ''; };
+  const cargar = async () => {
+    tutor.replaceChildren(); horarios.textContent = '';
+    const inicial = document.createElement('option'); inicial.value = ''; inicial.textContent = 'Selecciona al tutor académico...'; inicial.disabled = true; inicial.selected = true; tutor.appendChild(inicial);
+    if (!materia.value) return;
+    try {
+      const respuesta = await fetch('/controllers/api_tutores_por_materia.php?id_materia=' + encodeURIComponent(materia.value));
+      if (!respuesta.ok) throw new Error();
+      tutores = await respuesta.json();
+      const seleccionado = tutor.dataset.seleccionado;
+      tutores.forEach(t => { const o = document.createElement('option'); o.value = t.id_tutor; o.textContent = 'Prof. ' + t.nombre + ' ' + t.apellido + (t.especialidad ? ' — ' + t.especialidad : ''); o.selected = String(t.id_tutor) === seleccionado; tutor.appendChild(o); });
+      mostrarHorarios();
+    } catch (_) { horarios.textContent = 'No se pudieron cargar los tutores disponibles.'; }
+  };
+  materia.addEventListener('change', () => { tutor.dataset.seleccionado = ''; cargar(); });
+  tutor.addEventListener('change', mostrarHorarios); fecha.addEventListener('change', actualizarDia);
+  actualizarDia(); if (materia.value) cargar();
+})();
+</script>
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

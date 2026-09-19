@@ -59,9 +59,7 @@ include __DIR__ . '/../layouts/header.php';
             <td class="ps-4 text-muted fw-semibold">#<?= htmlspecialchars($u['id_usuario']) ?></td>
             <td>
               <div class="d-flex align-items-center gap-3">
-                <div class="monogram rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.9rem;">
-                  <?= strtoupper(substr($u['nombre'], 0, 1) . substr($u['apellido'], 0, 1)) ?>
-                </div>
+                <?= avatar($u['nombre'], $u['apellido'], $u['nombre_rol']) ?>
                 <div>
                   <div class="fw-bold text-dark"><?= htmlspecialchars($u['nombre'] . ' ' . $u['apellido']) ?></div>
                   <small class="text-muted"><i class="bi bi-person me-1"></i><?= htmlspecialchars($u['usuario']) ?></small>
@@ -72,9 +70,7 @@ include __DIR__ . '/../layouts/header.php';
               <span class="text-secondary"><?= htmlspecialchars($u['correo']) ?></span>
             </td>
             <td>
-              <span class="badge rounded-pill px-3 py-1 text-capitalize <?= $badgeRol ?>">
-                <?= htmlspecialchars($u['nombre_rol']) ?>
-              </span>
+              <?= rol_badge($u['nombre_rol']) ?>
             </td>
             <td>
               <?= estado_badge($u['estado']) ?>

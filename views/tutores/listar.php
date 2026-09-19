@@ -49,9 +49,7 @@ include __DIR__ . '/../layouts/header.php';
           <tr>
             <td class="ps-4">
               <div class="d-flex align-items-center gap-3">
-                <div class="monogram rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px;">
-                  <?= strtoupper(substr($t['nombre'], 0, 1) . substr($t['apellido'], 0, 1)) ?>
-                </div>
+                <?= avatar($t['nombre'], $t['apellido'], 'tutor') ?>
                 <div>
                   <div class="fw-bold text-dark">Prof. <?= htmlspecialchars($t['nombre'] . ' ' . $t['apellido']) ?></div>
                   <small class="text-muted"><i class="bi bi-person me-1"></i><?= htmlspecialchars($t['usuario']) ?></small>

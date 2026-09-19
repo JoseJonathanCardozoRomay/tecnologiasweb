@@ -48,19 +48,19 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Filtros de Estado y periodo -->
 <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
-  <a href="tutorias_listar.php<?= $filtroPeriodo ? '?periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= empty($filtroEstado) ? 'btn-dark' : 'btn-outline-secondary' ?> rounded-pill px-3">
+  <a href="<?= urlLista(['estado' => null, 'pagina' => 1]) ?>" class="btn btn-sm <?= empty($filtroEstado) ? 'btn-dark' : 'btn-outline-secondary' ?> rounded-pill px-3">
     Todas
   </a>
-  <a href="tutorias_listar.php?estado=pendiente<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'pendiente' ? 'btn-accent fw-bold' : 'btn-outline-accent' ?> rounded-pill px-3">
+  <a href="<?= urlLista(['estado' => 'pendiente', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'pendiente' ? 'btn-accent fw-bold' : 'btn-outline-accent' ?> rounded-pill px-3">
     <i class="bi bi-clock me-1"></i>Pendientes
   </a>
-  <a href="tutorias_listar.php?estado=confirmada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'confirmada' ? 'btn-info text-white fw-bold' : 'btn-outline-info' ?> rounded-pill px-3">
+  <a href="<?= urlLista(['estado' => 'confirmada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'confirmada' ? 'btn-info text-white fw-bold' : 'btn-outline-info' ?> rounded-pill px-3">
     <i class="bi bi-check2 me-1"></i>Confirmadas
   </a>
-  <a href="tutorias_listar.php?estado=realizada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'realizada' ? 'btn-success fw-bold' : 'btn-outline-success' ?> rounded-pill px-3">
+  <a href="<?= urlLista(['estado' => 'realizada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'realizada' ? 'btn-success fw-bold' : 'btn-outline-success' ?> rounded-pill px-3">
     <i class="bi bi-check-circle me-1"></i>Realizadas
   </a>
-  <a href="tutorias_listar.php?estado=cancelada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
+  <a href="<?= urlLista(['estado' => 'cancelada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
     <i class="bi bi-x-circle me-1"></i>Canceladas
   </a>
   <form method="GET" class="ms-md-auto">
