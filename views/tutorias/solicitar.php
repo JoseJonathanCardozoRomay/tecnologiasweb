@@ -29,6 +29,7 @@ include __DIR__ . '/../layouts/header.php';
 
     <div class="card card-custom p-4 p-md-5">
       <form method="POST" autocomplete="off">
+        <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
         <div class="row g-3">
           <!-- Materia -->
           <div class="col-md-12">

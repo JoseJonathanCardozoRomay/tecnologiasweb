@@ -49,7 +49,7 @@ $esEstudiante = $rolSesion === 'estudiante';
           <div class="topbar-user">
             <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
             <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
-            <a href="/controllers/logout.php" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
+            <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@ $esEstudiante = $rolSesion === 'estudiante';
       <div class="sidebar-user d-flex align-items-center gap-2">
         <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
         <div class="flex-grow-1"><div class="sidebar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="sidebar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
-        <a href="/controllers/logout.php" class="btn btn-sm btn-link text-white p-1" aria-label="Cerrar sesión" title="Cerrar sesión"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
+        <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-link text-white p-1" aria-label="Cerrar sesión" title="Cerrar sesión"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
       </div>
     </aside>
     <div class="offcanvas offcanvas-start mobile-offcanvas" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
@@ -110,14 +110,14 @@ $esEstudiante = $rolSesion === 'estudiante';
       <div class="mobile-menu-bar">
         <button class="btn btn-link text-white p-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="Abrir menú"><i class="bi bi-list fs-3" aria-hidden="true"></i></button>
         <img class="brand-logo" src="/assets/img/logo-upds.svg" alt="UPDS">
-        <a href="/controllers/logout.php" class="btn btn-link text-white p-0" aria-label="Cerrar sesión"><i class="bi bi-box-arrow-right fs-5" aria-hidden="true"></i></a>
+        <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-link text-white p-0" aria-label="Cerrar sesión"><i class="bi bi-box-arrow-right fs-5" aria-hidden="true"></i></a>
       </div>
       <header class="app-topbar d-flex justify-content-between align-items-center">
         <div class="topbar-title"><?= htmlspecialchars($tituloSeccion) ?></div>
         <div class="topbar-user">
           <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
           <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
-          <a href="/controllers/logout.php" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
+          <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
         </div>
       </header>
 <?php endif; ?>

@@ -23,10 +23,11 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
-    <form method="GET" class="input-group" style="max-width: 320px;">
+    <form method="GET" class="input-group" style="max-width: 420px;">
       <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
       <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
       <input type="hidden" name="pagina" value="1">
+      <select name="estado" class="form-select" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="activo" <?= $estado === 'activo' ? 'selected' : '' ?>>Activos</option><option value="pendiente" <?= $estado === 'pendiente' ? 'selected' : '' ?>>Pendientes</option><option value="inactivo" <?= $estado === 'inactivo' ? 'selected' : '' ?>>Inactivos</option></select>
       <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
       <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar por nombre, usuario...">
       <button class="btn btn-primary" type="submit">Buscar</button>
@@ -99,6 +100,7 @@ include __DIR__ . '/../layouts/header.php';
                         title="Eliminar">
                   <i class="bi bi-trash-fill"></i>
                 </button>
+                <?php if ($u['estado'] === 'pendiente'): ?><button type="button" class="btn btn-outline-success btn-sm" onclick="enviarPostSeguro('usuarios_aprobar.php?id=<?= $u['id_usuario'] ?>')" title="Aprobar cuenta"><i class="bi bi-check2"></i></button><?php endif; ?>
               </div>
             </td>
           </tr>

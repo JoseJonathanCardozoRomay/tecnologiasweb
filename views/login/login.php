@@ -1,6 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+  require_once __DIR__ . '/../../includes/sesion.php';
 }
 if (isset($_SESSION['id_usuario'])) {
     header('Location: ../../controllers/usuarios_listar.php');
@@ -50,6 +50,7 @@ if (isset($_SESSION['id_usuario'])) {
           <?php endif; ?>
 
           <form action="../../controllers/login_procesar.php" method="POST" autocomplete="off">
+            <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
             <div class="mb-3">
               <label for="usuarioInput" class="form-label">Usuario o correo electrónico</label>
               <div class="input-group">
@@ -70,6 +71,7 @@ if (isset($_SESSION['id_usuario'])) {
               <span>Ingresar</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
             </button>
           </form>
+          <div class="text-center mt-3"><a href="/controllers/registro.php">Crear cuenta de estudiante</a></div>
           <p class="text-muted small text-center mt-4 mb-0">Tecnologías Web · Sede Tarija</p>
         </div>
       </section>

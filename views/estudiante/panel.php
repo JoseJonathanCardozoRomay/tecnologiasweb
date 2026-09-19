@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/auth.php';
+requerirRol(['estudiante']);
 require_once __DIR__ . '/../../includes/verificar_sesion.php';
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../models/EstudianteModel.php';
@@ -150,6 +152,7 @@ include __DIR__ . '/../layouts/header.php';
                         <div class="modal-dialog modal-dialog-centered">
                           <div class="modal-content rounded-4 border-0 shadow">
                             <form action="/controllers/tutorias_evaluar.php" method="POST">
+                              <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
                               <input type="hidden" name="id_tutoria" value="<?= $t['id_tutoria'] ?>">
                               <div class="modal-header border-0 pb-0">
                                 <h5 class="modal-title fw-bold">Calificar Tutoría de <?= htmlspecialchars($t['nombre_materia']) ?></h5>
@@ -184,8 +187,8 @@ include __DIR__ . '/../layouts/header.php';
                       </div>
                     <?php endif; ?>
                   <?php elseif ($t['estado'] === 'pendiente'): ?>
-                    <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" 
-                       class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Deseas cancelar esta solicitud?');">
+                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" 
+                        class="btn btn-outline-danger btn-sm" onclick="confirmarEliminacion(this.href, '¿Deseas cancelar esta solicitud?'); return false;">
                       Cancelar
                     </a>
                   <?php else: ?>

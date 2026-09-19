@@ -1,13 +1,17 @@
 <?php
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador']);
 require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
 require_once __DIR__ . '/../includes/validador.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 $carreraModel = new CarreraModel($pdo);
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
     $nombre = normalizarTexto($_POST['nombre_carrera'] ?? '');
 
     if ($nombre === '') {

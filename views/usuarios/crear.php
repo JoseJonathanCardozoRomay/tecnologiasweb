@@ -29,6 +29,7 @@ include __DIR__ . '/../layouts/header.php';
 
     <div class="card card-custom p-4 p-md-5">
       <form method="POST" autocomplete="off">
+        <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
         <div class="row g-3">
           <div class="col-md-12">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Rol del Usuario *</label>
@@ -46,6 +47,16 @@ include __DIR__ . '/../layouts/header.php';
             <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre *</label>
             <input type="text" name="nombre" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre'] ?? '') ?>" maxlength="100" required>
           </div>
+
+          <div class="col-md-6 d-none" id="datosEstudiante">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Carrera</label>
+            <select name="id_carrera" class="form-select rounded-3 py-2">
+              <option value="">Selecciona una carrera</option>
+              <?php foreach ($carreras as $carrera): ?><option value="<?= $carrera['id_carrera'] ?>" <?= (($_POST['id_carrera'] ?? '') == $carrera['id_carrera']) ? 'selected' : '' ?>><?= htmlspecialchars($carrera['nombre_carrera']) ?></option><?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-md-3 d-none" id="semestreEstudiante"><label class="form-label fw-semibold text-secondary small text-uppercase">Semestre</label><input type="number" name="semestre" class="form-control" min="1" max="12" value="<?= htmlspecialchars($_POST['semestre'] ?? '') ?>"></div>
+          <div class="col-md-3 d-none" id="ruEstudiante"><label class="form-label fw-semibold text-secondary small text-uppercase">R.U.</label><input type="text" name="registro_universitario" class="form-control" maxlength="30" value="<?= htmlspecialchars($_POST['registro_universitario'] ?? '') ?>"></div>
 
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Apellido *</label>
@@ -87,3 +98,13 @@ include __DIR__ . '/../layouts/header.php';
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
+<script>
+  const rolNuevo = document.querySelector('[name="id_rol"]');
+  const camposEstudiante = document.querySelectorAll('#datosEstudiante, #semestreEstudiante, #ruEstudiante');
+  function alternarDatosEstudiante() {
+    const esEstudiante = rolNuevo?.selectedOptions[0]?.textContent.trim().toLowerCase() === 'estudiante';
+    camposEstudiante.forEach((campo) => campo.classList.toggle('d-none', !esEstudiante));
+  }
+  rolNuevo?.addEventListener('change', alternarDatosEstudiante);
+  alternarDatosEstudiante();
+</script>

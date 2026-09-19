@@ -28,6 +28,7 @@ include __DIR__ . '/../layouts/header.php';
 
     <div class="card card-custom p-4 p-md-5">
       <form method="POST" autocomplete="off">
+        <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
         <div class="mb-4">
           <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de la Materia *</label>
           <input type="text" name="nombre_materia" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['nombre_materia'] ?? '') ?>" maxlength="150" placeholder="Ej: Redes de Computadoras, Algoritmos..." required autofocus>

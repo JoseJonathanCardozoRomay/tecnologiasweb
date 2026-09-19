@@ -5,15 +5,13 @@ require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../includes/flash.php';
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit('Método no permitido.'); }
 csrf_validar();
 $id = (int) ($_POST['id'] ?? 0);
-if ($id === (int) $_SESSION['id_usuario']) {
-    flash_set('danger', 'No puedes eliminar tu propia cuenta.');
-} elseif ($id > 0) {
-    try { (new UsuarioModel($pdo))->eliminar($id); flash_set('success', 'Usuario eliminado correctamente.'); }
-    catch (PDOException $e) { error_log($e->getMessage()); flash_set('danger', 'No se pudo eliminar el usuario.'); }
+if ($id > 0) {
+    $modelo = new UsuarioModel($pdo);
+    $usuario = $modelo->obtenerPorId($id);
+    if ($usuario && $usuario['estado'] === 'pendiente') { $modelo->actualizarEstado($id, 'activo'); flash_set('success', 'Cuenta aprobada correctamente.'); }
 }
 header('Location: usuarios_listar.php');
 exit;

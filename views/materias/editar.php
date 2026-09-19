@@ -28,6 +28,7 @@ include __DIR__ . '/../layouts/header.php';
 
     <div class="card card-custom p-4 p-md-5">
       <form method="POST" autocomplete="off">
+        <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
         <input type="hidden" name="id_materia" value="<?= htmlspecialchars($materia_actual['id_materia']) ?>">
 
         <div class="mb-4">

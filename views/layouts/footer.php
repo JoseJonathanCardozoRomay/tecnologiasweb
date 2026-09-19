@@ -1,4 +1,5 @@
 </main>
+<?php require_once __DIR__ . '/../../includes/csrf.php'; ?>
 
 <footer class="app-footer text-center">
   Universidad Privada Domingo Savio — Sede Tarija · Tecnologías Web · <?= date('Y') ?>
@@ -7,6 +8,28 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  function enviarPostSeguro(url) {
+    const destino = new URL(url, window.location.href);
+    const formulario = document.createElement('form');
+    formulario.method = 'POST';
+    formulario.action = destino.pathname;
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>';
+    formulario.appendChild(token);
+    destino.searchParams.forEach((valor, clave) => {
+      const campo = document.createElement('input');
+      campo.type = 'hidden'; campo.name = clave; campo.value = valor;
+      formulario.appendChild(campo);
+    });
+    document.body.appendChild(formulario);
+    formulario.submit();
+  }
+  function cerrarSesion(event) {
+    if (event) event.preventDefault();
+    enviarPostSeguro('/controllers/logout.php');
+  }
   function confirmarEliminacion(url, mensaje = '¿Estás seguro de eliminar este registro?') {
     Swal.fire({
       title: '¿Confirmar eliminación?',
@@ -19,7 +42,7 @@
       cancelButtonText: 'Cancelar',
       customClass: { popup: 'swal-upds-popup' }
     }).then((result) => {
-      if (result.isConfirmed) window.location.href = url;
+      if (result.isConfirmed) enviarPostSeguro(url);
     });
   }
 </script>

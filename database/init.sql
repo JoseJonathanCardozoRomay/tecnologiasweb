@@ -26,9 +26,17 @@ CREATE TABLE IF NOT EXISTS usuarios (
   usuario VARCHAR(50) NOT NULL UNIQUE,
   contrasena_hash VARCHAR(255) NOT NULL,     -- Generado con password_hash() en PHP
   telefono VARCHAR(20),
-  estado ENUM('activo','inactivo') NOT NULL DEFAULT 'activo',
+  estado ENUM('activo','inactivo','pendiente') NOT NULL DEFAULT 'activo',
   fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Intentos de registro público por dirección IP
+CREATE TABLE IF NOT EXISTS registro_intentos (
+  id_registro INT AUTO_INCREMENT PRIMARY KEY,
+  ip_origen VARCHAR(45) NOT NULL,
+  fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_registro_intentos_ip_fecha (ip_origen, fecha_hora)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------

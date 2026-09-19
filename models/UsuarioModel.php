@@ -38,7 +38,7 @@ class UsuarioModel
         return $this->pdo->query($sql)->fetchAll();
     }
 
-    public function obtenerPaginadas($q, $orden, $dir, $limite, $offset)
+    public function obtenerPaginadas($q, $orden, $dir, $limite, $offset, $estado = '')
     {
         $columnas = ['id' => 'u.id_usuario', 'nombre' => 'u.nombre', 'correo' => 'u.correo', 'rol' => 'r.nombre_rol', 'estado' => 'u.estado', 'fecha' => 'u.fecha_registro'];
         $ordenSql = $columnas[$orden] ?? $columnas['id'];
@@ -46,24 +46,33 @@ class UsuarioModel
         $sql = "SELECT u.id_usuario, u.nombre, u.apellido, u.correo, u.usuario, r.nombre_rol, u.estado, u.fecha_registro
                 FROM usuarios u INNER JOIN roles r ON u.id_rol = r.id_rol";
         $params = [];
+        $condiciones = [];
+        if ($estado !== '') $condiciones[] = 'u.estado = :estado';
         if ($q !== '') {
-            $sql .= " WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.usuario, u.correo, r.nombre_rol) LIKE :q ESCAPE '\\\\'";
+            $condiciones[] = "CONCAT_WS(' ', u.nombre, u.apellido, u.usuario, u.correo, r.nombre_rol) LIKE :q ESCAPE '\\\\'";
             $params[':q'] = valorBusquedaLike($q);
         }
+        if ($condiciones) $sql .= ' WHERE ' . implode(' AND ', $condiciones);
         $sql .= " ORDER BY {$ordenSql} {$dirSql} LIMIT :limite OFFSET :offset";
         $stmt = $this->pdo->prepare($sql);
         if ($q !== '') $stmt->bindValue(':q', $params[':q'], PDO::PARAM_STR);
+        if ($estado !== '') $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
         $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function contar($q = '')
+    public function contar($q = '', $estado = '')
     {
         $sql = 'SELECT COUNT(*) FROM usuarios u INNER JOIN roles r ON u.id_rol = r.id_rol';
-        $stmt = $this->pdo->prepare($q !== '' ? $sql . " WHERE CONCAT_WS(' ', u.nombre, u.apellido, u.usuario, u.correo, r.nombre_rol) LIKE :q ESCAPE '\\\\'" : $sql);
+        $condiciones = [];
+        if ($estado !== '') $condiciones[] = 'u.estado = :estado';
+        if ($q !== '') $condiciones[] = "CONCAT_WS(' ', u.nombre, u.apellido, u.usuario, u.correo, r.nombre_rol) LIKE :q ESCAPE '\\\\'";
+        if ($condiciones) $sql .= ' WHERE ' . implode(' AND ', $condiciones);
+        $stmt = $this->pdo->prepare($sql);
         if ($q !== '') $stmt->bindValue(':q', valorBusquedaLike($q), PDO::PARAM_STR);
+        if ($estado !== '') $stmt->bindValue(':estado', $estado, PDO::PARAM_STR);
         $stmt->execute();
         return (int) $stmt->fetchColumn();
     }
@@ -165,4 +174,17 @@ class UsuarioModel
     ]);
     return $stmt->fetch();
 }
+
+    public function obtenerIdRol($nombreRol)
+    {
+        $stmt = $this->pdo->prepare('SELECT id_rol FROM roles WHERE nombre_rol = :rol LIMIT 1');
+        $stmt->execute([':rol' => $nombreRol]);
+        return $stmt->fetchColumn();
+    }
+
+    public function actualizarEstado($id, $estado)
+    {
+        $stmt = $this->pdo->prepare('UPDATE usuarios SET estado = :estado WHERE id_usuario = :id');
+        return $stmt->execute([':estado' => $estado, ':id' => $id]);
+    }
 }

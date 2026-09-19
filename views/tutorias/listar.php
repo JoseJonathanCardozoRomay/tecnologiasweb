@@ -161,17 +161,17 @@ include __DIR__ . '/../layouts/header.php';
             <td class="text-end pe-4">
               <div class="btn-group" role="group">
                 <?php if ($t['estado'] === 'pendiente'): ?>
-                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=confirmada" class="btn btn-outline-success btn-sm" title="Confirmar sesión">
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=confirmada" onclick="enviarPostSeguro(this.href); return false;" class="btn btn-outline-success btn-sm" title="Confirmar sesión">
                     <i class="bi bi-check-lg"></i>
                   </a>
                 <?php endif; ?>
                 <?php if ($t['estado'] === 'confirmada'): ?>
-                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada" class="btn btn-outline-primary btn-sm" title="Marcar como realizada">
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada" onclick="enviarPostSeguro(this.href); return false;" class="btn btn-outline-primary btn-sm" title="Marcar como realizada">
                     <i class="bi bi-check2-all"></i>
                   </a>
                 <?php endif; ?>
                 <?php if ($t['estado'] !== 'cancelada' && $t['estado'] !== 'realizada'): ?>
-                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-warning btn-sm" title="Cancelar sesión" onclick="return confirm('¿Cancelar esta tutoría?');">
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-warning btn-sm" title="Cancelar sesión" onclick="confirmarEliminacion(this.href, '¿Cancelar esta tutoría?'); return false;">
                     <i class="bi bi-slash-circle"></i>
                   </a>
                 <?php endif; ?>

@@ -144,6 +144,8 @@ class TutoriaModel
     public function obtenerPorId($id_tutoria)
     {
         $sql = "SELECT tu.*,
+                       e.id_usuario AS estudiante_id_usuario,
+                       t.id_usuario AS tutor_id_usuario,
                        ue.nombre AS est_nombre, ue.apellido AS est_apellido, ue.correo AS est_correo, ue.telefono AS est_telefono,
                        ut.nombre AS tut_nombre, ut.apellido AS tut_apellido, ut.correo AS tut_correo, ut.telefono AS tut_telefono,
                        m.nombre_materia, c.nombre_carrera,
@@ -160,6 +162,20 @@ class TutoriaModel
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':id' => $id_tutoria]);
         return $stmt->fetch();
+    }
+
+    public function perteneceATutor($id_tutoria, $id_usuario)
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM tutorias tu INNER JOIN tutores t ON tu.id_tutor = t.id_tutor WHERE tu.id_tutoria = :id AND t.id_usuario = :usuario LIMIT 1');
+        $stmt->execute([':id' => $id_tutoria, ':usuario' => $id_usuario]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function perteneceAEstudiante($id_tutoria, $id_usuario)
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM tutorias tu INNER JOIN estudiantes e ON tu.id_estudiante = e.id_estudiante WHERE tu.id_tutoria = :id AND e.id_usuario = :usuario LIMIT 1');
+        $stmt->execute([':id' => $id_tutoria, ':usuario' => $id_usuario]);
+        return (bool) $stmt->fetchColumn();
     }
 
     public function obtenerPorEstudiante($id_estudiante)

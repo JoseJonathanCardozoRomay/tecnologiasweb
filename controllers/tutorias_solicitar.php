@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador', 'estudiante']);
 require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
@@ -18,17 +20,14 @@ $tutoriaModel = new TutoriaModel($pdo);
 // Obtener o crear perfil de estudiante
 $estudiante = $estudianteModel->obtenerPorUsuario($idUsuario);
 if (!$estudiante) {
-    // Si no tiene ficha, asociar a la primera carrera disponible
-    $carreraModel = new CarreraModel($pdo);
-    $carreras = $carreraModel->obtenerTodas();
-    $idCarreraDefault = !empty($carreras) ? $carreras[0]['id_carrera'] : 1;
-    $estudianteModel->guardarOActualizar($idUsuario, $idCarreraDefault, 1, 'RU-' . rand(10000, 99999));
-    $estudiante = $estudianteModel->obtenerPorUsuario($idUsuario);
+    $estudiante = null;
 }
 
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once __DIR__ . '/../includes/csrf.php';
+    csrf_validar();
     $datos = [
         'id_estudiante'  => $estudiante['id_estudiante'],
         'id_materia'     => $_POST['id_materia'] ?? '',
@@ -43,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     // Validaciones
-    if (empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['periodo']) || empty($datos['hora_inicio']) || empty($datos['hora_fin'])) {
+    if (!$estudiante || empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['periodo']) || empty($datos['hora_inicio']) || empty($datos['hora_fin'])) {
         $errores[] = "Todos los campos marcados con asterisco (*) son obligatorios.";
     }
 
@@ -54,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($datos['hora_inicio']) && !empty($datos['hora_fin']) && $datos['hora_inicio'] >= $datos['hora_fin']) {
         $errores[] = "La hora de finalización debe ser posterior a la hora de inicio.";
     }
+    if (!in_array($datos['modalidad'], ['presencial', 'virtual'], true)) $errores[] = 'La modalidad seleccionada no es válida.';
+    if (!$materiaModel->obtenerPorId((int) $datos['id_materia']) || !$tutorModel->obtenerPorId((int) $datos['id_tutor'])) $errores[] = 'La materia o el tutor seleccionado no es válido.';
 
     if (empty($errores)) {
         try {
@@ -65,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         } catch (PDOException $e) {
-            $errores[] = "Error al agendar la sesión: " . $e->getMessage();
+            error_log($e->getMessage());
+            $errores[] = 'No se pudo agendar la sesión.';
         }
     }
 }

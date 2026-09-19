@@ -1,52 +1,52 @@
 <?php
-session_start();
-require_once '../config/conexion.php';
-require_once '../models/UsuarioModel.php';
+require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../models/UsuarioModel.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../views/login/login.php');
     exit;
 }
+csrf_validar();
 
-$usuarioInput = trim($_POST['usuario'] ?? '');
-$contrasenaInput = $_POST['contrasena'] ?? '';
-
+$usuarioInput = isset($_POST['usuario']) && is_scalar($_POST['usuario']) ? trim((string) $_POST['usuario']) : '';
+$contrasenaInput = isset($_POST['contrasena']) && is_scalar($_POST['contrasena']) ? (string) $_POST['contrasena'] : '';
+$ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 $modelo = new UsuarioModel($pdo);
 $usuario = $modelo->obtenerPorUsuario($usuarioInput);
 
-if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaInput, $usuario['contrasena_hash'])) {
-    // Login correcto
-    $_SESSION['id_usuario'] = $usuario['id_usuario'];
-    $_SESSION['nombre'] = $usuario['nombre'];
-    $_SESSION['rol'] = $usuario['nombre_rol'];
-
-    // Registrar acceso exitoso
-    $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (?, ?, 'exitoso')")
-        ->execute([$usuario['id_usuario'], $_SERVER['REMOTE_ADDR']]);
-
-    // Redirección según rol
-    switch ($usuario['nombre_rol']) {
-        case 'administrador':
-            header('Location: ../controllers/usuarios_listar.php');
-            break;
-        case 'tutor':
-            header('Location: ../views/tutor/panel.php'); // aún no existe, lo crearemos después
-            break;
-        case 'estudiante':
-            header('Location: ../views/estudiante/panel.php'); // aún no existe
-            break;
-        default:
-            header('Location: ../views/login/login.php');
-    }
-    exit;
-
-} else {
-    // Login fallido — registrar si el usuario existe
-    if ($usuario) {
-        $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (?, ?, 'fallido')")
-            ->execute([$usuario['id_usuario'], $_SERVER['REMOTE_ADDR']]);
-    }
-    $_SESSION['login_error'] = 'Usuario o contraseña incorrectos, o cuenta inactiva.';
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM registro_accesos WHERE ip_origen = :ip AND fecha_hora >= (NOW() - INTERVAL 15 MINUTE) AND resultado = 'fallido' AND COALESCE(id_usuario, 0) = COALESCE(:id_usuario, 0)");
+$stmt->execute([':ip' => $ip, ':id_usuario' => $usuario['id_usuario'] ?? null]);
+if ((int) $stmt->fetchColumn() >= 5) {
+    $_SESSION['login_error'] = 'No se puede iniciar sesión temporalmente. Inténtalo más tarde.';
     header('Location: ../views/login/login.php');
     exit;
 }
+
+$credencialesValidas = $usuario && password_verify($contrasenaInput, $usuario['contrasena_hash']);
+if ($credencialesValidas && $usuario['estado'] === 'pendiente') {
+    $mensaje = 'Tu cuenta está pendiente de aprobación.';
+} elseif ($credencialesValidas && $usuario['estado'] === 'activo') {
+    session_regenerate_id(true);
+    $_SESSION['id_usuario'] = (int) $usuario['id_usuario'];
+    $_SESSION['nombre'] = $usuario['nombre'];
+    $_SESSION['apellido'] = $usuario['apellido'];
+    $_SESSION['rol'] = $usuario['nombre_rol'];
+    $_SESSION['ultima_actividad'] = time();
+    $stmt = $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (:id_usuario, :ip, 'exitoso')");
+    $stmt->execute([':id_usuario' => $usuario['id_usuario'], ':ip' => $ip]);
+    $destinos = ['administrador' => '../controllers/usuarios_listar.php', 'tutor' => '../views/tutor/panel.php', 'estudiante' => '../views/estudiante/panel.php'];
+    header('Location: ' . ($destinos[$usuario['nombre_rol']] ?? '../views/login/login.php'));
+    exit;
+} else {
+    $mensaje = 'Usuario o contraseña incorrectos.';
+}
+
+$stmt = $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (:id_usuario, :ip, 'fallido')");
+$stmt->bindValue(':id_usuario', $usuario['id_usuario'] ?? null, $usuario ? PDO::PARAM_INT : PDO::PARAM_NULL);
+$stmt->bindValue(':ip', $ip, PDO::PARAM_STR);
+$stmt->execute();
+$_SESSION['login_error'] = $mensaje;
+header('Location: ../views/login/login.php');
+exit;

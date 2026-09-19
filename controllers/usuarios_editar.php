@@ -1,8 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador']);
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/RolModel.php';
 require_once __DIR__ . '/../includes/validador.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 $usuarioModel = new UsuarioModel($pdo);
 $rolModel = new RolModel($pdo);
@@ -16,6 +19,7 @@ if (!$id) {
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
     $datos = [
         'id_rol'   => (int) ($_POST['id_rol'] ?? 0),
         'nombre'   => normalizarTexto($_POST['nombre'] ?? ''),
@@ -57,6 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (!in_array($datos['estado'], ['activo', 'inactivo'], true)) {
         $errores[] = 'El estado seleccionado no es válido.';
+    }
+    if ((int) $id === (int) $_SESSION['id_usuario'] && $datos['estado'] !== 'activo') {
+        $errores[] = 'No puedes desactivar tu propia cuenta de administrador.';
     }
 
     if (empty($errores)) {

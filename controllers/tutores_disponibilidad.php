@@ -1,8 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador', 'tutor']);
 require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 $tutorModel = new TutorModel($pdo);
 $materiaModel = new MateriaModel($pdo);
@@ -36,6 +39,7 @@ $errores = [];
 
 // Procesar acciones POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
     $accion = $_POST['accion'] ?? '';
 
     // 1. Agregar nuevo horario
@@ -74,8 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Eliminar horario por GET
-if (isset($_GET['eliminar_horario'])) {
-    $idDisp = (int)$_GET['eliminar_horario'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'eliminar_horario') {
+    require_once __DIR__ . '/../includes/csrf.php';
+    csrf_validar();
+    $idDisp = (int) ($_POST['id_disponibilidad'] ?? 0);
     $tutorModel->eliminarDisponibilidad($idDisp, $idTutor);
     header("Location: tutores_disponibilidad.php?id=$idTutor&mensaje=horario_eliminado");
     exit;

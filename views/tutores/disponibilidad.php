@@ -53,9 +53,9 @@ include __DIR__ . '/../layouts/header.php';
                   <span class="badge bg-primary px-2 py-1 me-2"><?= htmlspecialchars($d['dia_semana']) ?></span>
                   <span class="fw-semibold text-dark"><?= substr($d['hora_inicio'], 0, 5) ?> - <?= substr($d['hora_fin'], 0, 5) ?></span>
                 </div>
-                <a href="tutores_disponibilidad.php?id=<?= $idTutor ?>&eliminar_horario=<?= $d['id_disponibilidad'] ?>" 
+                 <a href="tutores_disponibilidad.php?id=<?= $idTutor ?>&eliminar_horario=<?= $d['id_disponibilidad'] ?>" 
                    class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width: 28px; height: 28px;"
-                   onclick="return confirm('¿Eliminar este bloque horario?');" title="Eliminar">
+                   onclick="confirmarEliminacion(this.href, '¿Eliminar este bloque horario?'); return false;" title="Eliminar">
                   <i class="bi bi-trash"></i>
                 </a>
               </div>
@@ -72,6 +72,7 @@ include __DIR__ . '/../layouts/header.php';
       <div class="p-3 bg-light rounded-3 border">
         <h6 class="fw-bold mb-2 small text-uppercase text-secondary">Agregar Nuevo Bloque</h6>
         <form method="POST" class="row g-2">
+          <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
           <input type="hidden" name="accion" value="agregar_horario">
           <div class="col-12">
             <select name="dia_semana" class="form-select form-select-sm" required>
@@ -110,6 +111,7 @@ include __DIR__ . '/../layouts/header.php';
         <span>Materias que Imparte</span>
       </h5>
       <form method="POST">
+        <?php echo csrf_campo(); ?>
         <input type="hidden" name="accion" value="guardar_materias">
         <div class="mb-3" style="max-height: 220px; overflow-y: auto;">
           <?php foreach ($todasMaterias as $mat): ?>
@@ -136,6 +138,7 @@ include __DIR__ . '/../layouts/header.php';
         <span>Perfil Profesional</span>
       </h5>
       <form method="POST">
+        <?php echo csrf_campo(); ?>
         <input type="hidden" name="accion" value="actualizar_perfil">
         <div class="mb-3">
           <label class="form-label small text-muted">Especialidad</label>

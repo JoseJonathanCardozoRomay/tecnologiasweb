@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/auth.php';
+requerirRol(['tutor']);
 require_once __DIR__ . '/../../includes/verificar_sesion.php';
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../models/TutorModel.php';
@@ -143,17 +145,17 @@ include __DIR__ . '/../layouts/header.php';
                 <td class="text-end pe-4">
                   <div class="btn-group" role="group">
                     <?php if ($t['estado'] === 'pendiente'): ?>
-                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=confirmada" 
-                         class="btn btn-sm btn-success d-flex align-items-center gap-1" title="Aceptar y confirmar">
+                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=confirmada" 
+                         class="btn btn-sm btn-success d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Aceptar y confirmar">
                         <i class="bi bi-check-circle"></i> Aceptar
                       </a>
-                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" 
-                         class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Rechazar esta solicitud?');" title="Rechazar">
+                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" 
+                         class="btn btn-sm btn-outline-danger" onclick="confirmarEliminacion(this.href, '¿Rechazar esta solicitud?'); return false;" title="Rechazar">
                         <i class="bi bi-x-circle"></i>
                       </a>
                     <?php elseif ($t['estado'] === 'confirmada'): ?>
                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada" 
-                         class="btn btn-sm btn-primary d-flex align-items-center gap-1" title="Marcar como realizada">
+                         class="btn btn-sm btn-primary d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Marcar como realizada">
                         <i class="bi bi-check2-all"></i> Marcar Realizada
                       </a>
                     <?php endif; ?>

@@ -1,9 +1,12 @@
 <?php
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador']);
 require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
 require_once __DIR__ . '/../includes/validador.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 $materiaModel = new MateriaModel($pdo);
 $carreraModel = new CarreraModel($pdo);
@@ -17,6 +20,7 @@ if (!$id) {
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
     $datos = [
         'nombre_materia' => normalizarTexto($_POST['nombre_materia'] ?? ''),
         'id_carrera'     => ($_POST['id_carrera'] ?? '') !== '' ? (int) $_POST['id_carrera'] : null,
