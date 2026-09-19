@@ -8,7 +8,7 @@ class TutoriaModel
         $this->pdo = $pdo;
     }
 
-    public function obtenerTodas($filtro_estado = null)
+    public function obtenerTodas($filtro_estado = null, $filtro_periodo = null)
     {
         $sql = "SELECT tu.*,
                        ue.nombre AS est_nombre, ue.apellido AS est_apellido, ue.correo AS est_correo,
@@ -25,9 +25,17 @@ class TutoriaModel
                 LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria";
 
         $params = [];
+        $condiciones = [];
         if (!empty($filtro_estado)) {
-            $sql .= " WHERE tu.estado = :estado";
+            $condiciones[] = "tu.estado = :estado";
             $params[':estado'] = $filtro_estado;
+        }
+        if (!empty($filtro_periodo)) {
+            $condiciones[] = "tu.periodo = :periodo";
+            $params[':periodo'] = $filtro_periodo;
+        }
+        if (!empty($condiciones)) {
+            $sql .= " WHERE " . implode(' AND ', $condiciones);
         }
 
         $sql .= " ORDER BY tu.fecha DESC, tu.hora_inicio DESC";
@@ -97,14 +105,15 @@ class TutoriaModel
 
     public function crear($datos)
     {
-        $sql = "INSERT INTO tutorias (id_estudiante, id_tutor, id_materia, fecha, hora_inicio, hora_fin, modalidad, lugar_o_enlace, estado, observaciones)
-                VALUES (:id_estudiante, :id_tutor, :id_materia, :fecha, :hora_inicio, :hora_fin, :modalidad, :lugar_o_enlace, 'pendiente', :observaciones)";
+        $sql = "INSERT INTO tutorias (id_estudiante, id_tutor, id_materia, fecha, periodo, hora_inicio, hora_fin, modalidad, lugar_o_enlace, estado, observaciones)
+            VALUES (:id_estudiante, :id_tutor, :id_materia, :fecha, :periodo, :hora_inicio, :hora_fin, :modalidad, :lugar_o_enlace, 'pendiente', :observaciones)";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             ':id_estudiante'   => $datos['id_estudiante'],
             ':id_tutor'        => $datos['id_tutor'],
             ':id_materia'      => $datos['id_materia'],
             ':fecha'           => $datos['fecha'],
+            ':periodo'         => trim($datos['periodo'] ?? 'I-' . date('Y')),
             ':hora_inicio'     => $datos['hora_inicio'],
             ':hora_fin'        => $datos['hora_fin'],
             ':modalidad'       => $datos['modalidad'] ?? 'presencial',
@@ -140,7 +149,7 @@ class TutoriaModel
     }
 
     // Métricas para paneles de control
-    public function obtenerMetricasGlobales()
+    public function obtenerMetricasGlobales($periodo = null)
     {
         $sql = "SELECT 
                     COUNT(*) AS total,
@@ -149,6 +158,56 @@ class TutoriaModel
                     SUM(CASE WHEN estado = 'realizada' THEN 1 ELSE 0 END) AS realizadas,
                     SUM(CASE WHEN estado = 'cancelada' THEN 1 ELSE 0 END) AS canceladas
                 FROM tutorias";
-        return $this->pdo->query($sql)->fetch();
+        $params = [];
+        if (!empty($periodo)) {
+            $sql .= " WHERE periodo = :periodo";
+            $params[':periodo'] = $periodo;
+        }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch();
+    }
+
+    public function obtenerPeriodosDisponibles()
+    {
+        return $this->pdo->query("SELECT DISTINCT periodo FROM tutorias ORDER BY periodo DESC")->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function obtenerReportePorPeriodo($periodo)
+    {
+        $metricas = $this->obtenerMetricasGlobales($periodo);
+        $params = [':periodo' => $periodo];
+
+        $stmt = $this->pdo->prepare("SELECT m.nombre_materia, COUNT(*) AS total_sesiones,
+                                            SUM(tu.estado = 'realizada') AS realizadas
+                                     FROM tutorias tu
+                                     INNER JOIN materias m ON tu.id_materia = m.id_materia
+                                     WHERE tu.periodo = :periodo
+                                     GROUP BY tu.id_materia, m.nombre_materia
+                                     ORDER BY total_sesiones DESC, m.nombre_materia");
+        $stmt->execute($params);
+        $materias = $stmt->fetchAll();
+
+        $stmt = $this->pdo->prepare("SELECT CONCAT(u.nombre, ' ', u.apellido) AS tutor,
+                                            COUNT(CASE WHEN tu.estado = 'realizada' THEN 1 END) AS sesiones_realizadas,
+                                            COALESCE(SUM(CASE WHEN tu.estado = 'realizada' THEN TIME_TO_SEC(TIMEDIFF(tu.hora_fin, tu.hora_inicio)) / 3600 ELSE 0 END), 0) AS horas_dictadas
+                                     FROM tutorias tu
+                                     INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
+                                     INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                                     WHERE tu.periodo = :periodo
+                                     GROUP BY tu.id_tutor, u.nombre, u.apellido
+                                     ORDER BY horas_dictadas DESC, tutor");
+        $stmt->execute($params);
+        $tutores = $stmt->fetchAll();
+
+        $stmt = $this->pdo->prepare("SELECT ROUND(AVG(ev.calificacion), 2) AS promedio_satisfaccion,
+                                            COUNT(ev.id_evaluacion) AS evaluaciones
+                                     FROM evaluaciones_tutoria ev
+                                     INNER JOIN tutorias tu ON ev.id_tutoria = tu.id_tutoria
+                                     WHERE tu.periodo = :periodo");
+        $stmt->execute($params);
+        $satisfaccion = $stmt->fetch();
+
+        return compact('metricas', 'materias', 'tutores', 'satisfaccion');
     }
 }

@@ -52,7 +52,7 @@ include __DIR__ . '/../layouts/header.php';
           <tr>
             <td class="ps-4">
               <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary fw-bold" style="width: 40px; height: 40px; font-size: 0.9rem;">
+                <div class="monogram rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.9rem;">
                   <?= strtoupper(substr($u['nombre'], 0, 1) . substr($u['apellido'], 0, 1)) ?>
                 </div>
                 <div>

@@ -13,8 +13,10 @@ $filtroEstado = $_GET['estado'] ?? null;
 if (!in_array($filtroEstado, ['pendiente', 'confirmada', 'realizada', 'cancelada'])) {
     $filtroEstado = null;
 }
+$filtroPeriodo = trim($_GET['periodo'] ?? '');
 
-$tutorias = $tutoriaModel->obtenerTodas($filtroEstado);
-$metricas = $tutoriaModel->obtenerMetricasGlobales();
+$periodos = $tutoriaModel->obtenerPeriodosDisponibles();
+$tutorias = $tutoriaModel->obtenerTodas($filtroEstado, $filtroPeriodo);
+$metricas = $tutoriaModel->obtenerMetricasGlobales($filtroPeriodo);
 
 require_once __DIR__ . '/../views/tutorias/listar.php';

@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS tutorias (
   id_tutor INT NOT NULL,
   id_materia INT NOT NULL,
   fecha DATE NOT NULL,
+  periodo VARCHAR(30) NOT NULL DEFAULT 'I-2026',
   hora_inicio TIME NOT NULL,
   hora_fin TIME NOT NULL,
   modalidad ENUM('presencial','virtual') NOT NULL DEFAULT 'presencial',
@@ -116,7 +117,8 @@ CREATE TABLE IF NOT EXISTS tutorias (
   CONSTRAINT fk_tutorias_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON UPDATE CASCADE,
   CONSTRAINT fk_tutorias_materia FOREIGN KEY (id_materia) REFERENCES materias(id_materia) ON UPDATE CASCADE,
   INDEX idx_tutoria_fecha (fecha),
-  INDEX idx_tutoria_estado (estado)
+  INDEX idx_tutoria_estado (estado),
+  INDEX idx_tutoria_periodo (periodo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------

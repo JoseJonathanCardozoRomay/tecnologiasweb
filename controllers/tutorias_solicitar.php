@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'id_materia'     => $_POST['id_materia'] ?? '',
         'id_tutor'       => $_POST['id_tutor'] ?? '',
         'fecha'          => $_POST['fecha'] ?? '',
+        'periodo'        => $_POST['periodo'] ?? 'I-' . date('Y'),
         'hora_inicio'    => $_POST['hora_inicio'] ?? '',
         'hora_fin'       => $_POST['hora_fin'] ?? '',
         'modalidad'      => $_POST['modalidad'] ?? 'presencial',
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     // Validaciones
-    if (empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['hora_inicio']) || empty($datos['hora_fin'])) {
+    if (empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['periodo']) || empty($datos['hora_inicio']) || empty($datos['hora_fin'])) {
         $errores[] = "Todos los campos marcados con asterisco (*) son obligatorios.";
     }
 
@@ -71,5 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $materias = $materiaModel->obtenerTodas();
 $tutores = $tutorModel->obtenerTodos();
+$periodos = $tutoriaModel->obtenerPeriodosDisponibles();
+$periodos = array_values(array_unique(array_merge(
+    ['I-' . date('Y'), 'II-' . date('Y'), 'Verano-' . date('Y')],
+    $periodos
+)));
 
 require_once __DIR__ . '/../views/tutorias/solicitar.php';

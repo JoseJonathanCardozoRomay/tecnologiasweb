@@ -14,18 +14,18 @@ if (isset($_SESSION['id_usuario'])) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Iniciar Sesión - Sistema de Tutorías UPDS</title>
-  <!-- Google Fonts: Inter -->
+  <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #0a192f 0%, #1e3a5f 50%, #0d2137 100%);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: linear-gradient(135deg, #001e3d 0%, #002b49 55%, #00152c 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -37,17 +37,18 @@ if (isset($_SESSION['id_usuario'])) {
       width: 100%;
       background: #ffffff;
       border: none;
-      border-radius: 16px;
+      border-radius: 10px;
+      border-top: 5px solid #f5a623;
       box-shadow: 0 20px 40px rgba(0,0,0,0.25);
     }
     .btn-login {
-      background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+      background: linear-gradient(135deg, #002b49 0%, #001e3d 100%);
       border: none;
       font-weight: 600;
       letter-spacing: 0.3px;
     }
     .btn-login:hover {
-      background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+      background: linear-gradient(135deg, #003b63 0%, #002855 100%);
     }
   </style>
 </head>
@@ -55,11 +56,11 @@ if (isset($_SESSION['id_usuario'])) {
 
 <div class="login-card p-4 p-md-5">
   <div class="text-center mb-4">
-    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 68px; height: 68px;">
-      <i class="bi bi-mortarboard-fill fs-1"></i>
+    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 fw-extrabold" style="width: 72px; height: 72px; background: #f5a623; color: #002b49; font-size: 1.35rem;">
+      UPDS
     </div>
     <h3 class="fw-bold text-dark mb-1">Sistema de Tutorías</h3>
-    <p class="text-muted small">Universidad Privada Domingo Savio</p>
+    <p class="text-muted small mb-0">Sede Tarija • Sistema de Tutorías</p>
   </div>
 
   <?php if (isset($_SESSION['login_error'])): ?>

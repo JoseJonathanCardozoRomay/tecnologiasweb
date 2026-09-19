@@ -43,8 +43,18 @@ include __DIR__ . '/../layouts/header.php';
             </select>
           </div>
 
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Periodo Académico *</label>
+            <select name="periodo" class="form-select rounded-3 py-2" required>
+              <?php $periodoActual = $_POST['periodo'] ?? 'I-' . date('Y'); ?>
+              <?php foreach ($periodos as $periodo): ?>
+                <option value="<?= $periodo ?>" <?= $periodoActual === $periodo ? 'selected' : '' ?>><?= $periodo ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
           <!-- Tutor -->
-          <div class="col-md-12">
+          <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Docente Tutor *</label>
             <select name="id_tutor" class="form-select rounded-3 py-2" required>
               <option value="" disabled selected>Selecciona al tutor académico...</option>

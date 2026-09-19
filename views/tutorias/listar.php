@@ -46,23 +46,30 @@ include __DIR__ . '/../layouts/header.php';
   </a>
 </div>
 
-<!-- Filtros de Estado -->
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <a href="tutorias_listar.php" class="btn btn-sm <?= empty($filtroEstado) ? 'btn-dark' : 'btn-outline-secondary' ?> rounded-pill px-3">
+<!-- Filtros de Estado y periodo -->
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+  <a href="tutorias_listar.php<?= $filtroPeriodo ? '?periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= empty($filtroEstado) ? 'btn-dark' : 'btn-outline-secondary' ?> rounded-pill px-3">
     Todas
   </a>
-  <a href="tutorias_listar.php?estado=pendiente" class="btn btn-sm <?= $filtroEstado === 'pendiente' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark' ?> rounded-pill px-3">
+  <a href="tutorias_listar.php?estado=pendiente<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'pendiente' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark' ?> rounded-pill px-3">
     <i class="bi bi-clock me-1"></i>Pendientes
   </a>
-  <a href="tutorias_listar.php?estado=confirmada" class="btn btn-sm <?= $filtroEstado === 'confirmada' ? 'btn-info text-white fw-bold' : 'btn-outline-info' ?> rounded-pill px-3">
+  <a href="tutorias_listar.php?estado=confirmada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'confirmada' ? 'btn-info text-white fw-bold' : 'btn-outline-info' ?> rounded-pill px-3">
     <i class="bi bi-check2 me-1"></i>Confirmadas
   </a>
-  <a href="tutorias_listar.php?estado=realizada" class="btn btn-sm <?= $filtroEstado === 'realizada' ? 'btn-success fw-bold' : 'btn-outline-success' ?> rounded-pill px-3">
+  <a href="tutorias_listar.php?estado=realizada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'realizada' ? 'btn-success fw-bold' : 'btn-outline-success' ?> rounded-pill px-3">
     <i class="bi bi-check-circle me-1"></i>Realizadas
   </a>
-  <a href="tutorias_listar.php?estado=cancelada" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
+  <a href="tutorias_listar.php?estado=cancelada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
     <i class="bi bi-x-circle me-1"></i>Canceladas
   </a>
+  <form method="GET" class="ms-md-auto">
+    <input type="hidden" name="estado" value="<?= htmlspecialchars($filtroEstado ?? '') ?>">
+    <select name="periodo" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Todos los periodos</option>
+      <?php foreach ($periodos as $periodo): ?><option value="<?= htmlspecialchars($periodo) ?>" <?= $filtroPeriodo === $periodo ? 'selected' : '' ?>><?= htmlspecialchars($periodo) ?></option><?php endforeach; ?>
+    </select>
+  </form>
 </div>
 
 <div class="card card-custom shadow-sm overflow-hidden">
@@ -78,6 +85,7 @@ include __DIR__ . '/../layouts/header.php';
       <thead class="table-light text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
         <tr>
           <th class="ps-4">Fecha y Horario</th>
+          <th>Periodo</th>
           <th>Materia y Carrera</th>
           <th>Estudiante</th>
           <th>Docente Tutor</th>
@@ -99,6 +107,7 @@ include __DIR__ . '/../layouts/header.php';
               <div class="fw-bold text-dark"><?= date('d/m/Y', strtotime($t['fecha'])) ?></div>
               <small class="text-muted"><i class="bi bi-clock me-1"></i><?= substr($t['hora_inicio'], 0, 5) ?> - <?= substr($t['hora_fin'], 0, 5) ?></small>
             </td>
+            <td><span class="badge rounded-pill border px-2 py-1" style="color: #002b49; border-color: #f5a623 !important; background: #fff8e8;"><?= htmlspecialchars($t['periodo'] ?? 'I-' . date('Y')) ?></span></td>
             <td>
               <div class="fw-semibold text-primary"><?= htmlspecialchars($t['nombre_materia']) ?></div>
               <small class="text-muted"><?= htmlspecialchars($t['nombre_carrera'] ?? 'General') ?></small>
@@ -167,7 +176,7 @@ include __DIR__ . '/../layouts/header.php';
         <?php endforeach; ?>
         <?php if (empty($tutorias)): ?>
           <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
+            <td colspan="8" class="text-center py-5 text-muted">
               <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
               No hay tutorías registradas con el criterio seleccionado.
             </td>

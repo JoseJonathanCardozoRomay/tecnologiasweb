@@ -3,7 +3,7 @@
 <footer class="bg-white border-top py-3 mt-auto">
   <div class="container text-center text-muted" style="font-size: 0.85rem;">
     <p class="mb-0">
-      <strong>Sistema Web de Apoyo Académico para Tutorías</strong> &bull; &copy; <?= date('Y') ?> UPDS - Materia de Tecnologías Web
+      <strong>Universidad Privada Domingo Savio - Sede Tarija</strong> &bull; Facultad de Ingeniería / Tecnologías Web
     </p>
   </div>
 </footer>
