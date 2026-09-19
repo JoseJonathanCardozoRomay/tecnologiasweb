@@ -28,70 +28,69 @@ include __DIR__ . '/../layouts/header.php';
 <?php endif; ?>
 
 <div class="row g-4">
-  <!-- Columna 1: Horarios de Disponibilidad -->
+  <!-- Columna 1: Bloques Horarios Predefinidos -->
   <div class="col-lg-6">
     <div class="card card-custom p-4 h-100">
       <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
         <i class="bi bi-clock-history text-primary"></i>
-        <span>Bloques de Horarios Semanales</span>
+        <span>Bloques Horarios Disponibles</span>
       </h5>
+      <p class="text-muted small mb-3">Selecciona los bloques horarios definidos por coordinación que corresponden a tu disponibilidad.</p>
 
-      <!-- Lista de horarios actuales -->
+      <!-- Lista de bloques seleccionados -->
       <div class="mb-4">
-        <?php if (!empty($disponibilidades)): ?>
+        <?php if (!empty($bloquesSeleccionados)): ?>
           <div class="list-group list-group-flush">
-            <?php foreach ($disponibilidades as $d): ?>
+            <?php foreach ($bloquesSeleccionados as $b): ?>
               <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
                 <div>
-                  <span class="badge bg-primary px-2 py-1 me-2"><?= htmlspecialchars($d['dia_semana']) ?></span>
-                  <span class="fw-semibold text-dark"><?= substr($d['hora_inicio'], 0, 5) ?> - <?= substr($d['hora_fin'], 0, 5) ?></span>
+                  <span class="badge bg-primary px-2 py-1 me-2"><?= htmlspecialchars($b['nombre_bloque']) ?></span>
+                  <span class="fw-semibold text-dark"><?= substr($b['hora_inicio'], 0, 5) ?> - <?= substr($b['hora_fin'], 0, 5) ?></span>
+                  <?php if (!empty($b['descripcion'])): ?>
+                    <small class="text-muted d-block"><?= htmlspecialchars($b['descripcion']) ?></small>
+                  <?php endif; ?>
                 </div>
-                 <a href="tutores_disponibilidad.php?id=<?= $idTutor ?>&accion=eliminar_horario&id_disponibilidad=<?= $d['id_disponibilidad'] ?>" 
-                   class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width: 28px; height: 28px;"
-                   onclick="confirmarEliminacion(this.href, '¿Eliminar este bloque horario?'); return false;" title="Eliminar">
-                  <i class="bi bi-trash"></i>
-                </a>
               </div>
             <?php endforeach; ?>
           </div>
         <?php else: ?>
           <div class="p-3 bg-light rounded-3 text-center text-muted small">
-            No hay horarios registrados. Agrega uno a continuación.
+            No has seleccionado bloques horarios. Selecciona uno o más a continuación.
           </div>
         <?php endif; ?>
       </div>
 
-      <!-- Formulario para agregar horario -->
+      <!-- Formulario para seleccionar bloques -->
       <div class="p-3 bg-light rounded-3 border">
-        <h6 class="fw-bold mb-2 small text-uppercase text-secondary">Agregar Nuevo Bloque</h6>
-        <form method="POST" class="row g-2">
-          <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
-          <input type="hidden" name="accion" value="agregar_horario">
-          <div class="col-12">
-            <select name="dia_semana" class="form-select form-select-sm" required>
-              <option value="" disabled selected>Selecciona día de la semana...</option>
-              <option value="Lunes">Lunes</option>
-              <option value="Martes">Martes</option>
-              <option value="Miercoles">Miércoles</option>
-              <option value="Jueves">Jueves</option>
-              <option value="Viernes">Viernes</option>
-              <option value="Sabado">Sábado</option>
-            </select>
-          </div>
-          <div class="col-6">
-            <label class="small text-muted">Hora Inicio</label>
-            <input type="time" name="hora_inicio" class="form-control form-control-sm" required>
-          </div>
-          <div class="col-6">
-            <label class="small text-muted">Hora Fin</label>
-            <input type="time" name="hora_fin" class="form-control form-control-sm" required>
-          </div>
-          <div class="col-12 mt-2">
+        <h6 class="fw-bold mb-2 small text-uppercase text-secondary">Seleccionar Bloques Disponibles</h6>
+        <?php if (!empty($bloquesDisponibles)): ?>
+          <form method="POST">
+            <?php echo csrf_campo(); ?>
+            <input type="hidden" name="accion" value="guardar_bloques">
+            <div class="mb-3" style="max-height: 220px; overflow-y: auto;">
+              <?php foreach ($bloquesDisponibles as $bloque): ?>
+                <div class="form-check py-1">
+                  <input class="form-check-input" type="checkbox" name="bloques[]" value="<?= $bloque['id_bloque'] ?>" id="bloque_<?= $bloque['id_bloque'] ?>"
+                    <?= in_array($bloque['id_bloque'], $idsBloquesSeleccionados) ? 'checked' : '' ?>>
+                  <label class="form-check-label small fw-medium" for="bloque_<?= $bloque['id_bloque'] ?>">
+                    <?= htmlspecialchars($bloque['nombre_bloque']) ?> (<?= substr($bloque['hora_inicio'], 0, 5) ?> - <?= substr($bloque['hora_fin'], 0, 5) ?>)
+                    <?php if (!empty($bloque['descripcion'])): ?>
+                      <span class="text-muted">— <?= htmlspecialchars($bloque['descripcion']) ?></span>
+                    <?php endif; ?>
+                  </label>
+                </div>
+              <?php endforeach; ?>
+            </div>
             <button type="submit" class="btn btn-primary btn-sm w-100">
-              <i class="bi bi-plus-lg me-1"></i> Agregar Horario
+              <i class="bi bi-check2 me-1"></i> Guardar Selección de Bloques
             </button>
+          </form>
+        <?php else: ?>
+          <div class="text-center text-muted small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            No hay bloques horarios configurados por coordinación. Contacte a su administrador.
           </div>
-        </form>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -139,10 +138,26 @@ include __DIR__ . '/../layouts/header.php';
         </div>
         <div class="mb-3">
           <label class="form-label small text-muted">Biografía / Presentación</label>
-          <textarea name="biografia" class="form-control form-control-sm" rows="2"><?= htmlspecialchars($tutor['biografia'] ?? '') ?></textarea>
+          <textarea name="biografia" class="form-control form-control-sm" rows="2" placeholder="Breve descripción profesional..."><?= htmlspecialchars($tutor['biografia'] ?? '') ?></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Foto de Perfil (URL)</label>
+          <input type="text" name="foto_perfil" class="form-control form-control-sm" value="<?= htmlspecialchars($tutor['foto_perfil'] ?? '') ?>" placeholder="https://ejemplo.com/foto.jpg">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">LinkedIn / Perfil Profesional</label>
+          <input type="text" name="perfil_linkedin" class="form-control form-control-sm" value="<?= htmlspecialchars($tutor['perfil_linkedin'] ?? '') ?>" placeholder="https://linkedin.com/in/tu-perfil">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Certificaciones / Títulos</label>
+          <textarea name="certificaciones" class="form-control form-control-sm" rows="2" placeholder="Ej: PhD en Ciencias de la Computación, Certificación AWS..."><?= htmlspecialchars($tutor['certificaciones'] ?? '') ?></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Áreas de Expertise (separadas por comas)</label>
+          <input type="text" name="areas_expertise" class="form-control form-control-sm" value="<?= htmlspecialchars($tutor['areas_expertise'] ?? '') ?>" placeholder="Ej: Machine Learning, Bases de Datos, Programación Web">
         </div>
         <button type="submit" class="btn btn-light btn-sm w-100 border">
-          <i class="bi bi-check2 me-1"></i> Actualizar Perfil
+          <i class="bi bi-check2 me-1"></i> Actualizar Perfil Profesional
         </button>
       </form>
     </div>

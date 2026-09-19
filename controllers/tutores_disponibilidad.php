@@ -5,11 +5,13 @@ require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
+require_once __DIR__ . '/../models/BloqueModel.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/flash.php';
 
 $tutorModel = new TutorModel($pdo);
 $materiaModel = new MateriaModel($pdo);
+$bloqueModel = new BloqueModel($pdo);
 
 $rolSesion = $_SESSION['rol'] ?? '';
 $idUsuario = $_SESSION['id_usuario'] ?? 0;
@@ -42,58 +44,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
     $accion = $_POST['accion'] ?? '';
 
-    // 1. Agregar nuevo horario
-    if ($accion === 'agregar_horario') {
-        $dia = $_POST['dia_semana'] ?? '';
-        $inicio = $_POST['hora_inicio'] ?? '';
-        $fin = $_POST['hora_fin'] ?? '';
-
-        if (!empty($dia) && !empty($inicio) && !empty($fin)) {
-            if ($inicio < $fin) {
-                if ($tutorModel->agregarDisponibilidad($idTutor, $dia, $inicio, $fin)) {
-                    flash_set('success', 'Horario agregado correctamente.');
-                } else {
-                    $errores[] = 'El horario se solapa con otro bloque existente.';
-                }
-            } else {
-                $errores[] = "La hora de fin debe ser mayor a la hora de inicio.";
-            }
-        } else {
-            $errores[] = "Todos los campos de horario son obligatorios.";
-        }
+    // 1. Guardar bloques horarios seleccionados (predefinidos por coordinación)
+    if ($accion === 'guardar_bloques') {
+        $bloquesSeleccionados = $_POST['bloques'] ?? [];
+        $tutorModel->asignarBloques($idTutor, $bloquesSeleccionados);
+        flash_set('success', 'Bloques horarios actualizados con éxito.');
     }
 
     // 2. Actualizar materias asignadas
-    if ($accion === 'eliminar_horario') {
-        $idDisp = filter_var($_POST['id_disponibilidad'] ?? null, FILTER_VALIDATE_INT);
-        if ($idDisp) {
-            $tutorModel->eliminarDisponibilidad($idDisp, $idTutor);
-            flash_set('success', 'Horario eliminado.');
-            header("Location: tutores_disponibilidad.php?id=$idTutor");
-            exit;
-        }
-        $errores[] = 'El horario seleccionado no es válido.';
-    }
-
     if ($accion === 'guardar_materias') {
         $materiasSeleccionadas = $_POST['materias'] ?? [];
         $tutorModel->asignarMaterias($idTutor, $materiasSeleccionadas);
         flash_set('success', 'Materias asignadas actualizadas con éxito.');
     }
 
-    // 3. Actualizar perfil básico (especialidad y biografía)
+    // 3. Actualizar perfil profesional completo
     if ($accion === 'actualizar_perfil') {
-        $esp = $_POST['especialidad'] ?? '';
-        $bio = $_POST['biografia'] ?? '';
-        $tutorModel->actualizarPerfil($idTutor, $esp, $bio);
+        $datosPerfil = [
+            'especialidad' => $_POST['especialidad'] ?? '',
+            'biografia' => $_POST['biografia'] ?? '',
+            'foto_perfil' => $_POST['foto_perfil'] ?? '',
+            'perfil_linkedin' => $_POST['perfil_linkedin'] ?? '',
+            'certificaciones' => $_POST['certificaciones'] ?? '',
+            'areas_expertise' => $_POST['areas_expertise'] ?? '',
+        ];
+        $tutorModel->actualizarPerfilCompleto($idTutor, $datosPerfil);
         $tutor = $tutorModel->obtenerPorId($idTutor);
-        flash_set('success', 'Perfil docente actualizado con éxito.');
+        flash_set('success', 'Perfil profesional actualizado con éxito.');
     }
 }
 
 $materiasAsignadas = $tutorModel->obtenerMaterias($idTutor);
 $idsMateriasAsignadas = array_column($materiasAsignadas, 'id_materia');
 $todasMaterias = $materiaModel->obtenerTodas();
-$disponibilidades = $tutorModel->obtenerDisponibilidad($idTutor);
+$bloquesSeleccionados = $tutorModel->obtenerBloquesSeleccionados($idTutor);
+$idsBloquesSeleccionados = array_column($bloquesSeleccionados, 'id_bloque');
+$bloquesDisponibles = $bloqueModel->obtenerTodos();
 
 require_once __DIR__ . '/../views/tutores/disponibilidad.php';

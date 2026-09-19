@@ -172,6 +172,10 @@ include __DIR__ . '/../layouts/header.php';
                     <div class="small text-muted text-truncate" style="max-width: 150px;" title="<?= htmlspecialchars($t['lugar_o_enlace']) ?>">
                       <?= htmlspecialchars($t['lugar_o_enlace']) ?>
                     </div>
+                  <?php else: ?>
+                    <div class="small text-muted text-truncate" style="max-width: 150px;" title="Aún se está asignando el lugar/enlace">
+                      <i class="bi bi-hourglass-split me-1"></i>En proceso de asignación
+                    </div>
                   <?php endif; ?>
                 </td>
                 <td>

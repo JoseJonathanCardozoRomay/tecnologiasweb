@@ -105,6 +105,72 @@ class TutorModel
         ]);
     }
 
+    public function actualizarPerfilCompleto($id_tutor, $datos)
+    {
+        $campos = [];
+        $params = [':id' => $id_tutor];
+        
+        if (isset($datos['especialidad'])) {
+            $campos[] = 'especialidad = :esp';
+            $params[':esp'] = trim($datos['especialidad']);
+        }
+        if (isset($datos['biografia'])) {
+            $campos[] = 'biografia = :bio';
+            $params[':bio'] = trim($datos['biografia']);
+        }
+        if (isset($datos['foto_perfil'])) {
+            $campos[] = 'foto_perfil = :foto';
+            $params[':foto'] = trim($datos['foto_perfil']);
+        }
+        if (isset($datos['perfil_linkedin'])) {
+            $campos[] = 'perfil_linkedin = :linkedin';
+            $params[':linkedin'] = trim($datos['perfil_linkedin']);
+        }
+        if (isset($datos['certificaciones'])) {
+            $campos[] = 'certificaciones = :cert';
+            $params[':cert'] = trim($datos['certificaciones']);
+        }
+        if (isset($datos['areas_expertise'])) {
+            $campos[] = 'areas_expertise = :areas';
+            $params[':areas'] = trim($datos['areas_expertise']);
+        }
+        
+        if (empty($campos)) {
+            return false;
+        }
+        
+        $sql = "UPDATE tutores SET " . implode(', ', $campos) . " WHERE id_tutor = :id";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    public function obtenerBloquesSeleccionados($id_tutor)
+    {
+        $sql = "SELECT tbs.id_bloque, bh.nombre_bloque, bh.hora_inicio, bh.hora_fin, bh.descripcion
+                FROM tutor_bloque_seleccionado tbs
+                INNER JOIN bloques_horarios bh ON tbs.id_bloque = bh.id_bloque
+                WHERE tbs.id_tutor = :id_tutor
+                ORDER BY bh.hora_inicio ASC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id_tutor' => $id_tutor]);
+        return $stmt->fetchAll();
+    }
+
+    public function asignarBloques($id_tutor, $bloques_ids = [])
+    {
+        $this->pdo->prepare("DELETE FROM tutor_bloque_seleccionado WHERE id_tutor = :id_tutor")->execute([':id_tutor' => $id_tutor]);
+        if (!empty($bloques_ids)) {
+            $stmt = $this->pdo->prepare("INSERT INTO tutor_bloque_seleccionado (id_tutor, id_bloque) VALUES (:id_tutor, :id_bloque)");
+            foreach ($bloques_ids as $id_bloque) {
+                $stmt->execute([
+                    ':id_tutor'   => $id_tutor,
+                    ':id_bloque' => $id_bloque
+                ]);
+            }
+        }
+        return true;
+    }
+
     // Materias que domina el tutor
     public function obtenerMaterias($id_tutor)
     {

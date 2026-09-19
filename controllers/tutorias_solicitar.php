@@ -46,23 +46,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ? ($estudiante['id_estudiante'] ?? null)
         : filter_var($_POST['id_estudiante'] ?? null, FILTER_VALIDATE_INT);
 
-    // El estudiante solo envía: id_materia, id_tutor, id_bloque, fecha, lugar y observaciones.
-    // El periodo y la modalidad NO los envía (los define el sistema).
+    // El estudiante solo envía: id_materia, id_tutor, id_bloque, observaciones.
+    // La fecha, lugar_o_enlace y modalidad los define el sistema (coordinación).
     $datos = [
         'id_estudiante'  => $idEstudiante,
         'id_materia'     => $_POST['id_materia'] ?? '',
         'id_tutor'       => $_POST['id_tutor'] ?? '',
         'id_bloque'      => filter_var($_POST['id_bloque'] ?? null, FILTER_VALIDATE_INT),
-        'fecha'          => $_POST['fecha'] ?? '',
+        'fecha'          => '',
         'hora_inicio'    => '',
         'hora_fin'       => '',
         'modalidad'      => $modalidadDefecto,
-        'lugar_o_enlace' => trim($_POST['lugar_o_enlace'] ?? ''),
+        'lugar_o_enlace' => '',
         'observaciones'  => trim($_POST['observaciones'] ?? ''),
     ];
 
     // Campos obligatorios (ya NO hay horas libres: se derivan del bloque).
-    if (!$idEstudiante || empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['id_bloque'])) {
+    if (!$idEstudiante || empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['id_bloque'])) {
         $errores[] = 'Todos los campos marcados con asterisco (*) son obligatorios.';
     } elseif (!$estudianteModel->obtenerPorId($idEstudiante)) {
         $errores[] = 'El estudiante seleccionado no es válido.';
@@ -72,22 +72,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // El estudiante debe tener carrera asignada.
     if ($estudianteDestino && empty($estudianteDestino['id_carrera'])) {
-        $errores[] = 'El estudiante no tiene una carrera asignada. Contacta al administrador.';
+        $errores[] = 'El estudiante no tiene una carrera asignada. Contacte al administrador.';
     }
 
-    // Fecha: formato válido, no pasada y dentro de un periodo activo.
-    if ($datos['fecha'] !== '') {
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datos['fecha'])) {
-            $errores[] = 'La fecha seleccionada no es válida.';
-        } elseif ($datos['fecha'] < date('Y-m-d')) {
-            $errores[] = 'La fecha de la tutoría no puede ser en el pasado.';
+    // Fecha: se calcula automáticamente desde el periodo activo (no viene del estudiante)
+    $periodoActivo = $periodoModel->obtenerActivoPorFecha(date('Y-m-d'));
+    if (!$periodoActivo) {
+        $errores[] = 'No hay un periodo académico activo. Contacte a coordinación.';
+    } else {
+        // Calcular la fecha más próxima disponible (hoy o la fecha de inicio del periodo si es futuro)
+        $fechaHoy = date('Y-m-d');
+        $fechaInicioPeriodo = $periodoActivo['fecha_inicio'];
+        $fechaFinPeriodo = $periodoActivo['fecha_fin'];
+        
+        if ($fechaHoy < $fechaInicioPeriodo) {
+            $datos['fecha'] = $fechaInicioPeriodo;
+        } elseif ($fechaHoy > $fechaFinPeriodo) {
+            $errores[] = 'El periodo académico actual ha finalizado. Contacte a coordinación.';
         } else {
-            $periodoActivo = $periodoModel->obtenerActivoPorFecha($datos['fecha']);
-            if (!$periodoActivo) {
-                $errores[] = 'La fecha debe estar dentro de un periodo académico activo.';
-            } else {
-                $datos['periodo'] = $periodoActivo['codigo'];
-            }
+            $datos['fecha'] = $fechaHoy;
+        }
+        
+        if (!empty($datos['fecha'])) {
+            $datos['periodo'] = $periodoActivo['codigo'];
         }
     }
 

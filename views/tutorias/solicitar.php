@@ -84,13 +84,24 @@ include __DIR__ . '/../layouts/header.php';
             <div id="horarios-tutor" class="form-text mt-1" aria-live="polite"></div>
           </div>
 
-          <!-- Fecha: solo dentro del rango del periodo activo (min/max dinámicos) -->
+          <!-- Fecha: asignada automáticamente por el sistema (solo lectura) -->
           <div class="col-md-4">
-            <label class="form-label fw-semibold text-secondary small text-uppercase">Fecha de la Sesión *</label>
-            <input type="date" name="fecha" id="fecha" class="form-control rounded-3 py-2"
-                   min="<?= htmlspecialchars($fechaMin) ?>" max="<?= htmlspecialchars($fechaMax) ?>"
-                   value="<?= htmlspecialchars($_POST['fecha'] ?? '') ?>" required>
-            <div id="nombre-dia" class="form-text mt-1" aria-live="polite"></div>
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Fecha de la Sesión</label>
+            <?php if ($periodoActual): ?>
+              <input type="text" class="form-control rounded-3 py-2 bg-light" 
+                     value="<?= date('d/m/Y', strtotime($fechaMin)) ?>" readonly disabled>
+              <div class="form-text mt-1">
+                <i class="bi bi-lock-fill me-1"></i>Fecha asignada por coordinación. 
+                <?= date('d/m/Y', strtotime($periodoActual['fecha_inicio'])) ?> al <?= date('d/m/Y', strtotime($periodoActual['fecha_fin'])) ?>
+              </div>
+            <?php else: ?>
+              <input type="text" class="form-control rounded-3 py-2 bg-light" 
+                     value="En proceso de asignación" readonly disabled>
+              <div class="form-text mt-1 text-danger">
+                <i class="bi bi-exclamation-triangle me-1"></i>Aún no hay fechas disponibles. Contacte a coordinación.
+              </div>
+            <?php endif; ?>
+            <input type="hidden" name="fecha" value="<?= $fechaMin ?? '' ?>">
           </div>
 
           <!-- Bloque horario: lo define el admin; el estudiante solo elige el bloque -->
@@ -112,14 +123,19 @@ include __DIR__ . '/../layouts/header.php';
           <div class="col-md-4">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Modalidad</label>
             <input type="text" class="form-control rounded-3 py-2 bg-light" value="Presencial" readonly disabled>
-            <input type="hidden" name="modalidad_display" value="presencial">
+            <input type="hidden" name="modalidad" value="presencial">
             <div class="form-text mt-1"><i class="bi bi-lock-fill me-1"></i>Definida por coordinación/tutor.</div>
           </div>
 
-          <!-- Lugar o Enlace -->
+          <!-- Lugar o Enlace: asignado por coordinación/tutor (solo lectura) -->
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Lugar o Enlace</label>
-            <input type="text" name="lugar_o_enlace" class="form-control rounded-3 py-2" placeholder="Ej: Aula 204 o https://meet.google.com/..." value="<?= htmlspecialchars($_POST['lugar_o_enlace'] ?? '') ?>">
+            <input type="text" class="form-control rounded-3 py-2 bg-light" 
+                   value="Aún se está asignando el lugar/enlace" readonly disabled>
+            <div class="form-text mt-1">
+              <i class="bi bi-lock-fill me-1"></i>La coordinación notificará los detalles (aula o enlace virtual).
+            </div>
+            <input type="hidden" name="lugar_o_enlace" value="">
           </div>
 
           <!-- Observaciones / Temas -->
