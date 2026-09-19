@@ -171,7 +171,7 @@ include __DIR__ . '/../layouts/header.php';
                   </a>
                 <?php endif; ?>
                 <?php if ($t['estado'] !== 'cancelada' && $t['estado'] !== 'realizada'): ?>
-                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-accent btn-sm" title="Cancelar" onclick="confirmarEliminacion(this.href, '¿Cancelar esta tutoría?'); return false;">
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-accent btn-sm" title="Cancelar" onclick="confirmarCancelacion(this.href); return false;">
                     <i class="bi bi-slash-circle"></i>
                   </a>
                 <?php endif; ?>

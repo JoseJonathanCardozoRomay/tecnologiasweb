@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS tutorias (
   lugar_o_enlace VARCHAR(200),
   estado ENUM('pendiente','confirmada','realizada','cancelada') NOT NULL DEFAULT 'pendiente',
   observaciones TEXT,
+  motivo_cancelacion VARCHAR(255) NULL,
   fecha_solicitud DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_tutorias_estudiante FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON UPDATE CASCADE,
   CONSTRAINT fk_tutorias_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON UPDATE CASCADE,
@@ -145,6 +146,35 @@ CREATE TABLE IF NOT EXISTS evaluaciones_tutoria (
   comentario TEXT,
   fecha_evaluacion DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_evaluaciones_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Seguimiento de la sesión (1:1 con tutorias)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS seguimiento_sesion (
+  id_seguimiento INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutoria INT NOT NULL UNIQUE,
+  asistio ENUM('si','no') NOT NULL,
+  temas_tratados TEXT NULL,
+  avance ENUM('sin_avance','parcial','logrado') NULL,
+  recomendaciones TEXT NULL,
+  fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_seguimiento_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Notificaciones internas por usuario
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notificaciones (
+  id_notificacion INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  tipo VARCHAR(30) NOT NULL,
+  mensaje VARCHAR(255) NOT NULL,
+  url VARCHAR(200) NULL,
+  leida TINYINT(1) NOT NULL DEFAULT 0,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notif_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  INDEX idx_notif_usuario_leida (id_usuario, leida, fecha_creacion)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------

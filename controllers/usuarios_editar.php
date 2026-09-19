@@ -68,7 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (($error = validarTelefono($datos['telefono'])) !== null) $errores[] = $error;
     if ($datos['clave'] !== '' && (strlen($datos['clave']) < 8 || !preg_match('/[A-Za-z]/', $datos['clave']) || !preg_match('/\d/', $datos['clave']))) $errores[] = 'La contraseña debe tener al menos 8 caracteres, una letra y un número.';
-    if (!in_array($datos['estado'], ['activo', 'inactivo'], true)) $errores[] = 'El estado seleccionado no es válido.';
+    $estadosPermitidos = ['activo', 'inactivo'];
+    if (($usuario_actual['estado'] ?? '') === 'pendiente') $estadosPermitidos[] = 'pendiente';
+    if (!in_array($datos['estado'], $estadosPermitidos, true)) $errores[] = 'El estado seleccionado no es válido.';
     if ((int) $id === (int) $_SESSION['id_usuario'] && $datos['estado'] !== 'activo') $errores[] = 'No puedes desactivar tu propia cuenta de administrador.';
 
     if ($datos['id_rol'] === $idRolEstudiante && !$perfilEstudiante) {

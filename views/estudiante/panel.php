@@ -5,7 +5,6 @@ require_once __DIR__ . '/../../includes/verificar_sesion.php';
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../models/EstudianteModel.php';
 require_once __DIR__ . '/../../models/TutoriaModel.php';
-require_once __DIR__ . '/../../models/CarreraModel.php';
 require_once __DIR__ . '/../../includes/lista_helper.php';
 
 $estudianteModel = new EstudianteModel($pdo);
@@ -15,11 +14,14 @@ $idUsuario = $_SESSION['id_usuario'] ?? 0;
 $estudiante = $estudianteModel->obtenerPorUsuario($idUsuario);
 
 if (!$estudiante) {
-    $carreraModel = new CarreraModel($pdo);
-    $carreras = $carreraModel->obtenerTodas();
-    $idCarreraDefault = !empty($carreras) ? $carreras[0]['id_carrera'] : 1;
-    $estudianteModel->guardarOActualizar($idUsuario, $idCarreraDefault, 1, 'RU-' . rand(10000, 99999));
-    $estudiante = $estudianteModel->obtenerPorUsuario($idUsuario);
+    $tituloPagina = 'Portal del Estudiante - Tutorías UPDS';
+    include __DIR__ . '/../layouts/header.php';
+    $emptyIcono = 'bi-person-vcard';
+    $emptyTitulo = 'Perfil académico incompleto';
+    $emptyTexto = 'Tu perfil académico aún no está completo. Contacta al administrador.';
+    include __DIR__ . '/../partials/empty_state.php';
+    include __DIR__ . '/../layouts/footer.php';
+    exit;
 }
 
 $idEstudiante = $estudiante['id_estudiante'];
@@ -132,6 +134,25 @@ include __DIR__ . '/../layouts/header.php';
                   <span class="badge rounded-pill px-3 py-1 <?= $badgeEstado ?>">
                     <?= ucfirst($t['estado']) ?>
                   </span>
+                  <?php if ($t['estado'] === 'realizada' && !empty($t['asistio'])): ?>
+                    <div class="small text-muted mt-1">
+                      <i class="bi <?= $t['asistio'] === 'si' ? 'bi-check2 text-success' : 'bi-x text-danger' ?> me-1"></i>
+                      <?= $t['asistio'] === 'si' ? 'Asistió' : 'No asistió' ?>
+                    </div>
+                  <?php endif; ?>
+                  <?php if ($t['estado'] === 'realizada' && !empty($t['temas_tratados'])): ?>
+                    <div class="small text-muted text-truncate" style="max-width: 220px;" title="<?= htmlspecialchars($t['temas_tratados']) ?>">
+                      <strong>Temas:</strong> <?= htmlspecialchars($t['temas_tratados']) ?>
+                    </div>
+                  <?php endif; ?>
+                  <?php if ($t['estado'] === 'realizada' && !empty($t['avance'])): ?>
+                    <div class="small text-muted"><strong>Avance:</strong> <?= htmlspecialchars(str_replace('_', ' ', $t['avance'])) ?></div>
+                  <?php endif; ?>
+                  <?php if ($t['estado'] === 'cancelada' && !empty($t['motivo_cancelacion'])): ?>
+                    <div class="small text-muted text-truncate" style="max-width: 220px;" title="<?= htmlspecialchars($t['motivo_cancelacion']) ?>">
+                      <strong>Motivo:</strong> <?= htmlspecialchars($t['motivo_cancelacion']) ?>
+                    </div>
+                  <?php endif; ?>
                 </td>
                 <td class="text-end pe-4">
                   <?php if ($t['estado'] === 'realizada'): ?>
@@ -188,7 +209,7 @@ include __DIR__ . '/../layouts/header.php';
                     <?php endif; ?>
                   <?php elseif ($t['estado'] === 'pendiente'): ?>
                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" 
-                        class="btn btn-outline-danger btn-sm" onclick="confirmarEliminacion(this.href, '¿Deseas cancelar esta solicitud?'); return false;">
+                        class="btn btn-outline-danger btn-sm" onclick="confirmarCancelacion(this.href); return false;">
                       Cancelar
                     </a>
                   <?php else: ?>

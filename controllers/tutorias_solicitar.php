@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/EstudianteModel.php';
+require_once __DIR__ . '/../models/NotificacionModel.php';
 require_once __DIR__ . '/../includes/flash.php';
 require_once __DIR__ . '/../includes/reglas_tutoria.php';
 
@@ -58,6 +59,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$resultado['ok']) {
                 $errores[] = $resultado['error'];
             } else {
+            try {
+                $tutorSolicitado = $tutorModel->obtenerPorId((int) $datos['id_tutor']);
+                if ($tutorSolicitado && !empty($tutorSolicitado['id_usuario'])) {
+                    (new NotificacionModel($pdo))->crear(
+                        $tutorSolicitado['id_usuario'],
+                        'nueva_solicitud',
+                        'Tienes una nueva solicitud de tutoría.',
+                        '/views/tutor/panel.php'
+                    );
+                }
+            } catch (Throwable $e) {
+                error_log($e->getMessage());
+            }
             flash_set('success', 'Solicitud registrada.');
             header('Location: ' . ($rolSesion === 'estudiante' ? '/views/estudiante/panel.php' : 'tutorias_listar.php'));
             exit;

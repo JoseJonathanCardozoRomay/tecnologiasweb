@@ -5,6 +5,9 @@ const TUTORIA_DURACION_MAX = 120;
 const TUTORIA_ANTICIPACION_HORAS = 2;
 const TUTORIA_MAX_ACTIVAS = 3;
 
+// pendiente de definir en la entrevista de requerimientos; aún no se aplica
+const TUTORIA_CUPO_MAXIMO_GRUPO = 30;
+
 function validarSolicitudTutoria(PDO $pdo, array $datos, array $estudiante): array
 {
     $errores = [];

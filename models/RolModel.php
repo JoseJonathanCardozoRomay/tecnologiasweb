@@ -19,4 +19,11 @@ class RolModel
         $stmt->execute([':id' => $id]);
         return (bool) $stmt->fetchColumn();
     }
+
+    public function obtenerIdRol($nombreRol)
+    {
+        $stmt = $this->pdo->prepare('SELECT id_rol FROM roles WHERE nombre_rol = :rol LIMIT 1');
+        $stmt->execute([':rol' => $nombreRol]);
+        return $stmt->fetchColumn();
+    }
 }

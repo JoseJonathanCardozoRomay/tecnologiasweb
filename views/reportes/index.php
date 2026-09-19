@@ -32,10 +32,11 @@ $porcentajeCumplimiento = $total > 0 ? round(($realizadas / $total) * 100) : 0;
 <div class="report-heading mb-3"><span>Periodo académico</span><strong><?= htmlspecialchars($periodoSeleccionado) ?></strong></div>
 
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Sesiones totales</small><div class="fs-2 fw-bold text-primary mt-2"><?= $total ?></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Cumplimiento</small><div class="fs-2 fw-bold text-success mt-2"><?= $porcentajeCumplimiento ?>%</div><div class="progress mt-2" style="height: 6px"><div class="progress-bar bg-success" style="width: <?= $porcentajeCumplimiento ?>%"></div></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Horas dictadas</small><div class="fs-2 fw-bold text-primary mt-2"><?= number_format(array_sum(array_map(fn($t) => (float) $t['horas_dictadas'], $tutores)), 1) ?></div></div></div>
-  <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Satisfacción</small><div class="fs-2 fw-bold text-accent mt-2"><?= $satisfaccion['promedio_satisfaccion'] ? number_format($satisfaccion['promedio_satisfaccion'], 2) : '—' ?><small class="fs-6 text-muted"> / 5</small></div></div></div>
+ <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Sesiones totales</small><div class="fs-2 fw-bold text-primary mt-2"><?= $total ?></div></div></div>
+ <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Cumplimiento</small><div class="fs-2 fw-bold text-success mt-2"><?= $porcentajeCumplimiento ?>%</div><div class="progress mt-2" style="height: 6px"><div class="progress-bar bg-success" style="width: <?= $porcentajeCumplimiento ?>%"></div></div></div></div>
+ <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Horas dictadas</small><div class="fs-2 fw-bold text-primary mt-2"><?= number_format(array_sum(array_map(fn($t) => (float) $t['horas_dictadas'], $tutores)), 1) ?></div></div></div>
+ <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Satisfacción</small><div class="fs-2 fw-bold text-accent mt-2"><?= $satisfaccion['promedio_satisfaccion'] ? number_format($satisfaccion['promedio_satisfaccion'], 2) : '—' ?><small class="fs-6 text-muted"> / 5</small></div></div></div>
+ <div class="col-6 col-lg-3"><div class="card card-custom p-3 h-100"><small class="text-muted text-uppercase fw-bold">Asistencia</small><div class="fs-2 fw-bold text-info mt-2"><?= $porcentajeAsistencia !== null ? $porcentajeAsistencia . '%' : '—' ?></div><?php if ($porcentajeAsistencia !== null): ?><div class="progress mt-2" style="height: 6px"><div class="progress-bar bg-info" style="width: <?= $porcentajeAsistencia ?>%"></div></div><?php else: ?><small class="text-muted">Sin seguimientos</small><?php endif; ?></div></div>
 </div>
 
 <div class="row g-4">
@@ -65,7 +66,7 @@ $porcentajeCumplimiento = $total > 0 ? round(($realizadas / $total) * 100) : 0;
   @media print {
     .no-print, nav, footer { display: none !important; }
     body { background: #fff; color: #111827; }
-    main.container { max-width: none; width: 100%; padding: 1rem 0; }
+    .app-content { max-width: none; width: 100%; padding: 1rem 0; }
     .card-custom { box-shadow: none; border: 1px solid #e2e8f0; }
     .report-heading { border: 1px solid #e2e8f0; border-left: 4px solid #9fb8cc; }
   }

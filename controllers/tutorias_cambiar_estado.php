@@ -4,12 +4,14 @@ requerirRol(['administrador', 'tutor', 'estudiante']);
 require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
+require_once __DIR__ . '/../models/NotificacionModel.php';
 require_once __DIR__ . '/../includes/flash.php';
 
 require_once __DIR__ . '/../includes/csrf.php';
 $idTutoria = $_POST['id'] ?? null;
 $nuevoEstado = $_POST['estado'] ?? null;
 $observaciones = $_POST['observaciones'] ?? null;
+$motivoCancelacion = trim($_POST['motivo'] ?? '');
 
 $estadosValidos = ['pendiente', 'confirmada', 'realizada', 'cancelada'];
 
@@ -42,8 +44,36 @@ if ($idTutoria && in_array($nuevoEstado, $estadosValidos, true)) {
             flash_set('danger', 'No se puede confirmar una tutoría cuyo inicio ya pasó.');
         } elseif ($nuevoEstado === 'realizada' && strtotime($actual['fecha'] . ' ' . $actual['hora_inicio']) > time()) {
             flash_set('danger', 'No se puede marcar como realizada una tutoría que aún no inició.');
+        } elseif ($nuevoEstado === 'cancelada' && (mb_strlen($motivoCancelacion) < 5 || mb_strlen($motivoCancelacion) > 255)) {
+            flash_set('danger', 'Debes indicar un motivo de cancelación (entre 5 y 255 caracteres).');
         } else {
-            $tutoriaModel->actualizarEstado($idTutoria, $nuevoEstado, $observaciones);
+            $tutoriaModel->actualizarEstado($idTutoria, $nuevoEstado, $observaciones, $nuevoEstado === 'cancelada' ? $motivoCancelacion : null);
+
+            // Las notificaciones nunca deben impedir el cambio de estado.
+            try {
+                $notificacionModel = new NotificacionModel($pdo);
+                $materia = $actual['nombre_materia'] ?? 'la tutoría';
+                if ($nuevoEstado === 'confirmada') {
+                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'confirmada',
+                        'Tu tutoría de ' . $materia . ' fue confirmada.', '/views/estudiante/panel.php');
+                } elseif ($nuevoEstado === 'realizada') {
+                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'realizada',
+                        'Tu tutoría de ' . $materia . ' se marcó como realizada. Ya puedes calificarla.', '/views/estudiante/panel.php');
+                } elseif ($nuevoEstado === 'cancelada') {
+                    $mensaje = 'Una tutoría de ' . $materia . ' fue cancelada. Motivo: ' . $motivoCancelacion;
+                    if ($rol === 'administrador') {
+                        $notificacionModel->crear($actual['estudiante_id_usuario'], 'cancelada', $mensaje, '/views/estudiante/panel.php');
+                        $notificacionModel->crear($actual['tutor_id_usuario'], 'cancelada', $mensaje, '/views/tutor/panel.php');
+                    } elseif ($rol === 'tutor') {
+                        $notificacionModel->crear($actual['estudiante_id_usuario'], 'cancelada', $mensaje, '/views/estudiante/panel.php');
+                    } else {
+                        $notificacionModel->crear($actual['tutor_id_usuario'], 'cancelada', $mensaje, '/views/tutor/panel.php');
+                    }
+                }
+            } catch (Throwable $e) {
+                error_log($e->getMessage());
+            }
+
             flash_set('success', 'Estado de tutoría actualizado.');
         }
     } catch (PDOException $e) {

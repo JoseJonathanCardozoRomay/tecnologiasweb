@@ -8,7 +8,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  function enviarPostSeguro(url) {
+  function enviarPostSeguro(url, extras = {}) {
     const destino = new URL(url, window.location.href);
     const formulario = document.createElement('form');
     formulario.method = 'POST';
@@ -19,6 +19,11 @@
     token.value = '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>';
     formulario.appendChild(token);
     destino.searchParams.forEach((valor, clave) => {
+      const campo = document.createElement('input');
+      campo.type = 'hidden'; campo.name = clave; campo.value = valor;
+      formulario.appendChild(campo);
+    });
+    Object.entries(extras).forEach(([clave, valor]) => {
       const campo = document.createElement('input');
       campo.type = 'hidden'; campo.name = clave; campo.value = valor;
       formulario.appendChild(campo);
@@ -43,6 +48,27 @@
       customClass: { popup: 'swal-upds-popup' }
     }).then((result) => {
       if (result.isConfirmed) enviarPostSeguro(url);
+    });
+  }
+  function confirmarCancelacion(url) {
+    Swal.fire({
+      title: 'Motivo de la cancelación',
+      input: 'text',
+      inputPlaceholder: 'Escribe el motivo (mínimo 5 caracteres)',
+      inputAttributes: { maxlength: 255 },
+      showCancelButton: true,
+      confirmButtonColor: '#b42318',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Cancelar tutoría',
+      cancelButtonText: 'Volver',
+      customClass: { popup: 'swal-upds-popup' },
+      inputValidator: (valor) => {
+        if (!valor || valor.trim().length < 5) {
+          return 'El motivo es obligatorio (mínimo 5 caracteres).';
+        }
+      }
+    }).then((result) => {
+      if (result.isConfirmed) enviarPostSeguro(url, { motivo: result.value.trim() });
     });
   }
 </script>

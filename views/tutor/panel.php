@@ -94,6 +94,7 @@ include __DIR__ . '/../layouts/header.php';
               <th>Estudiante</th>
               <th>Modalidad</th>
               <th>Estado</th>
+              <th>Seguimiento</th>
               <th class="text-end pe-4">Acciones</th>
             </tr>
           </thead>
@@ -142,6 +143,74 @@ include __DIR__ . '/../layouts/header.php';
                     </div>
                   <?php endif; ?>
                 </td>
+                <td>
+                  <?php if (!empty($t['asistio'])): ?>
+                    <span class="badge rounded-pill px-3 py-1 <?= $t['asistio'] === 'si' ? 'bg-success text-white' : 'bg-secondary text-white' ?>">
+                      <i class="bi <?= $t['asistio'] === 'si' ? 'bi-check2' : 'bi-x' ?> me-1"></i><?= $t['asistio'] === 'si' ? 'Asistió' : 'No asistió' ?>
+                    </span>
+                    <?php if (!empty($t['avance'])): ?>
+                      <div class="small text-muted mt-1">Avance: <?= htmlspecialchars(str_replace('_', ' ', $t['avance'])) ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($t['temas_tratados'])): ?>
+                      <div class="small text-muted text-truncate" style="max-width: 200px;" title="<?= htmlspecialchars($t['temas_tratados']) ?>"><?= htmlspecialchars($t['temas_tratados']) ?></div>
+                    <?php endif; ?>
+                  <?php elseif ($t['estado'] === 'realizada'): ?>
+                    <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+                            data-bs-toggle="modal" data-bs-target="#modalSeguimiento_<?= $t['id_tutoria'] ?>">
+                      <i class="bi bi-clipboard-plus"></i> Registrar seguimiento
+                    </button>
+
+                    <div class="modal fade text-start" id="modalSeguimiento_<?= $t['id_tutoria'] ?>" tabindex="-1">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow">
+                          <form action="/controllers/tutorias_seguimiento.php" method="POST">
+                            <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
+                            <input type="hidden" name="id_tutoria" value="<?= $t['id_tutoria'] ?>">
+                            <div class="modal-header border-0 pb-0">
+                              <h5 class="modal-title fw-bold">Seguimiento de <?= htmlspecialchars($t['nombre_materia']) ?></h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-secondary">Asistencia *</label>
+                                <select name="asistio" class="form-select" required>
+                                  <option value="si">Sí asistió</option>
+                                  <option value="no">No asistió</option>
+                                </select>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-secondary">Temas tratados *</label>
+                                <textarea name="temas_tratados" class="form-control" rows="3" minlength="10" maxlength="1000" placeholder="Describe los temas tratados en la sesión"></textarea>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-secondary">Avance *</label>
+                                <select name="avance" class="form-select">
+                                  <option value="">Selecciona el avance</option>
+                                  <option value="sin_avance">Sin avance</option>
+                                  <option value="parcial">Parcial</option>
+                                  <option value="logrado">Logrado</option>
+                                </select>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-secondary">Recomendaciones</label>
+                                <textarea name="recomendaciones" class="form-control" rows="3" maxlength="1000" placeholder="Sugerencias para el estudiante (opcional)"></textarea>
+                              </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                              <button type="submit" class="btn btn-success">Guardar seguimiento</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  <?php elseif ($t['estado'] === 'cancelada' && !empty($t['motivo_cancelacion'])): ?>
+                    <span class="badge bg-danger bg-opacity-10 text-danger border-danger-subtle"><i class="bi bi-info-circle me-1"></i>Motivo</span>
+                    <div class="small text-muted text-truncate" style="max-width: 200px;" title="<?= htmlspecialchars($t['motivo_cancelacion']) ?>"><?= htmlspecialchars($t['motivo_cancelacion']) ?></div>
+                  <?php else: ?>
+                    <span class="text-muted small">-</span>
+                  <?php endif; ?>
+                </td>
                 <td class="text-end pe-4">
                   <div class="btn-group" role="group">
                     <?php if ($t['estado'] === 'pendiente'): ?>
@@ -150,7 +219,7 @@ include __DIR__ . '/../layouts/header.php';
                         <i class="bi bi-check-circle"></i> Aceptar
                       </a>
                        <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" 
-                         class="btn btn-sm btn-outline-danger" onclick="confirmarEliminacion(this.href, '¿Rechazar esta solicitud?'); return false;" title="Rechazar">
+                         class="btn btn-sm btn-outline-danger" onclick="confirmarCancelacion(this.href); return false;" title="Rechazar">
                         <i class="bi bi-x-circle"></i>
                       </a>
                     <?php elseif ($t['estado'] === 'confirmada'): ?>

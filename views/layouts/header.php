@@ -11,6 +11,26 @@ $nombreSesion = $_SESSION['nombre'] ?? 'Usuario';
 $apellidoSesion = $_SESSION['apellido'] ?? '';
 $tituloSeccion = $tituloSeccion ?? ($tituloPagina ?? 'Sistema de Tutorías');
 $esEstudiante = $rolSesion === 'estudiante';
+
+// Insignia de notificaciones: un fallo de base de datos no debe romper la página.
+$notificacionesNoLeidas = 0;
+if (!empty($_SESSION['id_usuario'])) {
+    try {
+        require_once __DIR__ . '/../../config/conexion.php';
+        require_once __DIR__ . '/../../models/NotificacionModel.php';
+        $notificacionesNoLeidas = (new NotificacionModel($pdo))->contarNoLeidas($_SESSION['id_usuario']);
+    } catch (Throwable $e) {
+        error_log($e->getMessage());
+        $notificacionesNoLeidas = 0;
+    }
+}
+function campanaNotificaciones($noLeidas) {
+    $insignia = $noLeidas > 0
+        ? '<span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: .6rem;">' . (int) $noLeidas . '</span>'
+        : '';
+    return '<a href="/controllers/notificaciones_listar.php" class="position-relative d-inline-flex align-items-center justify-content-center p-2 text-decoration-none" aria-label="Notificaciones" title="Notificaciones">'
+        . '<i class="bi bi-bell" aria-hidden="true"></i>' . $insignia . '</a>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -47,6 +67,7 @@ $esEstudiante = $rolSesion === 'estudiante';
             <li class="nav-item"><a class="nav-link <?= menuActivo('solicitar') ? 'active' : '' ?>" href="/controllers/tutorias_solicitar.php"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Solicitar Tutoría</a></li>
           </ul>
           <div class="topbar-user">
+            <span class="text-white"><?= campanaNotificaciones($notificacionesNoLeidas) ?></span>
             <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
             <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
             <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
@@ -110,11 +131,15 @@ $esEstudiante = $rolSesion === 'estudiante';
       <div class="mobile-menu-bar">
         <button class="btn btn-link text-white p-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="Abrir menú"><i class="bi bi-list fs-3" aria-hidden="true"></i></button>
         <img class="brand-logo" src="/assets/img/logo-upds.svg" alt="UPDS">
-        <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-link text-white p-0" aria-label="Cerrar sesión"><i class="bi bi-box-arrow-right fs-5" aria-hidden="true"></i></a>
+        <div class="d-flex align-items-center gap-1 text-white">
+          <?= campanaNotificaciones($notificacionesNoLeidas) ?>
+          <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-link text-white p-0" aria-label="Cerrar sesión"><i class="bi bi-box-arrow-right fs-5" aria-hidden="true"></i></a>
+        </div>
       </div>
       <header class="app-topbar d-flex justify-content-between align-items-center">
         <div class="topbar-title"><?= htmlspecialchars($tituloSeccion) ?></div>
         <div class="topbar-user">
+          <span class="text-primary"><?= campanaNotificaciones($notificacionesNoLeidas) ?></span>
           <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
           <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
           <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>

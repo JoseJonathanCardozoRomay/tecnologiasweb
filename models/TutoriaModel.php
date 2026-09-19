@@ -200,12 +200,14 @@ class TutoriaModel
     public function obtenerPorEstudiantePaginadas($id_estudiante, $limite, $offset)
     {
         $sql = "SELECT tu.*, ut.nombre AS tut_nombre, ut.apellido AS tut_apellido, ut.correo AS tut_correo,
-                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario
+                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario,
+                       ss.asistio, ss.temas_tratados, ss.avance, ss.recomendaciones
                 FROM tutorias tu INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
                 INNER JOIN usuarios ut ON t.id_usuario = ut.id_usuario
                 INNER JOIN materias m ON tu.id_materia = m.id_materia
                 LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
                 LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria
+                LEFT JOIN seguimiento_sesion ss ON tu.id_tutoria = ss.id_tutoria
                 WHERE tu.id_estudiante = :id_est ORDER BY tu.fecha DESC, tu.hora_inicio DESC LIMIT :limite OFFSET :offset";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':id_est', $id_estudiante, PDO::PARAM_INT);
@@ -244,12 +246,14 @@ class TutoriaModel
     public function obtenerPorTutorPaginadas($id_tutor, $limite, $offset)
     {
         $sql = "SELECT tu.*, ue.nombre AS est_nombre, ue.apellido AS est_apellido, ue.correo AS est_correo,
-                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario
+                       m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario,
+                       ss.asistio, ss.temas_tratados, ss.avance, ss.recomendaciones
                 FROM tutorias tu INNER JOIN estudiantes e ON tu.id_estudiante = e.id_estudiante
                 INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
                 INNER JOIN materias m ON tu.id_materia = m.id_materia
                 LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
                 LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria
+                LEFT JOIN seguimiento_sesion ss ON tu.id_tutoria = ss.id_tutoria
                 WHERE tu.id_tutor = :id_tutor ORDER BY tu.fecha DESC, tu.hora_inicio DESC LIMIT :limite OFFSET :offset";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':id_tutor', $id_tutor, PDO::PARAM_INT);
@@ -352,22 +356,22 @@ class TutoriaModel
         }
     }
 
-    public function actualizarEstado($id_tutoria, $nuevo_estado, $observaciones = null)
+    public function actualizarEstado($id_tutoria, $nuevo_estado, $observaciones = null, $motivoCancelacion = null)
     {
+        $sets = ['estado = :estado'];
+        $params = [
+            ':estado' => $nuevo_estado,
+            ':id'     => $id_tutoria
+        ];
         if ($observaciones !== null) {
-            $sql = "UPDATE tutorias SET estado = :estado, observaciones = :obs WHERE id_tutoria = :id";
-            $params = [
-                ':estado' => $nuevo_estado,
-                ':obs'    => trim($observaciones),
-                ':id'     => $id_tutoria
-            ];
-        } else {
-            $sql = "UPDATE tutorias SET estado = :estado WHERE id_tutoria = :id";
-            $params = [
-                ':estado' => $nuevo_estado,
-                ':id'     => $id_tutoria
-            ];
+            $sets[] = 'observaciones = :obs';
+            $params[':obs'] = trim($observaciones);
         }
+        if ($motivoCancelacion !== null) {
+            $sets[] = 'motivo_cancelacion = :motivo';
+            $params[':motivo'] = trim($motivoCancelacion);
+        }
+        $sql = "UPDATE tutorias SET " . implode(', ', $sets) . " WHERE id_tutoria = :id";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($params);
     }
@@ -381,7 +385,7 @@ class TutoriaModel
     // Métricas para paneles de control
     public function obtenerMetricasGlobales($periodo = null)
     {
-        $sql = "SELECT 
+        $sql = "SELECT
                     COUNT(*) AS total,
                     SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
                     SUM(CASE WHEN estado = 'confirmada' THEN 1 ELSE 0 END) AS confirmadas,
@@ -438,6 +442,18 @@ class TutoriaModel
         $stmt->execute($params);
         $satisfaccion = $stmt->fetch();
 
-        return compact('metricas', 'materias', 'tutores', 'satisfaccion');
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) AS total_seguimientos,
+                                            SUM(ss.asistio = 'si') AS asistencias
+                                     FROM seguimiento_sesion ss
+                                     INNER JOIN tutorias tu ON ss.id_tutoria = tu.id_tutoria
+                                     WHERE tu.periodo = :periodo");
+        $stmt->execute($params);
+        $asistencia = $stmt->fetch();
+        $totalSeguimientos = (int) ($asistencia['total_seguimientos'] ?? 0);
+        $asistencias = (int) ($asistencia['asistencias'] ?? 0);
+        $porcentajeAsistencia = $totalSeguimientos > 0 ? round(($asistencias / $totalSeguimientos) * 100) : null;
+        $asistencia['porcentaje_asistencia'] = $porcentajeAsistencia;
+
+        return compact('metricas', 'materias', 'tutores', 'satisfaccion', 'asistencia');
     }
 }

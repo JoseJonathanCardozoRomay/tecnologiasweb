@@ -47,6 +47,9 @@ include __DIR__ . '/../layouts/header.php';
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Estado de la Cuenta *</label>
             <select name="estado" class="form-select rounded-3 py-2" required>
+              <?php if ($usuario_actual['estado'] === 'pendiente'): ?>
+                <option value="pendiente" selected>Pendiente</option>
+              <?php endif; ?>
               <option value="activo"   <?= $usuario_actual['estado'] === 'activo'   ? 'selected' : '' ?>>Activo</option>
               <option value="inactivo" <?= $usuario_actual['estado'] === 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
             </select>
