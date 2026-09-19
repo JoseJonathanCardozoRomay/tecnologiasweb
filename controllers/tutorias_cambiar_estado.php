@@ -49,5 +49,10 @@ if ($idTutoria && in_array($nuevoEstado, $estadosValidos, true)) {
 }
 
 // Redirección inteligente según de dónde vino la petición
-header('Location: ' . (($_SESSION['rol'] ?? '') === 'estudiante' ? '../views/estudiante/panel.php' : 'tutorias_listar.php'));
+$destinos = [
+    'estudiante' => '/views/estudiante/panel.php',
+    'tutor' => '/views/tutor/panel.php',
+    'administrador' => 'tutorias_listar.php',
+];
+header('Location: ' . ($destinos[$_SESSION['rol'] ?? ''] ?? 'tutorias_listar.php'));
 exit;

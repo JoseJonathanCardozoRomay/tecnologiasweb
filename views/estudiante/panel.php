@@ -45,7 +45,7 @@ include __DIR__ . '/../layouts/header.php';
           <p class="mb-0 text-white-50">Carrera: <?= htmlspecialchars($estudiante['nombre_carrera']) ?> &bull; Semestre <?= $estudiante['semestre'] ?> &bull; R.U: <?= htmlspecialchars($estudiante['registro_universitario']) ?></p>
         </div>
         <div>
-          <a href="/controllers/tutorias_solicitar.php" class="btn btn-warning text-dark fw-bold d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
+          <a href="/controllers/tutorias_solicitar.php" class="btn btn-accent fw-bold d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
             <i class="bi bi-calendar-plus-fill"></i>
             <span>+ Solicitar Nueva Tutoría</span>
           </a>
@@ -56,8 +56,8 @@ include __DIR__ . '/../layouts/header.php';
 
   <!-- Métricas del estudiante -->
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-warning border-4">
-      <div class="text-warning fs-1 mb-2"><i class="bi bi-hourglass-split"></i></div>
+    <div class="card card-custom p-4 text-center border-start border-accent border-4">
+      <div class="text-accent fs-1 mb-2"><i class="bi bi-hourglass-split"></i></div>
       <h3 class="fw-bold mb-0 text-dark"><?= $pendientes ?></h3>
       <p class="text-muted small mb-0">Solicitudes en Espera de Confirmación</p>
     </div>
@@ -101,7 +101,7 @@ include __DIR__ . '/../layouts/header.php';
           <tbody>
             <?php foreach ($misTutorias as $t): ?>
               <?php
-                $badgeEstado = 'bg-warning text-dark';
+                $badgeEstado = 'badge-accent';
                 if ($t['estado'] === 'confirmada') $badgeEstado = 'bg-info text-white';
                 if ($t['estado'] === 'realizada') $badgeEstado = 'bg-success text-white';
                 if ($t['estado'] === 'cancelada') $badgeEstado = 'bg-danger text-white';
@@ -136,13 +136,13 @@ include __DIR__ . '/../layouts/header.php';
                 <td class="text-end pe-4">
                   <?php if ($t['estado'] === 'realizada'): ?>
                     <?php if (!empty($t['calificacion'])): ?>
-                      <div class="text-warning small" title="Calificación enviada: <?= $t['calificacion'] ?>/5">
+                      <div class="text-accent small" title="Calificación enviada: <?= $t['calificacion'] ?>/5">
                         <?php for ($i = 1; $i <= 5; $i++): ?>
                           <i class="bi bi-star<?= $i <= $t['calificacion'] ? '-fill' : '' ?>"></i>
                         <?php endfor; ?>
                       </div>
                     <?php else: ?>
-                      <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
+                      <button type="button" class="btn btn-accent btn-sm d-inline-flex align-items-center gap-1"
                               data-bs-toggle="modal" data-bs-target="#modalEvaluar_<?= $t['id_tutoria'] ?>">
                         <i class="bi bi-star"></i> Calificar
                       </button>
@@ -163,7 +163,7 @@ include __DIR__ . '/../layouts/header.php';
                                 
                                 <div class="mb-3 text-center">
                                   <label class="form-label fw-semibold small text-uppercase text-secondary d-block">Calificación (1 a 5 estrellas)</label>
-                                  <select name="calificacion" class="form-select form-select-lg text-center fw-bold text-warning border-warning" required>
+                                  <select name="calificacion" class="form-select form-select-lg text-center fw-bold text-accent border-accent" required>
                                     <option value="5">⭐⭐⭐⭐⭐ 5 - Excelente</option>
                                     <option value="4">⭐⭐⭐⭐ 4 - Muy Buena</option>
                                     <option value="3">⭐⭐⭐ 3 - Regular</option>

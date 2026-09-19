@@ -13,9 +13,9 @@ include __DIR__ . '/../layouts/header.php';
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card card-custom p-3 text-center border-start border-warning border-4">
+    <div class="card card-custom p-3 text-center border-start border-accent border-4">
       <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Pendientes</small>
-      <h3 class="fw-bold mb-0 text-warning"><?= $metricas['pendientes'] ?? 0 ?></h3>
+      <h3 class="fw-bold mb-0 text-accent"><?= $metricas['pendientes'] ?? 0 ?></h3>
     </div>
   </div>
   <div class="col-6 col-md-3">
@@ -51,7 +51,7 @@ include __DIR__ . '/../layouts/header.php';
   <a href="tutorias_listar.php<?= $filtroPeriodo ? '?periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= empty($filtroEstado) ? 'btn-dark' : 'btn-outline-secondary' ?> rounded-pill px-3">
     Todas
   </a>
-  <a href="tutorias_listar.php?estado=pendiente<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'pendiente' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning text-dark' ?> rounded-pill px-3">
+  <a href="tutorias_listar.php?estado=pendiente<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'pendiente' ? 'btn-accent fw-bold' : 'btn-outline-accent' ?> rounded-pill px-3">
     <i class="bi bi-clock me-1"></i>Pendientes
   </a>
   <a href="tutorias_listar.php?estado=confirmada<?= $filtroPeriodo ? '&periodo=' . urlencode($filtroPeriodo) : '' ?>" class="btn btn-sm <?= $filtroEstado === 'confirmada' ? 'btn-info text-white fw-bold' : 'btn-outline-info' ?> rounded-pill px-3">
@@ -107,7 +107,7 @@ include __DIR__ . '/../layouts/header.php';
       <tbody>
         <?php foreach ($tutorias as $t): ?>
           <?php
-            $badgeEstado = 'bg-warning text-dark border-warning';
+            $badgeEstado = 'badge-accent';
             if ($t['estado'] === 'confirmada') $badgeEstado = 'bg-info bg-opacity-10 text-info-emphasis border-info-subtle';
             if ($t['estado'] === 'realizada') $badgeEstado = 'bg-success bg-opacity-10 text-success border-success-subtle';
             if ($t['estado'] === 'cancelada') $badgeEstado = 'bg-danger bg-opacity-10 text-danger border-danger-subtle';
@@ -117,7 +117,7 @@ include __DIR__ . '/../layouts/header.php';
               <div class="fw-bold text-dark"><?= date('d/m/Y', strtotime($t['fecha'])) ?></div>
               <small class="text-muted"><i class="bi bi-clock me-1"></i><?= substr($t['hora_inicio'], 0, 5) ?> - <?= substr($t['hora_fin'], 0, 5) ?></small>
             </td>
-            <td><span class="badge rounded-pill border px-2 py-1" style="color: #002b49; border-color: #f5a623 !important; background: #fff8e8;"><?= htmlspecialchars($t['periodo'] ?? 'I-' . date('Y')) ?></span></td>
+            <td><span class="badge rounded-pill border badge-accent px-2 py-1"><?= htmlspecialchars($t['periodo'] ?? 'I-' . date('Y')) ?></span></td>
             <td>
               <div class="fw-semibold text-primary"><?= htmlspecialchars($t['nombre_materia']) ?></div>
               <small class="text-muted"><?= htmlspecialchars($t['nombre_carrera'] ?? 'General') ?></small>
@@ -151,7 +151,7 @@ include __DIR__ . '/../layouts/header.php';
                 <?= htmlspecialchars($t['estado']) ?>
               </span>
               <?php if (!empty($t['calificacion'])): ?>
-                <div class="text-warning small mt-1">
+                <div class="text-accent small mt-1">
                   <?php for ($i = 1; $i <= 5; $i++): ?>
                     <i class="bi bi-star<?= $i <= $t['calificacion'] ? '-fill' : '' ?>"></i>
                   <?php endfor; ?>
@@ -171,15 +171,10 @@ include __DIR__ . '/../layouts/header.php';
                   </a>
                 <?php endif; ?>
                 <?php if ($t['estado'] !== 'cancelada' && $t['estado'] !== 'realizada'): ?>
-                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-warning btn-sm" title="Cancelar sesión" onclick="confirmarEliminacion(this.href, '¿Cancelar esta tutoría?'); return false;">
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-accent btn-sm" title="Cancelar" onclick="confirmarEliminacion(this.href, '¿Cancelar esta tutoría?'); return false;">
                     <i class="bi bi-slash-circle"></i>
                   </a>
                 <?php endif; ?>
-                <button type="button" class="btn btn-outline-danger btn-sm" 
-                        onclick="confirmarEliminacion('tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada', '¿Deseas cancelar definitivamente esta tutoría?')"
-                        title="Eliminar">
-                  <i class="bi bi-trash"></i>
-                </button>
               </div>
             </td>
           </tr>

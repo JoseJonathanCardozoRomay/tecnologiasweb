@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/flash.php';
 
 $tutorModel = new TutorModel($pdo);
 $materiaModel = new MateriaModel($pdo);
@@ -14,7 +15,7 @@ $rolSesion = $_SESSION['rol'] ?? '';
 $idUsuario = $_SESSION['id_usuario'] ?? 0;
 
 // Si es un tutor, obtiene su propio id_tutor; si es admin, puede venir por GET
-$idTutor = $_GET['id'] ?? null;
+$idTutor = $_GET['id'] ?? $_POST['id'] ?? null;
 
 if ($rolSesion === 'tutor') {
     $tutorActual = $tutorModel->obtenerPorUsuario($idUsuario);
@@ -34,7 +35,6 @@ if (!$tutor) {
     exit;
 }
 
-$mensaje = '';
 $errores = [];
 
 // Procesar acciones POST
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($dia) && !empty($inicio) && !empty($fin)) {
             if ($inicio < $fin) {
                 $tutorModel->agregarDisponibilidad($idTutor, $dia, $inicio, $fin);
-                $mensaje = "Horario agregado correctamente.";
+                flash_set('success', 'Horario agregado correctamente.');
             } else {
                 $errores[] = "La hora de fin debe ser mayor a la hora de inicio.";
             }
@@ -61,10 +61,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 2. Actualizar materias asignadas
+    if ($accion === 'eliminar_horario') {
+        $idDisp = filter_var($_POST['id_disponibilidad'] ?? null, FILTER_VALIDATE_INT);
+        if ($idDisp) {
+            $tutorModel->eliminarDisponibilidad($idDisp, $idTutor);
+            flash_set('success', 'Horario eliminado.');
+            header("Location: tutores_disponibilidad.php?id=$idTutor");
+            exit;
+        }
+        $errores[] = 'El horario seleccionado no es válido.';
+    }
+
     if ($accion === 'guardar_materias') {
         $materiasSeleccionadas = $_POST['materias'] ?? [];
         $tutorModel->asignarMaterias($idTutor, $materiasSeleccionadas);
-        $mensaje = "Materias asignadas actualizadas con éxito.";
+        flash_set('success', 'Materias asignadas actualizadas con éxito.');
     }
 
     // 3. Actualizar perfil básico (especialidad y biografía)
@@ -73,18 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bio = $_POST['biografia'] ?? '';
         $tutorModel->actualizarPerfil($idTutor, $esp, $bio);
         $tutor = $tutorModel->obtenerPorId($idTutor);
-        $mensaje = "Perfil docente actualizado con éxito.";
+        flash_set('success', 'Perfil docente actualizado con éxito.');
     }
-}
-
-// Eliminar horario por GET
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'eliminar_horario') {
-    require_once __DIR__ . '/../includes/csrf.php';
-    csrf_validar();
-    $idDisp = (int) ($_POST['id_disponibilidad'] ?? 0);
-    $tutorModel->eliminarDisponibilidad($idDisp, $idTutor);
-    header("Location: tutores_disponibilidad.php?id=$idTutor&mensaje=horario_eliminado");
-    exit;
 }
 
 $materiasAsignadas = $tutorModel->obtenerMaterias($idTutor);

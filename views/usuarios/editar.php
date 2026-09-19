@@ -35,7 +35,7 @@ include __DIR__ . '/../layouts/header.php';
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Rol del Usuario *</label>
-            <select name="id_rol" class="form-select rounded-3 py-2" required>
+            <select id="id_rol" name="id_rol" class="form-select rounded-3 py-2" required>
               <?php foreach ($roles as $r): ?>
                 <option value="<?= $r['id_rol'] ?>" <?= $r['id_rol'] == $usuario_actual['id_rol'] ? 'selected' : '' ?>>
                   <?= ucfirst(htmlspecialchars($r['nombre_rol'])) ?>
@@ -73,6 +73,26 @@ include __DIR__ . '/../layouts/header.php';
           </div>
         </div>
 
+        <div id="camposEstudiante" class="row g-3 mt-1 d-none">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Carrera *</label>
+            <select id="id_carrera" name="id_carrera" class="form-select rounded-3 py-2">
+              <option value="">Selecciona una carrera</option>
+              <?php foreach ($carreras as $carrera): ?>
+                <option value="<?= $carrera['id_carrera'] ?>" <?= (($_POST['id_carrera'] ?? ($perfilEstudianteActual['id_carrera'] ?? '')) == $carrera['id_carrera']) ? 'selected' : '' ?>><?= htmlspecialchars($carrera['nombre_carrera']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Semestre *</label>
+            <input id="semestre" type="number" name="semestre" class="form-control rounded-3 py-2" min="1" max="12" value="<?= htmlspecialchars($_POST['semestre'] ?? ($perfilEstudianteActual['semestre'] ?? '')) ?>">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Registro universitario *</label>
+            <input id="registro_universitario" type="text" name="registro_universitario" class="form-control rounded-3 py-2" maxlength="30" value="<?= htmlspecialchars($_POST['registro_universitario'] ?? ($perfilEstudianteActual['registro_universitario'] ?? '')) ?>">
+          </div>
+        </div>
+
         <div class="row g-3 mt-1">
           <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Teléfono</label>
@@ -96,4 +116,20 @@ include __DIR__ . '/../layouts/header.php';
   </div>
 </div>
 
+<script>
+  (() => {
+    const roleSelect = document.getElementById('id_rol');
+    const studentFields = document.getElementById('camposEstudiante');
+    const requiresProfile = <?= $perfilEstudianteActual ? 'false' : 'true' ?>;
+    const studentRole = '<?= $idRolEstudiante ?>';
+    const inputs = studentFields.querySelectorAll('select, input');
+    const syncStudentFields = () => {
+      const show = roleSelect.value === studentRole;
+      studentFields.classList.toggle('d-none', !show);
+      inputs.forEach((input) => { input.required = show && requiresProfile; });
+    };
+    roleSelect.addEventListener('change', syncStudentFields);
+    syncStudentFields();
+  })();
+</script>
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

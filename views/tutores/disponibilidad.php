@@ -17,13 +17,6 @@ include __DIR__ . '/../layouts/header.php';
   </a>
 </div>
 
-<?php if (!empty($mensaje)): ?>
-  <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-4">
-    <i class="bi bi-check-circle-fill fs-5"></i>
-    <div><?= htmlspecialchars($mensaje) ?></div>
-  </div>
-<?php endif; ?>
-
 <?php if (!empty($errores)): ?>
   <div class="alert alert-danger py-2 px-3 rounded-3 mb-4">
     <ul class="mb-0 ps-3 small">
@@ -53,7 +46,7 @@ include __DIR__ . '/../layouts/header.php';
                   <span class="badge bg-primary px-2 py-1 me-2"><?= htmlspecialchars($d['dia_semana']) ?></span>
                   <span class="fw-semibold text-dark"><?= substr($d['hora_inicio'], 0, 5) ?> - <?= substr($d['hora_fin'], 0, 5) ?></span>
                 </div>
-                 <a href="tutores_disponibilidad.php?id=<?= $idTutor ?>&eliminar_horario=<?= $d['id_disponibilidad'] ?>" 
+                 <a href="tutores_disponibilidad.php?id=<?= $idTutor ?>&accion=eliminar_horario&id_disponibilidad=<?= $d['id_disponibilidad'] ?>" 
                    class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width: 28px; height: 28px;"
                    onclick="confirmarEliminacion(this.href, '¿Eliminar este bloque horario?'); return false;" title="Eliminar">
                   <i class="bi bi-trash"></i>

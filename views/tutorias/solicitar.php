@@ -31,6 +31,19 @@ include __DIR__ . '/../layouts/header.php';
       <form method="POST" autocomplete="off">
         <?php require_once __DIR__ . '/../../includes/csrf.php'; echo csrf_campo(); ?>
         <div class="row g-3">
+          <?php if (($_SESSION['rol'] ?? '') === 'administrador'): ?>
+            <div class="col-md-12">
+              <label class="form-label fw-semibold text-secondary small text-uppercase">Estudiante *</label>
+              <select name="id_estudiante" class="form-select rounded-3 py-2" required>
+                <option value="" disabled <?= empty($_POST['id_estudiante']) ? 'selected' : '' ?>>Selecciona al estudiante...</option>
+                <?php foreach ($estudiantes as $estudianteItem): ?>
+                  <option value="<?= $estudianteItem['id_estudiante'] ?>" <?= (($_POST['id_estudiante'] ?? '') == $estudianteItem['id_estudiante']) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($estudianteItem['nombre'] . ' ' . $estudianteItem['apellido']) ?> — <?= htmlspecialchars($estudianteItem['registro_universitario']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          <?php endif; ?>
           <!-- Materia -->
           <div class="col-md-12">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Materia Académica *</label>

@@ -77,15 +77,7 @@ include __DIR__ . '/../layouts/header.php';
               </span>
             </td>
             <td>
-              <?php if ($u['estado'] === 'activo'): ?>
-                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1">
-                  <i class="bi bi-check-circle me-1"></i>Activo
-                </span>
-              <?php else: ?>
-                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-2 py-1">
-                  <i class="bi bi-dash-circle me-1"></i>Inactivo
-                </span>
-              <?php endif; ?>
+              <?= estado_badge($u['estado']) ?>
             </td>
             <td class="text-muted small">
               <?= date('d/m/Y', strtotime($u['fecha_registro'])) ?>

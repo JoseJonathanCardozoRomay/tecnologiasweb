@@ -6,25 +6,34 @@ require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/EvaluacionModel.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/flash.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    csrf_validar();
-    $idTutoria = $_POST['id_tutoria'] ?? null;
-    $calificacion = (int)($_POST['calificacion'] ?? 0);
-    $comentario = trim($_POST['comentario'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: /views/estudiante/panel.php');
+    exit;
+}
 
-    $tutoriaModel = new TutoriaModel($pdo);
-    $tutoria = $tutoriaModel->obtenerPorId($idTutoria);
-    if ($idTutoria && $tutoria && $tutoria['estado'] === 'realizada' && (int) ($tutoria['id_usuario'] ?? 0) === (int) $_SESSION['id_usuario'] && $calificacion >= 1 && $calificacion <= 5) {
-        $evaluacionModel = new EvaluacionModel($pdo);
+csrf_validar();
+$idTutoria = filter_var($_POST['id_tutoria'] ?? null, FILTER_VALIDATE_INT);
+$calificacion = (int) ($_POST['calificacion'] ?? 0);
+$comentario = trim($_POST['comentario'] ?? '');
+
+if (!$idTutoria || $calificacion < 1 || $calificacion > 5) {
+    flash_set('danger', 'Los datos de la calificación no son válidos.');
+} else {
+    $tutoria = (new TutoriaModel($pdo))->obtenerPorId($idTutoria);
+    if (!$tutoria || $tutoria['estado'] !== 'realizada' || (int) $tutoria['estudiante_id_usuario'] !== (int) $_SESSION['id_usuario']) {
+        flash_set('danger', 'No puedes calificar esta tutoría.');
+    } else {
         try {
-            $evaluacionModel->registrar($idTutoria, $calificacion, $comentario);
+            (new EvaluacionModel($pdo))->registrar($idTutoria, $calificacion, $comentario);
+            flash_set('success', 'Calificación registrada.');
         } catch (PDOException $e) {
             error_log($e->getMessage());
+            flash_set('danger', 'No se pudo registrar la calificación.');
         }
     }
 }
 
-$referer = $_SERVER['HTTP_REFERER'] ?? '../views/estudiante/panel.php';
-header("Location: " . $referer);
+header('Location: /views/estudiante/panel.php');
 exit;

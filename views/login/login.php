@@ -3,7 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
   require_once __DIR__ . '/../../includes/sesion.php';
 }
 if (isset($_SESSION['id_usuario'])) {
-    header('Location: ../../controllers/usuarios_listar.php');
+    $destinos = [
+      'administrador' => '../../controllers/usuarios_listar.php',
+      'tutor' => '../tutor/panel.php',
+      'estudiante' => '../estudiante/panel.php',
+    ];
+    header('Location: ' . ($destinos[$_SESSION['rol'] ?? ''] ?? '../../controllers/usuarios_listar.php'));
     exit;
 }
 ?>
@@ -32,11 +37,16 @@ if (isset($_SESSION['id_usuario'])) {
           <div class="login-kicker">Universidad Privada Domingo Savio · Sede Tarija</div>
           <h1 id="loginBrandTitle" class="login-title">Sistema de Tutorías Académicas</h1>
           <p class="login-lead">Un espacio institucional para conectar estudiantes y tutores con acompañamiento académico oportuno.</p>
+          <ul class="login-benefits" aria-label="Beneficios del sistema">
+            <li><i class="bi bi-calendar2-check" aria-hidden="true"></i>Agenda tutorías en pocos pasos.</li>
+            <li><i class="bi bi-graph-up-arrow" aria-hidden="true"></i>Da seguimiento a cada solicitud.</li>
+            <li><i class="bi bi-bar-chart-line" aria-hidden="true"></i>Consulta reportes académicos claros.</li>
+          </ul>
         </div>
       </section>
       <section class="col-lg-6 login-form-panel" aria-labelledby="loginTitle">
         <div class="login-form-wrap">
-          <img class="login-form-logo d-lg-none" src="/assets/img/logo-upds.svg" alt="UPDS">
+          <img class="login-form-logo" src="/assets/img/logo-upds.svg" alt="UPDS">
           <p class="login-kicker">Acceso institucional</p>
           <h2 id="loginTitle" class="login-form-title mb-2">Iniciar sesión</h2>
           <p class="login-form-subtitle mb-4">Ingresa con tus credenciales para continuar.</p>
@@ -71,6 +81,7 @@ if (isset($_SESSION['id_usuario'])) {
               <span>Ingresar</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
             </button>
           </form>
+          <p class="text-center mt-3 mb-0"><span class="text-muted small" aria-disabled="true">¿Olvidaste tu contraseña?</span></p>
           <div class="text-center mt-3"><a href="/controllers/registro.php">Crear cuenta de estudiante</a></div>
           <p class="text-muted small text-center mt-4 mb-0">Tecnologías Web · Sede Tarija</p>
         </div>
