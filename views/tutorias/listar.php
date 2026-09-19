@@ -60,8 +60,14 @@ include __DIR__ . '/../layouts/header.php';
   <a href="<?= urlLista(['estado' => 'realizada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'realizada' ? 'btn-success fw-bold' : 'btn-outline-success' ?> rounded-pill px-3">
     <i class="bi bi-check-circle me-1"></i>Realizadas
   </a>
+  <a href="<?= urlLista(['estado' => 'en_proceso', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'en_proceso' ? 'btn-warning text-dark fw-bold' : 'btn-outline-warning' ?> rounded-pill px-3">
+     <i class="bi bi-arrow-repeat me-1"></i>En Proceso
+  </a>
+  <a href="<?= urlLista(['estado' => 'detenido', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'detenido' ? 'btn-secondary fw-bold' : 'btn-outline-secondary' ?> rounded-pill px-3">
+     <i class="bi bi-pause-circle me-1"></i>Detenidas
+  </a>
   <a href="<?= urlLista(['estado' => 'cancelada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
-    <i class="bi bi-x-circle me-1"></i>Canceladas
+     <i class="bi bi-x-circle me-1"></i>Canceladas
   </a>
   <form method="GET" class="ms-md-auto">
     <input type="hidden" name="estado" value="<?= htmlspecialchars($filtroEstado ?? '') ?>">
@@ -111,6 +117,16 @@ include __DIR__ . '/../layouts/header.php';
             if ($t['estado'] === 'confirmada') $badgeEstado = 'bg-info bg-opacity-10 text-info-emphasis border-info-subtle';
             if ($t['estado'] === 'realizada') $badgeEstado = 'bg-success bg-opacity-10 text-success border-success-subtle';
             if ($t['estado'] === 'cancelada') $badgeEstado = 'bg-danger bg-opacity-10 text-danger border-danger-subtle';
+            if ($t['estado'] === 'en_proceso') $badgeEstado = 'bg-warning bg-opacity-10 text-warning-emphasis border-warning-subtle';
+            if ($t['estado'] === 'detenido') $badgeEstado = 'bg-secondary bg-opacity-10 text-secondary-emphasis border-secondary-subtle';
+            $etiquetaEstado = [
+                'pendiente'  => 'Pendiente',
+                'confirmada' => 'Confirmada',
+                'realizada'  => 'Realizada',
+                'cancelada'  => 'Cancelada',
+                'en_proceso' => 'En Proceso',
+                'detenido'   => 'Detenido',
+            ][$t['estado']] ?? ucfirst($t['estado']);
           ?>
           <tr>
             <td class="ps-4">
@@ -147,8 +163,8 @@ include __DIR__ . '/../layouts/header.php';
               <?php endif; ?>
             </td>
             <td>
-              <span class="badge rounded-pill border px-3 py-1 text-capitalize <?= $badgeEstado ?>">
-                <?= htmlspecialchars($t['estado']) ?>
+              <span class="badge rounded-pill border px-3 py-1 <?= $badgeEstado ?>">
+                <?= htmlspecialchars($etiquetaEstado) ?>
               </span>
               <?php if (!empty($t['calificacion'])): ?>
                 <div class="text-accent small mt-1">
@@ -166,11 +182,19 @@ include __DIR__ . '/../layouts/header.php';
                   </a>
                 <?php endif; ?>
                 <?php if ($t['estado'] === 'confirmada'): ?>
-                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada" onclick="enviarPostSeguro(this.href); return false;" class="btn btn-outline-primary btn-sm" title="Marcar como realizada">
-                    <i class="bi bi-check2-all"></i>
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=en_proceso" onclick="enviarPostSeguro(this.href); return false;" class="btn btn-outline-warning btn-sm" title="Iniciar sesión">
+                    <i class="bi bi-play-circle"></i>
                   </a>
                 <?php endif; ?>
-                <?php if ($t['estado'] !== 'cancelada' && $t['estado'] !== 'realizada'): ?>
+                <?php if ($t['estado'] === 'en_proceso'): ?>
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada" onclick="enviarPostSeguro(this.href); return false;" class="btn btn-outline-primary btn-sm" title="Finalizar con éxito">
+                    <i class="bi bi-check2-all"></i>
+                  </a>
+                  <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=detenido" onclick="confirmarDetencion(this.href); return false;" class="btn btn-outline-secondary btn-sm" title="Detener sesión">
+                    <i class="bi bi-pause-circle"></i>
+                  </a>
+                <?php endif; ?>
+                <?php if (!in_array($t['estado'], ['cancelada', 'realizada', 'detenido'], true)): ?>
                   <a href="tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" class="btn btn-outline-accent btn-sm" title="Cancelar" onclick="confirmarCancelacion(this.href); return false;">
                     <i class="bi bi-slash-circle"></i>
                   </a>

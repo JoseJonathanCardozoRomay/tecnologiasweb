@@ -90,6 +90,8 @@ function campanaNotificaciones($noLeidas) {
           <a class="sidebar-link <?= menuActivo('materias') ? 'active' : '' ?>" href="/controllers/materias_listar.php"><i class="bi bi-journal-bookmark" aria-hidden="true"></i>Materias</a>
           <a class="sidebar-link <?= menuActivo('tutores') ? 'active' : '' ?>" href="/controllers/tutores_listar.php"><i class="bi bi-person-video3" aria-hidden="true"></i>Tutores</a>
           <a class="sidebar-link <?= menuActivo('estudiantes') ? 'active' : '' ?>" href="/controllers/estudiantes_listar.php"><i class="bi bi-person-vcard" aria-hidden="true"></i>Estudiantes</a>
+          <a class="sidebar-link <?= menuActivo('admin_periodos') ? 'active' : '' ?>" href="/controllers/admin_periodos.php"><i class="bi bi-calendar-range" aria-hidden="true"></i>Periodos</a>
+          <a class="sidebar-link <?= menuActivo('admin_bloques') ? 'active' : '' ?>" href="/controllers/admin_bloques.php"><i class="bi bi-clock" aria-hidden="true"></i>Bloques Horarios</a>
           <div class="sidebar-section mt-4">Tutorías</div>
           <a class="sidebar-link <?= menuActivo('tutorias') ? 'active' : '' ?>" href="/controllers/tutorias_listar.php"><i class="bi bi-calendar-check" aria-hidden="true"></i>Tutorías</a>
           <a class="sidebar-link <?= menuActivo('reportes') ? 'active' : '' ?>" href="/controllers/reportes.php"><i class="bi bi-bar-chart" aria-hidden="true"></i>Reportes</a>
@@ -117,6 +119,8 @@ function campanaNotificaciones($noLeidas) {
           <a class="sidebar-link <?= menuActivo('materias') ? 'active' : '' ?>" href="/controllers/materias_listar.php"><i class="bi bi-journal-bookmark" aria-hidden="true"></i>Materias</a>
           <a class="sidebar-link <?= menuActivo('tutores') ? 'active' : '' ?>" href="/controllers/tutores_listar.php"><i class="bi bi-person-video3" aria-hidden="true"></i>Tutores</a>
           <a class="sidebar-link <?= menuActivo('estudiantes') ? 'active' : '' ?>" href="/controllers/estudiantes_listar.php"><i class="bi bi-person-vcard" aria-hidden="true"></i>Estudiantes</a>
+          <a class="sidebar-link <?= menuActivo('admin_periodos') ? 'active' : '' ?>" href="/controllers/admin_periodos.php"><i class="bi bi-calendar-range" aria-hidden="true"></i>Periodos</a>
+          <a class="sidebar-link <?= menuActivo('admin_bloques') ? 'active' : '' ?>" href="/controllers/admin_bloques.php"><i class="bi bi-clock" aria-hidden="true"></i>Bloques Horarios</a>
           <div class="sidebar-section mt-4">Tutorías</div>
           <a class="sidebar-link <?= menuActivo('tutorias') ? 'active' : '' ?>" href="/controllers/tutorias_listar.php"><i class="bi bi-calendar-check" aria-hidden="true"></i>Tutorías</a>
           <a class="sidebar-link <?= menuActivo('reportes') ? 'active' : '' ?>" href="/controllers/reportes.php"><i class="bi bi-bar-chart" aria-hidden="true"></i>Reportes</a>

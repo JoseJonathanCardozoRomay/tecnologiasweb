@@ -57,14 +57,17 @@ include __DIR__ . '/../layouts/header.php';
             </select>
           </div>
 
+          <!-- Periodo académico: definido por coordinación; el estudiante solo lo VE -->
           <div class="col-md-6">
-            <label class="form-label fw-semibold text-secondary small text-uppercase">Periodo Académico *</label>
-            <select name="periodo" class="form-select rounded-3 py-2" required>
-              <?php $periodoActual = $_POST['periodo'] ?? 'I-' . date('Y'); ?>
-              <?php foreach ($periodos as $periodo): ?>
-                <option value="<?= htmlspecialchars($periodo, ENT_QUOTES, 'UTF-8') ?>" <?= $periodoActual === $periodo ? 'selected' : '' ?>><?= htmlspecialchars($periodo, ENT_QUOTES, 'UTF-8') ?></option>
-              <?php endforeach; ?>
-            </select>
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Periodo Académico</label>
+            <input type="text" class="form-control rounded-3 py-2 bg-light" value="<?= $periodoActual ? htmlspecialchars($periodoActual['nombre'] . ' (' . $periodoActual['codigo'] . ')') : 'Sin periodo activo' ?>" readonly disabled>
+            <div class="form-text mt-1">
+              <?php if ($periodoActual): ?>
+                <i class="bi bi-calendar-range me-1"></i>Fechas habilitadas: <?= date('d/m/Y', strtotime($periodoActual['fecha_inicio'])) ?> al <?= date('d/m/Y', strtotime($periodoActual['fecha_fin'])) ?>
+              <?php else: ?>
+                <span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>No hay un periodo activo. Contacta a coordinación.</span>
+              <?php endif; ?>
+            </div>
           </div>
 
           <!-- Tutor -->
@@ -81,32 +84,36 @@ include __DIR__ . '/../layouts/header.php';
             <div id="horarios-tutor" class="form-text mt-1" aria-live="polite"></div>
           </div>
 
-          <!-- Fecha -->
+          <!-- Fecha: solo dentro del rango del periodo activo (min/max dinámicos) -->
           <div class="col-md-4">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Fecha de la Sesión *</label>
-            <input type="date" name="fecha" id="fecha" class="form-control rounded-3 py-2" min="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($_POST['fecha'] ?? date('Y-m-d')) ?>" required>
+            <input type="date" name="fecha" id="fecha" class="form-control rounded-3 py-2"
+                   min="<?= htmlspecialchars($fechaMin) ?>" max="<?= htmlspecialchars($fechaMax) ?>"
+                   value="<?= htmlspecialchars($_POST['fecha'] ?? '') ?>" required>
             <div id="nombre-dia" class="form-text mt-1" aria-live="polite"></div>
           </div>
 
-          <!-- Hora Inicio -->
+          <!-- Bloque horario: lo define el admin; el estudiante solo elige el bloque -->
           <div class="col-md-4">
-            <label class="form-label fw-semibold text-secondary small text-uppercase">Hora Inicio *</label>
-            <input type="time" name="hora_inicio" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['hora_inicio'] ?? '15:00') ?>" required>
-          </div>
-
-          <!-- Hora Fin -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold text-secondary small text-uppercase">Hora Fin *</label>
-            <input type="time" name="hora_fin" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['hora_fin'] ?? '16:00') ?>" required>
-          </div>
-
-          <!-- Modalidad -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold text-secondary small text-uppercase">Modalidad *</label>
-            <select name="modalidad" class="form-select rounded-3 py-2" required>
-              <option value="presencial" <?= (isset($_POST['modalidad']) && $_POST['modalidad'] === 'presencial') ? 'selected' : '' ?>>Presencial (En campus UPDS)</option>
-              <option value="virtual" <?= (isset($_POST['modalidad']) && $_POST['modalidad'] === 'virtual') ? 'selected' : '' ?>>Virtual (Meet / Teams / Zoom)</option>
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Bloque Horario *</label>
+            <select name="id_bloque" id="id_bloque" class="form-select rounded-3 py-2" required>
+              <option value="" disabled <?= empty($_POST['id_bloque']) ? 'selected' : '' ?>>Selecciona un bloque...</option>
+              <?php foreach ($bloques as $b): ?>
+                <option value="<?= (int) $b['id_bloque'] ?>" data-inicio="<?= substr($b['hora_inicio'], 0, 5) ?>" data-fin="<?= substr($b['hora_fin'], 0, 5) ?>"
+                  <?= (isset($_POST['id_bloque']) && (int) $_POST['id_bloque'] === (int) $b['id_bloque']) ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($b['nombre_bloque']) ?><?= !empty($b['descripcion']) ? ' — ' . htmlspecialchars($b['descripcion']) : '' ?>
+                </option>
+              <?php endforeach; ?>
             </select>
+            <div id="rango-bloque" class="form-text mt-1" aria-live="polite"></div>
+          </div>
+
+          <!-- Modalidad: definida por admin/tutor; el estudiante NO la modifica -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Modalidad</label>
+            <input type="text" class="form-control rounded-3 py-2 bg-light" value="Presencial" readonly disabled>
+            <input type="hidden" name="modalidad_display" value="presencial">
+            <div class="form-text mt-1"><i class="bi bi-lock-fill me-1"></i>Definida por coordinación/tutor.</div>
           </div>
 
           <!-- Lugar o Enlace -->
@@ -141,9 +148,29 @@ include __DIR__ . '/../layouts/header.php';
   const horarios = document.getElementById('horarios-tutor');
   const fecha = document.getElementById('fecha');
   const nombreDia = document.getElementById('nombre-dia');
+  const bloque = document.getElementById('id_bloque');
+  const rangoBloque = document.getElementById('rango-bloque');
   let tutores = [];
   const dias = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-  const actualizarDia = () => { if (!fecha.value) return nombreDia.textContent = ''; const d = new Date(fecha.value + 'T12:00:00'); nombreDia.textContent = 'Día: ' + dias[d.getDay()]; };
+  const fechaMin = fecha ? fecha.getAttribute('min') : '';
+  const fechaMax = fecha ? fecha.getAttribute('max') : '';
+  const actualizarDia = () => { if (!fecha.value) return nombreDia.textContent = ''; const d = new Date(fecha.value + 'T12:00:00'); const dia = dias[d.getDay()]; nombreDia.textContent = 'Día: ' + dia; nombreDia.className = 'form-text mt-1' + (dia === 'Domingo' ? ' text-danger' : ''); };
+  // Muestra el rango de horas del bloque seleccionado (las horas las define el admin).
+  const mostrarBloque = () => {
+    const opcion = bloque.options[bloque.selectedIndex];
+    rangoBloque.textContent = (opcion && opcion.dataset.inicio)
+      ? 'Horario: ' + opcion.dataset.inicio + ' - ' + opcion.dataset.fin
+      : '';
+  };
+  // Impide elegir una fecha fuera del rango del periodo activo.
+  const validarFechaRango = () => {
+    if (!fecha.value) return;
+    if ((fechaMin && fecha.value < fechaMin) || (fechaMax && fecha.value > fechaMax)) {
+      alert('La fecha debe estar dentro del periodo activo: ' + fechaMin + ' al ' + fechaMax + '.');
+      fecha.value = '';
+      nombreDia.textContent = '';
+    }
+  };
   const mostrarHorarios = () => { const actual = tutores.find(t => String(t.id_tutor) === tutor.value); horarios.textContent = actual ? (actual.horarios || []).map(h => h.dia_semana + ' ' + String(h.hora_inicio).slice(0, 5) + '-' + String(h.hora_fin).slice(0, 5)).join(' · ') || 'Sin horarios registrados.' : ''; };
   const cargar = async () => {
     tutor.replaceChildren(); horarios.textContent = '';
@@ -159,8 +186,10 @@ include __DIR__ . '/../layouts/header.php';
     } catch (_) { horarios.textContent = 'No se pudieron cargar los tutores disponibles.'; }
   };
   materia.addEventListener('change', () => { tutor.dataset.seleccionado = ''; cargar(); });
-  tutor.addEventListener('change', mostrarHorarios); fecha.addEventListener('change', actualizarDia);
-  actualizarDia(); if (materia.value) cargar();
+  tutor.addEventListener('change', mostrarHorarios);
+  fecha.addEventListener('change', () => { validarFechaRango(); actualizarDia(); });
+  bloque.addEventListener('change', mostrarBloque);
+  actualizarDia(); mostrarBloque(); if (materia.value) cargar();
 })();
 </script>
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

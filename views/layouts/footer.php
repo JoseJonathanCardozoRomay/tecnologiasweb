@@ -50,6 +50,21 @@
       if (result.isConfirmed) enviarPostSeguro(url);
     });
   }
+  function confirmarDetencion(url) {
+    Swal.fire({
+      title: 'Detener la sesión',
+      text: 'La sesión quedará detenida y no podrá reanudarse. ¿Deseas continuar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#6c757d',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, detener',
+      cancelButtonText: 'Volver',
+      customClass: { popup: 'swal-upds-popup' }
+    }).then((result) => {
+      if (result.isConfirmed) enviarPostSeguro(url);
+    });
+  }
   function confirmarCancelacion(url) {
     Swal.fire({
       title: 'Motivo de la cancelación',

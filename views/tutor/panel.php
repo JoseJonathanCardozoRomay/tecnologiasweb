@@ -30,6 +30,8 @@ $misHorarios = $tutorModel->obtenerDisponibilidad($idTutor);
 $pendientes = (int) ($metricasTutor['pendientes'] ?? 0);
 $confirmadas = (int) ($metricasTutor['confirmadas'] ?? 0);
 $realizadas = (int) ($metricasTutor['realizadas'] ?? 0);
+$enProceso = (int) ($metricasTutor['en_proceso'] ?? 0);
+$detenidas = (int) ($metricasTutor['detenido'] ?? 0);
 
 $tituloPagina = 'Panel del Docente Tutor - UPDS';
 include __DIR__ . '/../layouts/header.php';
@@ -69,14 +71,28 @@ include __DIR__ . '/../layouts/header.php';
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-success border-4">
-      <div class="text-success fs-1 mb-2"><i class="bi bi-check2-circle"></i></div>
-      <h3 class="fw-bold mb-0 text-dark"><?= $realizadas ?></h3>
-      <p class="text-muted small mb-0">Tutorías Realizadas con Éxito</p>
-    </div>
+     <div class="card card-custom p-4 text-center border-start border-success border-4">
+       <div class="text-success fs-1 mb-2"><i class="bi bi-check2-circle"></i></div>
+       <h3 class="fw-bold mb-0 text-dark"><?= $realizadas ?></h3>
+       <p class="text-muted small mb-0">Tutorías Realizadas con Éxito</p>
+     </div>
+  </div>
+  <div class="col-md-6">
+     <div class="card card-custom p-4 text-center border-start border-warning border-4">
+       <div class="text-warning fs-1 mb-2"><i class="bi bi-arrow-repeat"></i></div>
+       <h3 class="fw-bold mb-0 text-dark"><?= $enProceso ?></h3>
+       <p class="text-muted small mb-0">Sesiones En Proceso</p>
+     </div>
+  </div>
+  <div class="col-md-6">
+     <div class="card card-custom p-4 text-center border-start border-secondary border-4">
+       <div class="text-secondary fs-1 mb-2"><i class="bi bi-pause-circle"></i></div>
+       <h3 class="fw-bold mb-0 text-dark"><?= $detenidas ?></h3>
+       <p class="text-muted small mb-0">Sesiones Detenidas</p>
+     </div>
   </div>
 
-  <!-- Listado de tutorías asignadas -->
+   <!-- Listado de tutorías asignadas -->
   <div class="col-12">
     <div class="card card-custom shadow-sm overflow-hidden">
       <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
@@ -105,6 +121,20 @@ include __DIR__ . '/../layouts/header.php';
                 if ($t['estado'] === 'confirmada') $badgeEstado = 'bg-info text-white';
                 if ($t['estado'] === 'realizada') $badgeEstado = 'bg-success text-white';
                 if ($t['estado'] === 'cancelada') $badgeEstado = 'bg-danger text-white';
+                if ($t['estado'] === 'en_proceso') $badgeEstado = 'bg-warning text-dark';
+                if ($t['estado'] === 'detenido') $badgeEstado = 'bg-secondary text-white';
+                $etiquetaEstado = [
+                    'pendiente'  => 'Pendiente',
+                    'confirmada' => 'Confirmada',
+                    'realizada'  => 'Realizada',
+                    'cancelada'  => 'Cancelada',
+                    'en_proceso' => 'En Proceso',
+                    'detenido'   => 'Detenido',
+                ][$t['estado']] ?? ucfirst($t['estado']);
+                $iconoEstado = [
+                    'en_proceso' => '<i class="bi bi-arrow-repeat me-1"></i>',
+                    'detenido'   => '<i class="bi bi-pause-fill me-1"></i>',
+                ][$t['estado']] ?? '';
               ?>
               <tr>
                 <td class="ps-4">
@@ -133,7 +163,7 @@ include __DIR__ . '/../layouts/header.php';
                 </td>
                 <td>
                   <span class="badge rounded-pill px-3 py-1 <?= $badgeEstado ?>">
-                    <?= ucfirst($t['estado']) ?>
+                    <?= $iconoEstado ?><?= $etiquetaEstado ?>
                   </span>
                   <?php if (!empty($t['calificacion'])): ?>
                     <div class="text-warning small mt-1">
@@ -223,9 +253,18 @@ include __DIR__ . '/../layouts/header.php';
                         <i class="bi bi-x-circle"></i>
                       </a>
                     <?php elseif ($t['estado'] === 'confirmada'): ?>
-                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada" 
-                         class="btn btn-sm btn-primary d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Marcar como realizada">
-                        <i class="bi bi-check2-all"></i> Marcar Realizada
+                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=en_proceso"
+                         class="btn btn-sm btn-warning text-dark d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Iniciar la sesión">
+                        <i class="bi bi-play-circle"></i> Iniciar Sesión
+                      </a>
+                    <?php elseif ($t['estado'] === 'en_proceso'): ?>
+                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada"
+                         class="btn btn-sm btn-success d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Finalizar con éxito">
+                        <i class="bi bi-check2-all"></i> Finalizar con Éxito
+                      </a>
+                      <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=detenido"
+                         class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="confirmarDetencion(this.href); return false;" title="Detener la sesión">
+                        <i class="bi bi-pause-circle"></i> Detener
                       </a>
                     <?php endif; ?>
                   </div>

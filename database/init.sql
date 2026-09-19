@@ -108,6 +108,34 @@ CREATE TABLE IF NOT EXISTS disponibilidad_tutor (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------
+-- Periodos de tutoría (rango de fechas definido por coordinación/admin)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS periodos_tutoria (
+  id_periodo INT AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,         -- ej: 'I-2026', 'II-2026', 'Verano-2026'
+  nombre VARCHAR(100) NOT NULL,               -- ej: '2026-1 Primer Semestre'
+  fecha_inicio DATE NOT NULL,                 -- primera fecha disponible para tutorías
+  fecha_fin DATE NOT NULL,                    -- última fecha disponible
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  creado_por INT NULL,                        -- id_usuario del coordinador/admin
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_periodo_fechas CHECK (fecha_fin >= fecha_inicio),
+  INDEX idx_periodo_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Bloques horarios (Morning / Noon / Afternoon / Night) definidos por admin
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS bloques_horarios (
+  id_bloque INT AUTO_INCREMENT PRIMARY KEY,
+  nombre_bloque VARCHAR(30) NOT NULL UNIQUE,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  descripcion VARCHAR(200) NULL,
+  CONSTRAINT chk_bloque_horas CHECK (hora_fin > hora_inicio)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
 -- Tutorías (sesiones agendadas)
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tutorias (
@@ -115,23 +143,26 @@ CREATE TABLE IF NOT EXISTS tutorias (
   id_estudiante INT NOT NULL,
   id_tutor INT NOT NULL,
   id_materia INT NOT NULL,
+  id_bloque INT NULL,                          -- bloque horario (Morning/Noon/Afternoon/Night)
   fecha DATE NOT NULL,
   periodo VARCHAR(30) NOT NULL DEFAULT 'I-2026',
   hora_inicio TIME NOT NULL,
   hora_fin TIME NOT NULL,
   modalidad ENUM('presencial','virtual') NOT NULL DEFAULT 'presencial',
   lugar_o_enlace VARCHAR(200),
-  estado ENUM('pendiente','confirmada','realizada','cancelada') NOT NULL DEFAULT 'pendiente',
+  estado ENUM('pendiente','confirmada','realizada','cancelada','en_proceso','detenido') NOT NULL DEFAULT 'pendiente',
   observaciones TEXT,
   motivo_cancelacion VARCHAR(255) NULL,
   fecha_solicitud DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_tutorias_estudiante FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON UPDATE CASCADE,
   CONSTRAINT fk_tutorias_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON UPDATE CASCADE,
   CONSTRAINT fk_tutorias_materia FOREIGN KEY (id_materia) REFERENCES materias(id_materia) ON UPDATE CASCADE,
+  CONSTRAINT fk_tutorias_bloque FOREIGN KEY (id_bloque) REFERENCES bloques_horarios(id_bloque) ON UPDATE CASCADE,
   CONSTRAINT chk_tutoria_horas CHECK (hora_fin > hora_inicio),
   INDEX idx_tutoria_fecha (fecha),
   INDEX idx_tutoria_estado (estado),
   INDEX idx_tutoria_periodo (periodo),
+  INDEX idx_tutoria_bloque (id_bloque),
   INDEX idx_tutoria_tutor_fecha (id_tutor, fecha),
   INDEX idx_tutoria_estudiante_fecha (id_estudiante, fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -194,14 +225,14 @@ CREATE TABLE IF NOT EXISTS registro_accesos (
 -- =========================================================
 
 -- Roles del sistema
-INSERT INTO roles (id_rol, nombre_rol) VALUES 
-(1, 'administrador'), 
-(2, 'tutor'), 
+INSERT INTO roles (id_rol, nombre_rol) VALUES
+(1, 'administrador'),
+(2, 'tutor'),
 (3, 'estudiante')
 ON DUPLICATE KEY UPDATE nombre_rol = VALUES(nombre_rol);
 
 -- Carreras
-INSERT INTO carreras (id_carrera, nombre_carrera) VALUES 
+INSERT INTO carreras (id_carrera, nombre_carrera) VALUES
 (1, 'Ingeniería de Sistemas')
 ON DUPLICATE KEY UPDATE nombre_carrera = VALUES(nombre_carrera);
 
@@ -239,6 +270,20 @@ INSERT INTO disponibilidad_tutor (id_disponibilidad, id_tutor, dia_semana, hora_
 (2, 1, 'Miercoles', '14:00:00', '18:00:00'),
 (3, 1, 'Viernes', '09:00:00', '12:00:00')
 ON DUPLICATE KEY UPDATE dia_semana = VALUES(dia_semana);
+
+-- Bloques horarios (definidos por el admin)
+INSERT INTO bloques_horarios (nombre_bloque, hora_inicio, hora_fin, descripcion) VALUES
+('Morning',    '08:00:00', '11:00:00', 'Mañana: 8:00 AM – 11:00 AM'),
+('Noon',       '11:00:00', '14:00:00', 'Mediodía: 11:00 AM – 2:00 PM'),
+('Afternoon',  '14:00:00', '18:00:00', 'Tarde: 2:00 PM – 6:00 PM'),
+('Night',      '18:00:00', '21:00:00', 'Noche: 6:00 PM – 9:00 PM')
+ON DUPLICATE KEY UPDATE nombre_bloque = VALUES(nombre_bloque);
+
+-- Periodos académicos (rango de fechas para agendar tutorías)
+INSERT INTO periodos_tutoria (codigo, nombre, fecha_inicio, fecha_fin, activo) VALUES
+('I-2026', '2026-1 Primer Semestre', '2026-03-01', '2026-07-31', 1),
+('II-2026', '2026-2 Segundo Semestre', '2026-08-01', '2026-12-31', 1)
+ON DUPLICATE KEY UPDATE fecha_inicio = VALUES(fecha_inicio), fecha_fin = VALUES(fecha_fin);
 
 -- 3. Estudiante de prueba (estudiante1 / password)
 INSERT INTO usuarios (id_usuario, id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado) VALUES

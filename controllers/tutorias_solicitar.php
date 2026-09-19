@@ -7,6 +7,8 @@ require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/EstudianteModel.php';
+require_once __DIR__ . '/../models/PeriodoModel.php';
+require_once __DIR__ . '/../models/BloqueModel.php';
 require_once __DIR__ . '/../models/NotificacionModel.php';
 require_once __DIR__ . '/../includes/flash.php';
 require_once __DIR__ . '/../includes/reglas_tutoria.php';
@@ -17,8 +19,24 @@ $estudianteModel = new EstudianteModel($pdo);
 $materiaModel = new MateriaModel($pdo);
 $tutorModel = new TutorModel($pdo);
 $tutoriaModel = new TutoriaModel($pdo);
+$periodoModel = new PeriodoModel($pdo);
+$bloqueModel = new BloqueModel($pdo);
 $estudiante = $rolSesion === 'estudiante' ? $estudianteModel->obtenerPorUsuario($idUsuario) : null;
 $errores = [];
+
+// Modalidad por defecto: el estudiante NO la elige. Queda definida por admin/tutor.
+$modalidadDefecto = 'presencial';
+
+// Periodos activos y bloques horarios definidos por admin/coordinación.
+$periodosActivos = $periodoModel->obtenerActivos();
+$bloques = $bloqueModel->obtenerTodos();
+
+// Bloqueo temprano: un estudiante sin carrera no puede solicitar tutorías.
+if ($rolSesion === 'estudiante' && $estudiante && empty($estudiante['id_carrera'])) {
+    flash_set('danger', 'Debes completar tu registro académico (carrera y semestre) antes de solicitar tutorías. Contacta al administrador.');
+    header('Location: /views/estudiante/panel.php');
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/../includes/csrf.php';
@@ -27,31 +45,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idEstudiante = $rolSesion === 'estudiante'
         ? ($estudiante['id_estudiante'] ?? null)
         : filter_var($_POST['id_estudiante'] ?? null, FILTER_VALIDATE_INT);
+
+    // El estudiante solo envía: id_materia, id_tutor, id_bloque, fecha, lugar y observaciones.
+    // El periodo y la modalidad NO los envía (los define el sistema).
     $datos = [
-        'id_estudiante' => $idEstudiante,
-        'id_materia' => $_POST['id_materia'] ?? '',
-        'id_tutor' => $_POST['id_tutor'] ?? '',
-        'fecha' => $_POST['fecha'] ?? '',
-        'periodo' => $_POST['periodo'] ?? 'I-' . date('Y'),
-        'hora_inicio' => $_POST['hora_inicio'] ?? '',
-        'hora_fin' => $_POST['hora_fin'] ?? '',
-        'modalidad' => $_POST['modalidad'] ?? 'presencial',
+        'id_estudiante'  => $idEstudiante,
+        'id_materia'     => $_POST['id_materia'] ?? '',
+        'id_tutor'       => $_POST['id_tutor'] ?? '',
+        'id_bloque'      => filter_var($_POST['id_bloque'] ?? null, FILTER_VALIDATE_INT),
+        'fecha'          => $_POST['fecha'] ?? '',
+        'hora_inicio'    => '',
+        'hora_fin'       => '',
+        'modalidad'      => $modalidadDefecto,
         'lugar_o_enlace' => trim($_POST['lugar_o_enlace'] ?? ''),
-        'observaciones' => trim($_POST['observaciones'] ?? ''),
+        'observaciones'  => trim($_POST['observaciones'] ?? ''),
     ];
 
-    if (!$idEstudiante || empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['periodo']) || empty($datos['hora_inicio']) || empty($datos['hora_fin'])) {
+    // Campos obligatorios (ya NO hay horas libres: se derivan del bloque).
+    if (!$idEstudiante || empty($datos['id_materia']) || empty($datos['id_tutor']) || empty($datos['fecha']) || empty($datos['id_bloque'])) {
         $errores[] = 'Todos los campos marcados con asterisco (*) son obligatorios.';
     } elseif (!$estudianteModel->obtenerPorId($idEstudiante)) {
         $errores[] = 'El estudiante seleccionado no es válido.';
     }
-    if ($datos['fecha'] !== '' && $datos['fecha'] < date('Y-m-d')) $errores[] = 'La fecha de la tutoría no puede ser en el pasado.';
-    if ($datos['hora_inicio'] !== '' && $datos['hora_fin'] !== '' && $datos['hora_inicio'] >= $datos['hora_fin']) $errores[] = 'La hora de finalización debe ser posterior a la hora de inicio.';
-    if (!in_array($datos['modalidad'], ['presencial', 'virtual'], true)) $errores[] = 'La modalidad seleccionada no es válida.';
-    if (!$materiaModel->obtenerPorId((int) $datos['id_materia']) || !$tutorModel->obtenerPorId((int) $datos['id_tutor'])) $errores[] = 'La materia o el tutor seleccionado no es válido.';
+
+    $estudianteDestino = $estudianteModel->obtenerPorId($idEstudiante);
+
+    // El estudiante debe tener carrera asignada.
+    if ($estudianteDestino && empty($estudianteDestino['id_carrera'])) {
+        $errores[] = 'El estudiante no tiene una carrera asignada. Contacta al administrador.';
+    }
+
+    // Fecha: formato válido, no pasada y dentro de un periodo activo.
+    if ($datos['fecha'] !== '') {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datos['fecha'])) {
+            $errores[] = 'La fecha seleccionada no es válida.';
+        } elseif ($datos['fecha'] < date('Y-m-d')) {
+            $errores[] = 'La fecha de la tutoría no puede ser en el pasado.';
+        } else {
+            $periodoActivo = $periodoModel->obtenerActivoPorFecha($datos['fecha']);
+            if (!$periodoActivo) {
+                $errores[] = 'La fecha debe estar dentro de un periodo académico activo.';
+            } else {
+                $datos['periodo'] = $periodoActivo['codigo'];
+            }
+        }
+    }
+
+    // Bloque horario: debe existir; de él se derivan hora_inicio/hora_fin.
+    $bloque = !empty($datos['id_bloque']) ? $bloqueModel->obtenerPorId((int) $datos['id_bloque']) : false;
+    if (!empty($datos['id_bloque']) && !$bloque) {
+        $errores[] = 'El bloque horario seleccionado no existe.';
+    } elseif ($bloque) {
+        $datos['hora_inicio'] = $bloque['hora_inicio'];
+        $datos['hora_fin']    = $bloque['hora_fin'];
+    }
+
+    if (empty($datos['periodo'])) {
+        $datos['periodo'] = 'I-' . date('Y');
+    }
+
+    if (!$materiaModel->obtenerPorId((int) $datos['id_materia']) || !$tutorModel->obtenerPorId((int) $datos['id_tutor'])) {
+        $errores[] = 'La materia o el tutor seleccionado no es válido.';
+    }
+
+    // Defensa en profundidad: la materia debe pertenecer a la carrera del estudiante.
+    if (!$errores && $estudianteDestino) {
+        $materiasPermitidas = array_map('intval', array_column($materiaModel->obtenerDisponiblesParaCarrera($estudianteDestino['id_carrera'] ?? 0), 'id_materia'));
+        if (!in_array((int) $datos['id_materia'], $materiasPermitidas, true)) {
+            $errores[] = 'La materia seleccionada no pertenece a tu carrera.';
+        }
+    }
 
     if (!$errores) {
-        $errores = array_merge($errores, validarSolicitudTutoria($pdo, $datos, $estudianteModel->obtenerPorId($idEstudiante)));
+        $errores = array_merge($errores, validarSolicitudTutoria($pdo, $datos, $estudianteDestino));
     }
     if (!$errores) {
         try {
@@ -59,22 +125,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$resultado['ok']) {
                 $errores[] = $resultado['error'];
             } else {
-            try {
-                $tutorSolicitado = $tutorModel->obtenerPorId((int) $datos['id_tutor']);
-                if ($tutorSolicitado && !empty($tutorSolicitado['id_usuario'])) {
-                    (new NotificacionModel($pdo))->crear(
-                        $tutorSolicitado['id_usuario'],
-                        'nueva_solicitud',
-                        'Tienes una nueva solicitud de tutoría.',
-                        '/views/tutor/panel.php'
-                    );
+                try {
+                    $tutorSolicitado = $tutorModel->obtenerPorId((int) $datos['id_tutor']);
+                    if ($tutorSolicitado && !empty($tutorSolicitado['id_usuario'])) {
+                        (new NotificacionModel($pdo))->crear(
+                            $tutorSolicitado['id_usuario'],
+                            'nueva_solicitud',
+                            'Tienes una nueva solicitud de tutoría.',
+                            '/views/tutor/panel.php'
+                        );
+                    }
+                } catch (Throwable $e) {
+                    error_log($e->getMessage());
                 }
-            } catch (Throwable $e) {
-                error_log($e->getMessage());
-            }
-            flash_set('success', 'Solicitud registrada.');
-            header('Location: ' . ($rolSesion === 'estudiante' ? '/views/estudiante/panel.php' : 'tutorias_listar.php'));
-            exit;
+                flash_set('success', 'Solicitud registrada.');
+                header('Location: ' . ($rolSesion === 'estudiante' ? '/views/estudiante/panel.php' : 'tutorias_listar.php'));
+                exit;
             }
         } catch (PDOException $e) {
             error_log($e->getMessage());
@@ -83,13 +149,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Materias visibles: SOLO las de la carrera del estudiante (o todas con tutor activo si es admin).
 $materias = $rolSesion === 'estudiante'
     ? $materiaModel->obtenerDisponiblesParaCarrera($estudiante['id_carrera'] ?? 0)
     : $materiaModel->obtenerTodasConTutorActivo();
 $tutores = $tutorModel->obtenerTodos();
 $estudiantes = $rolSesion === 'administrador' ? $estudianteModel->obtenerTodos() : [];
-$periodos = array_values(array_unique(array_merge(
-    ['I-' . date('Y'), 'II-' . date('Y'), 'Verano-' . date('Y')],
-    $tutoriaModel->obtenerPeriodosDisponibles()
-)));
+
+// Periodo mostrado por defecto: el activo que cubre hoy (o el primero activo).
+$periodoActual = $periodoModel->obtenerActivoPorFecha(date('Y-m-d')) ?: ($periodosActivos[0] ?? null);
+$fechaMin = $periodoActual['fecha_inicio'] ?? date('Y-m-d');
+$fechaMax = $periodoActual['fecha_fin'] ?? date('Y-m-d', strtotime('+6 months'));
 require_once __DIR__ . '/../views/tutorias/solicitar.php';

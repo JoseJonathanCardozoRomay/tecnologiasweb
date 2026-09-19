@@ -37,20 +37,34 @@ function validarSolicitudTutoria(PDO $pdo, array $datos, array $estudiante): arr
     if (!$fechaHora || $fechaHora->format('Y-m-d H:i') !== $fecha . ' ' . substr($inicio, 0, 5) || $fechaHora < (new DateTime())->modify('+' . TUTORIA_ANTICIPACION_HORAS . ' hours')) {
         $errores[] = 'La tutoría debe solicitarse con al menos ' . TUTORIA_ANTICIPACION_HORAS . ' horas de anticipación.';
     }
-    $iniDt = DateTime::createFromFormat('H:i', substr($inicio, 0, 5));
-    $finDt = DateTime::createFromFormat('H:i', substr($fin, 0, 5));
-    if (!$iniDt || !$finDt || $finDt <= $iniDt) {
-        $errores[] = 'La hora de finalización debe ser posterior a la de inicio.';
+    // Flujo por BLOQUES horarios (definidos por admin): las horas provienen del bloque,
+    // no del estudiante, por lo que no se valida duración libre ni disponibilidad puntual.
+    $usaBloque = !empty($datos['id_bloque']);
+    if ($usaBloque) {
+        $stmt = $pdo->prepare('SELECT 1 FROM bloques_horarios WHERE id_bloque = :id');
+        $stmt->execute([':id' => $datos['id_bloque']]);
+        if (!$stmt->fetchColumn()) $errores[] = 'El bloque horario seleccionado no existe.';
+        if ($fechaHora && (int) $fechaHora->format('N') === 7) $errores[] = 'No se permiten tutorías los domingos.';
     } else {
-        $minutos = ($finDt->getTimestamp() - $iniDt->getTimestamp()) / 60;
-        if ($minutos < TUTORIA_DURACION_MIN || $minutos > TUTORIA_DURACION_MAX) $errores[] = 'La duración debe estar entre ' . TUTORIA_DURACION_MIN . ' y ' . TUTORIA_DURACION_MAX . ' minutos.';
-        if ($fechaHora && (int) $fechaHora->format('N') <= 6) {
-            $dias = [1 => 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-            $stmt = $pdo->prepare('SELECT 1 FROM disponibilidad_tutor WHERE id_tutor = :tutor AND dia_semana = :dia AND hora_inicio <= :inicio AND hora_fin >= :fin');
-            $stmt->execute([':tutor' => $idTutor, ':dia' => $dias[(int) $fechaHora->format('N')], ':inicio' => $inicio, ':fin' => $fin]);
-            if (!$stmt->fetchColumn()) $errores[] = 'El tutor no tiene disponibilidad para el horario solicitado.';
-        } elseif ($fechaHora) $errores[] = 'No se permiten tutorías los domingos.';
+        // Flujo heredado con hora_inicio/hora_fin libres.
+        $iniDt = DateTime::createFromFormat('H:i', substr($inicio, 0, 5));
+        $finDt = DateTime::createFromFormat('H:i', substr($fin, 0, 5));
+        if (!$iniDt || !$finDt || $finDt <= $iniDt) {
+            $errores[] = 'La hora de finalización debe ser posterior a la de inicio.';
+        } else {
+            $minutos = ($finDt->getTimestamp() - $iniDt->getTimestamp()) / 60;
+            if ($minutos < TUTORIA_DURACION_MIN || $minutos > TUTORIA_DURACION_MAX) $errores[] = 'La duración debe estar entre ' . TUTORIA_DURACION_MIN . ' y ' . TUTORIA_DURACION_MAX . ' minutos.';
+            if ($fechaHora && (int) $fechaHora->format('N') <= 6) {
+                $dias = [1 => 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+                $stmt = $pdo->prepare('SELECT 1 FROM disponibilidad_tutor WHERE id_tutor = :tutor AND dia_semana = :dia AND hora_inicio <= :inicio AND hora_fin >= :fin');
+                $stmt->execute([':tutor' => $idTutor, ':dia' => $dias[(int) $fechaHora->format('N')], ':inicio' => $inicio, ':fin' => $fin]);
+                if (!$stmt->fetchColumn()) $errores[] = 'El tutor no tiene disponibilidad para el horario solicitado.';
+            } elseif ($fechaHora) $errores[] = 'No se permiten tutorías los domingos.';
+        }
     }
-    if (!preg_match('/^(I|II|Verano)-(\\d{4})$/', (string) ($datos['periodo'] ?? ''), $coincide) || ($fecha !== '' && $coincide[2] !== date('Y', strtotime($fecha)))) $errores[] = 'El periodo debe ser I, II o Verano y coincidir con el año de la fecha.';
+    // El periodo debe existir en periodos_tutoria (definido por coordinación).
+    $stmt = $pdo->prepare('SELECT 1 FROM periodos_tutoria WHERE codigo = :codigo');
+    $stmt->execute([':codigo' => (string) ($datos['periodo'] ?? '')]);
+    if (!$stmt->fetchColumn()) $errores[] = 'El periodo académico no es válido.';
     return $errores;
 }

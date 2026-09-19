@@ -102,16 +102,37 @@ class EstudianteModel
         return (bool) $stmt->fetchColumn();
     }
 
+    /**
+     * Devuelve el estudiante asociado a un usuario.
+     * Usa LEFT JOIN con carreras (no INNER) para que un estudiante SIN carrera
+     * asignada (id_carrera NULL) siga apareciendo: así el panel puede mostrar un
+     * mensaje claro en lugar de un error genérico de "perfil incompleto".
+     */
     public function obtenerPorUsuario($id_usuario)
     {
         $sql = "SELECT e.*, u.nombre, u.apellido, u.correo, u.telefono, c.nombre_carrera
                 FROM estudiantes e
                 INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
-                INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+                LEFT JOIN carreras c ON e.id_carrera = c.id_carrera
                 WHERE e.id_usuario = :id_usuario";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':id_usuario' => $id_usuario]);
         return $stmt->fetch();
+    }
+
+    /**
+     * Devuelve la carrera del estudiante (con su id) o null si no tiene carrera asignada.
+     */
+    public function obtenerCarreraPorEstudiante($id_estudiante)
+    {
+        $sql = "SELECT c.id_carrera, c.nombre_carrera
+                FROM estudiantes e
+                INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+                WHERE e.id_estudiante = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $id_estudiante]);
+        $carrera = $stmt->fetch();
+        return $carrera ?: null;
     }
 
     public function guardarOActualizar($id_usuario, $id_carrera, $semestre, $registro_universitario)

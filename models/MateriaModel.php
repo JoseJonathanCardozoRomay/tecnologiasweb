@@ -97,9 +97,28 @@ class MateriaModel
         return $stmt->fetchAll();
     }
 
+    /**
+     * Materias que el estudiante PUEDE solicitar: SOLO las de su carrera.
+     * - Si la carrera es 0/null, devuelve array vacío (el estudiante sin carrera
+     *   no tiene materias disponibles).
+     * - Solo se incluyen materias con al menos un tutor activo.
+     * - NO se devuelven materias de otras carreras ni materias "generales".
+     */
     public function obtenerDisponiblesParaCarrera($idCarrera)
     {
-        $sql = "SELECT m.id_materia, m.nombre_materia, m.id_carrera, c.nombre_carrera FROM materias m LEFT JOIN carreras c ON c.id_carrera = m.id_carrera WHERE (m.id_carrera = :carrera OR m.id_carrera IS NULL) AND EXISTS (SELECT 1 FROM tutor_materia tm INNER JOIN tutores t ON t.id_tutor = tm.id_tutor INNER JOIN usuarios u ON u.id_usuario = t.id_usuario WHERE tm.id_materia = m.id_materia AND u.estado = 'activo') ORDER BY m.nombre_materia";
+        $idCarrera = (int) $idCarrera;
+        if ($idCarrera <= 0) {
+            return [];
+        }
+        $sql = "SELECT m.id_materia, m.nombre_materia, m.id_carrera, c.nombre_carrera
+                FROM materias m
+                INNER JOIN carreras c ON c.id_carrera = m.id_carrera
+                WHERE m.id_carrera = :carrera
+                  AND EXISTS (SELECT 1 FROM tutor_materia tm
+                              INNER JOIN tutores t ON t.id_tutor = tm.id_tutor
+                              INNER JOIN usuarios u ON u.id_usuario = t.id_usuario
+                              WHERE tm.id_materia = m.id_materia AND u.estado = 'activo')
+                ORDER BY m.nombre_materia";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':carrera' => $idCarrera]);
         return $stmt->fetchAll();

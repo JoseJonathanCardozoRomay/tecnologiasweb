@@ -1,6 +1,24 @@
 <?php
+require_once __DIR__ . '/PeriodoModel.php';
+
 class TutoriaModel
 {
+    /** Estados válidos de una tutoría (incluye los nuevos: en_proceso y detenido). */
+    const ESTADOS_TUTORIA = ['pendiente', 'confirmada', 'realizada', 'cancelada', 'en_proceso', 'detenido'];
+
+    /**
+     * Transiciones de estado permitidas del flujo controlado.
+     * El estudiante solo puede cancelar una tutoría pendiente.
+     */
+    const TRANSICIONES_ESTADO = [
+        'pendiente'  => ['confirmada', 'cancelada'],
+        'confirmada' => ['en_proceso', 'cancelada'],
+        'en_proceso' => ['realizada', 'detenido'],
+        'detenido'   => [],
+        'realizada'  => [],
+        'cancelada'  => [],
+    ];
+
     private $pdo;
 
     public function __construct($pdo)
@@ -275,7 +293,9 @@ class TutoriaModel
         $stmt = $this->pdo->prepare("SELECT
             SUM(estado = 'pendiente') AS pendientes,
             SUM(estado = 'confirmada') AS confirmadas,
-            SUM(estado = 'realizada') AS realizadas
+            SUM(estado = 'realizada') AS realizadas,
+            SUM(estado = 'en_proceso') AS en_proceso,
+            SUM(estado = 'detenido') AS detenido
             FROM tutorias WHERE id_tutor = :id_tutor");
         $stmt->execute([':id_tutor' => $id_tutor]);
         return $stmt->fetch();
@@ -286,7 +306,9 @@ class TutoriaModel
         $stmt = $this->pdo->prepare("SELECT
             SUM(estado = 'pendiente') AS pendientes,
             SUM(estado = 'confirmada') AS confirmadas,
-            SUM(estado = 'realizada') AS realizadas
+            SUM(estado = 'realizada') AS realizadas,
+            SUM(estado = 'en_proceso') AS en_proceso,
+            SUM(estado = 'detenido') AS detenido
             FROM tutorias WHERE id_estudiante = :id_estudiante");
         $stmt->execute([':id_estudiante' => $id_estudiante]);
         return $stmt->fetch();
@@ -294,13 +316,14 @@ class TutoriaModel
 
     public function crear($datos)
     {
-        $sql = "INSERT INTO tutorias (id_estudiante, id_tutor, id_materia, fecha, periodo, hora_inicio, hora_fin, modalidad, lugar_o_enlace, estado, observaciones)
-            VALUES (:id_estudiante, :id_tutor, :id_materia, :fecha, :periodo, :hora_inicio, :hora_fin, :modalidad, :lugar_o_enlace, 'pendiente', :observaciones)";
+        $sql = "INSERT INTO tutorias (id_estudiante, id_tutor, id_materia, id_bloque, fecha, periodo, hora_inicio, hora_fin, modalidad, lugar_o_enlace, estado, observaciones)
+            VALUES (:id_estudiante, :id_tutor, :id_materia, :id_bloque, :fecha, :periodo, :hora_inicio, :hora_fin, :modalidad, :lugar_o_enlace, 'pendiente', :observaciones)";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             ':id_estudiante'   => $datos['id_estudiante'],
             ':id_tutor'        => $datos['id_tutor'],
             ':id_materia'      => $datos['id_materia'],
+            ':id_bloque'       => $datos['id_bloque'] ?? null,
             ':fecha'           => $datos['fecha'],
             ':periodo'         => trim($datos['periodo'] ?? 'I-' . date('Y')),
             ':hora_inicio'     => $datos['hora_inicio'],
@@ -311,9 +334,58 @@ class TutoriaModel
         ]);
     }
 
+    // =====================================================
+    // Periodos y bloques horarios (definidos por admin/coordinación)
+    // =====================================================
+
+    /** Devuelve los periodos con activo = 1 ordenados por fecha de inicio. */
+    public function obtenerPeriodosActivos()
+    {
+        return $this->pdo->query("SELECT * FROM periodos_tutoria WHERE activo = 1 ORDER BY fecha_inicio ASC")->fetchAll();
+    }
+
+    /** Devuelve todos los bloques horarios ordenados por hora de inicio. */
+    public function obtenerBloquesHorarios()
+    {
+        return $this->pdo->query("SELECT * FROM bloques_horarios ORDER BY hora_inicio ASC")->fetchAll();
+    }
+
+    /** Devuelve el bloque horario por id (o false si no existe). */
+    public function obtenerBloquePorId($id_bloque)
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM bloques_horarios WHERE id_bloque = :id");
+        $stmt->execute([':id' => $id_bloque]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Devuelve el rango de fechas (fecha_inicio, fecha_fin) de un periodo por su código.
+     * Retorna false si el periodo no existe.
+     */
+    public function obtenerRangoFechaPorPeriodo($codigo)
+    {
+        $stmt = $this->pdo->prepare("SELECT fecha_inicio, fecha_fin FROM periodos_tutoria WHERE codigo = :codigo");
+        $stmt->execute([':codigo' => $codigo]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Valida que una fecha esté dentro del rango de un periodo (por id_periodo).
+     * Si el periodo no existe o la fecha está fuera, devuelve false.
+     */
+    public function validarFechaEnPeriodo($fecha, $id_periodo)
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT 1 FROM periodos_tutoria
+             WHERE id_periodo = :id AND fecha_inicio <= :fecha AND fecha_fin >= :fecha LIMIT 1"
+        );
+        $stmt->execute([':id' => $id_periodo, ':fecha' => $fecha]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function hayCruceTutor($idTutor, $fecha, $ini, $fin, $excluirId = null)
     {
-        $sql = "SELECT 1 FROM tutorias WHERE id_tutor = :id AND fecha = :fecha AND estado IN ('pendiente','confirmada') AND hora_inicio < :fin AND hora_fin > :ini";
+        $sql = "SELECT 1 FROM tutorias WHERE id_tutor = :id AND fecha = :fecha AND estado IN ('pendiente','confirmada','en_proceso') AND hora_inicio < :fin AND hora_fin > :ini";
         $params = [':id' => $idTutor, ':fecha' => $fecha, ':ini' => $ini, ':fin' => $fin];
         if ($excluirId !== null) { $sql .= ' AND id_tutoria <> :excluir'; $params[':excluir'] = $excluirId; }
         $stmt = $this->pdo->prepare($sql); $stmt->execute($params);
@@ -322,7 +394,7 @@ class TutoriaModel
 
     public function hayCruceEstudiante($idEstudiante, $fecha, $ini, $fin, $excluirId = null)
     {
-        $sql = "SELECT 1 FROM tutorias WHERE id_estudiante = :id AND fecha = :fecha AND estado IN ('pendiente','confirmada') AND hora_inicio < :fin AND hora_fin > :ini";
+        $sql = "SELECT 1 FROM tutorias WHERE id_estudiante = :id AND fecha = :fecha AND estado IN ('pendiente','confirmada','en_proceso') AND hora_inicio < :fin AND hora_fin > :ini";
         $params = [':id' => $idEstudiante, ':fecha' => $fecha, ':ini' => $ini, ':fin' => $fin];
         if ($excluirId !== null) { $sql .= ' AND id_tutoria <> :excluir'; $params[':excluir'] = $excluirId; }
         $stmt = $this->pdo->prepare($sql); $stmt->execute($params);
@@ -331,7 +403,7 @@ class TutoriaModel
 
     public function contarActivasPorEstudiante($idEstudiante)
     {
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM tutorias WHERE id_estudiante = :id AND estado IN ('pendiente','confirmada') AND fecha >= CURDATE()");
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM tutorias WHERE id_estudiante = :id AND estado IN ('pendiente','confirmada','en_proceso') AND fecha >= CURDATE()");
         $stmt->execute([':id' => $idEstudiante]);
         return (int) $stmt->fetchColumn();
     }
@@ -339,6 +411,22 @@ class TutoriaModel
     public function crearSinCruces($datos)
     {
         try {
+            // 1) Resolver el bloque horario: las horas NO las define el estudiante.
+            $bloque = $this->obtenerBloquePorId($datos['id_bloque'] ?? null);
+            if (!$bloque) {
+                return ['ok' => false, 'error' => 'El bloque horario seleccionado no existe. Vuelve a elegir un bloque válido.'];
+            }
+            $datos['hora_inicio'] = $bloque['hora_inicio'];
+            $datos['hora_fin']    = $bloque['hora_fin'];
+
+            // 2) Validar que la fecha esté dentro de un periodo activo.
+            $periodoActivo = (new PeriodoModel($this->pdo))->obtenerActivoPorFecha($datos['fecha']);
+            if (!$periodoActivo) {
+                return ['ok' => false, 'error' => 'La fecha elegida no está dentro de ningún periodo académico activo. Contacta a coordinación.'];
+            }
+            // Se guarda el código del periodo real (no el que envíe el cliente).
+            $datos['periodo'] = $periodoActivo['codigo'];
+
             $this->pdo->beginTransaction();
             $bloqueo = $this->pdo->prepare('SELECT id_tutor FROM tutores WHERE id_tutor = :id FOR UPDATE');
             $bloqueo->execute([':id' => $datos['id_tutor']]);
@@ -390,7 +478,9 @@ class TutoriaModel
                     SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
                     SUM(CASE WHEN estado = 'confirmada' THEN 1 ELSE 0 END) AS confirmadas,
                     SUM(CASE WHEN estado = 'realizada' THEN 1 ELSE 0 END) AS realizadas,
-                    SUM(CASE WHEN estado = 'cancelada' THEN 1 ELSE 0 END) AS canceladas
+                    SUM(CASE WHEN estado = 'cancelada' THEN 1 ELSE 0 END) AS canceladas,
+                    SUM(CASE WHEN estado = 'en_proceso' THEN 1 ELSE 0 END) AS en_proceso,
+                    SUM(CASE WHEN estado = 'detenido' THEN 1 ELSE 0 END) AS detenidas
                 FROM tutorias";
         $params = [];
         if (!empty($periodo)) {

@@ -13,7 +13,8 @@ $nuevoEstado = $_POST['estado'] ?? null;
 $observaciones = $_POST['observaciones'] ?? null;
 $motivoCancelacion = trim($_POST['motivo'] ?? '');
 
-$estadosValidos = ['pendiente', 'confirmada', 'realizada', 'cancelada'];
+// Estados válidos: incluye los nuevos en_proceso y detenido.
+$estadosValidos = TutoriaModel::ESTADOS_TUTORIA;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -28,22 +29,27 @@ if ($idTutoria && in_array($nuevoEstado, $estadosValidos, true)) {
         $rol = $_SESSION['rol'];
         $propia = $actual && (($rol === 'tutor' && $tutoriaModel->perteneceATutor($idTutoria, $_SESSION['id_usuario']))
             || ($rol === 'estudiante' && $tutoriaModel->perteneceAEstudiante($idTutoria, $_SESSION['id_usuario'])));
-        $transiciones = [
-            'pendiente' => ['confirmada', 'cancelada'],
-            'confirmada' => ['realizada', 'cancelada'],
-        ];
+        // Transiciones permitidas del flujo controlado (definidas en el modelo).
+        $transiciones = TutoriaModel::TRANSICIONES_ESTADO;
+        // Momento de inicio programado (evita repetir la concatenación fecha+hora).
+        $separador = chr(32); // espacio literal, evita colapso de espacios al editar
+        $inicioFechaHora = $actual ? ($actual['fecha'] . $separador . $actual['hora_inicio']) : '';
+        $inicioTs = $inicioFechaHora !== '' ? strtotime(trim($inicioFechaHora)) : 0;
         $permitido = $actual && ($rol === 'administrador' || ($propia && in_array($nuevoEstado, $transiciones[$actual['estado']] ?? [], true)));
         if ($rol === 'estudiante') {
             $permitido = $propia && $actual['estado'] === 'pendiente' && $nuevoEstado === 'cancelada';
         }
         if (!$actual || !$permitido) {
             flash_set('danger', 'No tienes permiso para cambiar el estado de esta tutoría.');
-        } elseif ($rol === 'administrador' && !in_array($nuevoEstado, $transiciones[$actual['estado']] ?? [], true)) {
+        } elseif (!in_array($nuevoEstado, $transiciones[$actual['estado']] ?? [], true)) {
+            // Se bloquea cualquier salto inválido (p. ej. pendiente -> realizada).
             flash_set('danger', 'La transición de estado no es válida.');
         } elseif ($nuevoEstado === 'confirmada' && strtotime($actual['fecha'] . ' ' . $actual['hora_inicio']) <= time()) {
             flash_set('danger', 'No se puede confirmar una tutoría cuyo inicio ya pasó.');
         } elseif ($nuevoEstado === 'realizada' && strtotime($actual['fecha'] . ' ' . $actual['hora_inicio']) > time()) {
             flash_set('danger', 'No se puede marcar como realizada una tutoría que aún no inició.');
+        } elseif ($nuevoEstado === 'en_proceso' && $inicioTs > time() + 3600) {
+            flash_set('danger', 'Solo se puede iniciar la sesión cerca de su horario programado.'); // inicio cercano
         } elseif ($nuevoEstado === 'cancelada' && (mb_strlen($motivoCancelacion) < 5 || mb_strlen($motivoCancelacion) > 255)) {
             flash_set('danger', 'Debes indicar un motivo de cancelación (entre 5 y 255 caracteres).');
         } else {
@@ -56,6 +62,12 @@ if ($idTutoria && in_array($nuevoEstado, $estadosValidos, true)) {
                 if ($nuevoEstado === 'confirmada') {
                     $notificacionModel->crear($actual['estudiante_id_usuario'], 'confirmada',
                         'Tu tutoría de ' . $materia . ' fue confirmada.', '/views/estudiante/panel.php');
+                } elseif ($nuevoEstado === 'en_proceso') {
+                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'en_proceso',
+                        'Tu tutoría de ' . $materia . ' está en proceso.', '/views/estudiante/panel.php');
+                } elseif ($nuevoEstado === 'detenido') {
+                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'detenido',
+                        'Tu tutoría de ' . $materia . ' fue detenida.', '/views/estudiante/panel.php');
                 } elseif ($nuevoEstado === 'realizada') {
                     $notificacionModel->crear($actual['estudiante_id_usuario'], 'realizada',
                         'Tu tutoría de ' . $materia . ' se marcó como realizada. Ya puedes calificarla.', '/views/estudiante/panel.php');

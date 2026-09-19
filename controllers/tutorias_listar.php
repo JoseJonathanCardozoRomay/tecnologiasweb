@@ -11,9 +11,9 @@ $tutoriaModel = new TutoriaModel($pdo);
 $rolSesion = $_SESSION['rol'] ?? '';
 $idUsuario = $_SESSION['id_usuario'] ?? 0;
 
-// Filtro por estado desde GET
+// Filtro por estado desde GET (incluye los nuevos en_proceso y detenido).
 $filtroEstado = $_GET['estado'] ?? null;
-if (!in_array($filtroEstado, ['pendiente', 'confirmada', 'realizada', 'cancelada'])) {
+if (!in_array($filtroEstado, TutoriaModel::ESTADOS_TUTORIA, true)) {
     $filtroEstado = null;
 }
 $filtroPeriodo = isset($_GET['periodo']) && is_scalar($_GET['periodo']) ? trim((string) $_GET['periodo']) : '';
