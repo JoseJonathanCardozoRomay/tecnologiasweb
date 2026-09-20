@@ -27,13 +27,29 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
-    <form method="GET" class="input-group" style="max-width: 320px;">
+    <form method="GET" class="d-flex flex-wrap gap-2">
       <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
       <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
       <input type="hidden" name="pagina" value="1">
-      <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-      <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar materia o carrera...">
+      
+      <!-- Selector de carrera -->
+      <select name="id_carrera" class="form-select" style="max-width: 200px;">
+        <option value="0">Todas las carreras</option>
+        <?php foreach ($carreras as $c): ?>
+          <option value="<?= $c['id_carrera'] ?>" <?= $id_carrera == $c['id_carrera'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars($c['nombre_carrera']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      
+      <!-- Input de búsqueda -->
+      <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control" style="flex: 1; min-width: 200px;" placeholder="Buscar materia...">
+      
       <button class="btn btn-primary" type="submit">Buscar</button>
+      
+      <?php if ($id_carrera > 0 || $q !== ''): ?>
+        <a href="materias_listar.php" class="btn btn-outline-secondary">Limpiar filtros</a>
+      <?php endif; ?>
     </form>
   </div>
 

@@ -33,8 +33,9 @@ if (isset($_SESSION['id_usuario'])) {
       <section class="col-lg-6 login-brand-panel" aria-labelledby="loginBrandTitle">
         <div class="login-brand-copy">
           <img class="login-logo" src="/assets/img/logo-upds.svg" alt="UPDS">
+          <div class="login-institutional">UNIVERSIDAD PRIVADA DOMINGO SAVIO</div>
           <div class="login-logo-eslogan">Profesionales <span class="login-logo-plus">+</span> humanos</div>
-          <div class="login-kicker">Universidad Privada Domingo Savio · Sede Tarija</div>
+          <div class="login-kicker">Sede Tarija</div>
           <h1 id="loginBrandTitle" class="login-title">Sistema de Tutorías Académicas</h1>
           <p class="login-lead">Un espacio institucional para conectar estudiantes y tutores con acompañamiento académico oportuno.</p>
           <ul class="login-benefits" aria-label="Beneficios del sistema">
@@ -43,13 +44,22 @@ if (isset($_SESSION['id_usuario'])) {
             <li><i class="bi bi-bar-chart-line" aria-hidden="true"></i>Consulta reportes académicos claros.</li>
           </ul>
         </div>
+        <!-- Decoración SVG sutil (círculos blancos) -->
+        <svg class="login-decoration" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="160" cy="160" r="30" fill="rgba(255,255,255,0.05)"/>
+          <circle cx="180" cy="140" r="20" fill="rgba(255,255,255,0.08)"/>
+          <circle cx="150" cy="180" r="15" fill="rgba(255,255,255,0.06)"/>
+          <circle cx="170" cy="170" r="10" fill="rgba(255,255,255,0.04)"/>
+        </svg>
       </section>
       <section class="col-lg-6 login-form-panel" aria-labelledby="loginTitle">
         <div class="login-form-wrap">
-          <img class="login-form-logo" src="/assets/img/logo-upds.svg" alt="UPDS">
+          <div class="text-center mb-4">
+            <i class="bi bi-mortarboard-fill login-form-icon" aria-hidden="true"></i>
+          </div>
           <p class="login-kicker">Acceso institucional</p>
-          <h2 id="loginTitle" class="login-form-title mb-2">Iniciar sesión</h2>
-          <p class="login-form-subtitle mb-4">Ingresa con tus credenciales para continuar.</p>
+          <h2 id="loginTitle" class="login-form-title mb-2">Bienvenido de nuevo</h2>
+          <p class="login-form-subtitle mb-4">Inicia sesión para acceder a tu plataforma de tutorías</p>
 
           <?php if (isset($_SESSION['login_error'])): ?>
             <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-4" role="alert">
@@ -77,8 +87,8 @@ if (isset($_SESSION['id_usuario'])) {
                 </button>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
-              <span>Ingresar</span><i class="bi bi-arrow-right" aria-hidden="true"></i>
+            <button type="submit" class="btn btn-upds-navy w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-semibold">
+              <span>Iniciar Sesión</span><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
             </button>
           </form>
           <p class="text-center mt-3 mb-0"><span class="text-muted small" aria-disabled="true">¿Olvidaste tu contraseña?</span></p>

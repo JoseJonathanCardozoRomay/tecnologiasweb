@@ -39,7 +39,6 @@ function campanaNotificaciones($noLeidas) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#002b49">
   <title><?= htmlspecialchars($tituloPagina ?? 'Sistema de Tutorías - UPDS') ?></title>
-  <!-- Reemplazar el logo provisional de assets/img/logo-upds.svg por el logo oficial cuando esté disponible. -->
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

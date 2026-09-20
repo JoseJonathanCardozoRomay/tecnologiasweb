@@ -38,7 +38,7 @@ class MateriaModel
         return $this->pdo->query($sql)->fetchAll();
     }
 
-    public function obtenerPaginadas($q, $orden, $dir, $limite, $offset)
+    public function obtenerPaginadas($q, $id_carrera, $orden, $dir, $limite, $offset)
     {
         $columnas = ['id' => 'm.id_materia', 'nombre' => 'm.nombre_materia', 'carrera' => 'c.nombre_carrera', 'tutores' => 'total_tutores'];
         $ordenSql = $columnas[$orden] ?? $columnas['nombre'];
@@ -47,24 +47,49 @@ class MateriaModel
                        (SELECT COUNT(*) FROM tutor_materia tm WHERE tm.id_materia = m.id_materia) AS total_tutores
                 FROM materias m LEFT JOIN carreras c ON m.id_carrera = c.id_carrera";
         $params = [];
+        $where = [];
         if ($q !== '') {
-            $sql .= " WHERE CONCAT_WS(' ', m.nombre_materia, c.nombre_carrera) LIKE :q ESCAPE '\\\\'";
+            $where[] = "CONCAT_WS(' ', m.nombre_materia, c.nombre_carrera) LIKE :q ESCAPE '\\\\'";
             $params[':q'] = valorBusquedaLike($q);
+        }
+        if ($id_carrera > 0) {
+            $where[] = "m.id_carrera = :id_carrera";
+            $params[':id_carrera'] = $id_carrera;
+        }
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(' AND ', $where);
         }
         $sql .= " ORDER BY {$ordenSql} {$dirSql} LIMIT :limite OFFSET :offset";
         $stmt = $this->pdo->prepare($sql);
-        if ($q !== '') $stmt->bindValue(':q', $params[':q'], PDO::PARAM_STR);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
         $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function contar($q = '')
+    public function contar($q = '', $id_carrera = 0)
     {
         $sql = 'SELECT COUNT(*) FROM materias m LEFT JOIN carreras c ON m.id_carrera = c.id_carrera';
-        $stmt = $this->pdo->prepare($q !== '' ? $sql . " WHERE CONCAT_WS(' ', m.nombre_materia, c.nombre_carrera) LIKE :q ESCAPE '\\\\'" : $sql);
-        if ($q !== '') $stmt->bindValue(':q', valorBusquedaLike($q), PDO::PARAM_STR);
+        $params = [];
+        $where = [];
+        if ($q !== '') {
+            $where[] = "CONCAT_WS(' ', m.nombre_materia, c.nombre_carrera) LIKE :q ESCAPE '\\\\'";
+            $params[':q'] = valorBusquedaLike($q);
+        }
+        if ($id_carrera > 0) {
+            $where[] = "m.id_carrera = :id_carrera";
+            $params[':id_carrera'] = $id_carrera;
+        }
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(' AND ', $where);
+        }
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
         $stmt->execute();
         return (int) $stmt->fetchColumn();
     }
