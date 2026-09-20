@@ -148,4 +148,16 @@ class EstudianteModel
             ':ru'         => trim($registro_universitario)
         ]);
     }
+
+    /**
+     * Verifica si un estudiante tiene carrera asignada.
+     * Útil para validaciones de negocio antes de permitir solicitudes de tutoría.
+     */
+    public function tieneCarreraAsignada($id_estudiante)
+    {
+        $sql = "SELECT id_carrera FROM estudiantes WHERE id_estudiante = :id AND id_carrera IS NOT NULL";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $id_estudiante]);
+        return (bool) $stmt->fetchColumn();
+    }
 }

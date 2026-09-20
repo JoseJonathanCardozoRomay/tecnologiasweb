@@ -53,6 +53,31 @@
   --bs-border-radius-sm: 8px;
   --bs-border-radius-lg: 12px;
   --bs-focus-ring-color: rgba(159, 184, 204, .5);
+  
+  /* Colores de estado para badges - Psicología de colores */
+  --state-pending-bg: var(--upds-warning-bg);
+  --state-pending-text: #92400e;
+  --state-pending-border: var(--upds-warning-border);
+  
+  --state-confirmed-bg: var(--upds-info-bg);
+  --state-confirmed-text: #075985;
+  --state-confirmed-border: var(--upds-info-border);
+  
+  --state-completed-bg: var(--upds-success-bg);
+  --state-completed-text: #166534;
+  --state-completed-border: var(--upds-success-border);
+  
+  --state-cancelled-bg: var(--upds-danger-bg);
+  --state-cancelled-text: #991b1b;
+  --state-cancelled-border: var(--upds-danger-border);
+  
+  --state-process-bg: var(--upds-academic-bg);
+  --state-process-text: #4338ca;
+  --state-process-border: var(--upds-academic-border);
+  
+  --state-stopped-bg: #f1f5f9;
+  --state-stopped-text: #475569;
+  --state-stopped-border: #cbd5e1;
 }
 
 * { box-sizing: border-box; }
@@ -172,13 +197,14 @@ a:hover { color: var(--upds-navy-deep); }
 .avatar-student { color: var(--upds-success); background: var(--upds-success-bg); }
 .avatar-default { color: var(--upds-navy); background: var(--upds-navy-soft); }
 .status-badge { display: inline-flex; align-items: center; min-height: 26px; padding: .25rem .6rem; border: 1px solid transparent; border-radius: 999px; font-size: .72rem; font-weight: 700; }
-.status-pending { color: var(--upds-navy); background: var(--upds-navy-soft); border-color: var(--upds-accent); }
-.status-confirmed { color: var(--upds-info); background: var(--upds-info-bg); border-color: var(--upds-info-border); }
-.status-completed { color: var(--upds-success); background: var(--upds-success-bg); border-color: var(--upds-success-border); }
-.status-cancelled { color: var(--upds-danger); background: var(--upds-danger-bg); border-color: var(--upds-danger-border); }
-.status-active { color: var(--upds-success); background: var(--upds-success-bg); border-color: var(--upds-success-border); }
-.status-inactive { color: var(--upds-muted); background: var(--upds-bg); border-color: var(--upds-border); }
+.status-pending { color: var(--state-pending-text); background: var(--state-pending-bg); border-color: var(--state-pending-border); }
+.status-confirmed { color: var(--state-confirmed-text); background: var(--state-confirmed-bg); border-color: var(--state-confirmed-border); }
+.status-completed { color: var(--state-completed-text); background: var(--state-completed-bg); border-color: var(--state-completed-border); }
+.status-cancelled { color: var(--state-cancelled-text); background: var(--state-cancelled-bg); border-color: var(--state-cancelled-border); }
+.status-active { color: var(--state-completed-text); background: var(--state-completed-bg); border-color: var(--state-completed-border); }
+.status-inactive { color: var(--state-stopped-text); background: var(--state-stopped-bg); border-color: var(--state-stopped-border); }
 .status-neutral { color: var(--upds-muted); background: var(--upds-bg); border-color: var(--upds-border); }
+.status-process { color: var(--state-process-text); background: var(--state-process-bg); border-color: var(--state-process-border); }
 .role-badge { display:inline-flex; align-items:center; min-height:26px; padding:.25rem .7rem; border:1px solid transparent; border-radius:999px; font-size:.72rem; font-weight:700; }
 .role-admin { color:var(--upds-navy); background:var(--upds-navy-soft); border-color:var(--upds-accent); }
 .role-tutor { color:var(--upds-info); background:var(--upds-info-bg); border-color:var(--upds-info-border); }

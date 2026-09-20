@@ -200,12 +200,13 @@ function handleEditProfilePhoto(input) {
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen no debe superar los 5MB.');
+    if (file.size > 2 * 1024 * 1024) {
+      alert('La imagen no debe superar los 2MB.');
       input.value = '';
       return;
     }
     
+    // Previsualizar imagen antes de subir
     const reader = new FileReader();
     reader.onload = function(e) {
       const wrapper = document.querySelector('.profile-photo-wrapper');
@@ -221,21 +222,42 @@ function handleEditProfilePhoto(input) {
         img.alt = 'Foto de perfil';
         wrapper.appendChild(img);
       }
-      
-      document.getElementById('edit-foto_perfil_hidden').value = e.target.result;
-      
-      const removeBtn = document.querySelector('.btn-outline-danger');
-      if (!removeBtn) {
-        const btnContainer = document.querySelector('.d-flex.gap-2');
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.className = 'btn btn-sm btn-outline-danger';
-        removeButton.innerHTML = '<i class="bi bi-trash me-1"></i> Eliminar';
-        removeButton.onclick = removeEditProfilePhoto;
-        btnContainer.appendChild(removeButton);
-      }
     };
     reader.readAsDataURL(file);
+    
+    // Subir archivo al servidor
+    const formData = new FormData();
+    formData.append('foto_file', file);
+    
+    fetch('/controllers/tutor_foto_subir.php', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        document.getElementById('edit-foto_perfil_hidden').value = data.ruta;
+        
+        const removeBtn = document.querySelector('.btn-outline-danger');
+        if (!removeBtn) {
+          const btnContainer = document.querySelector('.d-flex.gap-2');
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.className = 'btn btn-sm btn-outline-danger';
+          removeButton.innerHTML = '<i class="bi bi-trash me-1"></i> Eliminar';
+          removeButton.onclick = removeEditProfilePhoto;
+          btnContainer.appendChild(removeButton);
+        }
+      } else {
+        alert('Error al subir la foto: ' + data.error);
+        input.value = '';
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al subir la foto. Por favor intenta nuevamente.');
+      input.value = '';
+    });
   }
 }
 

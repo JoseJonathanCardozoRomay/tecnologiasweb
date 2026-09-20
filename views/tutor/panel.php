@@ -428,14 +428,14 @@ function handleProfilePhoto(input) {
       return;
     }
     
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen no debe superar los 5MB.');
+    // Validar tamaño (máximo 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('La imagen no debe superar los 2MB.');
       input.value = '';
       return;
     }
     
-    // Crear URL temporal para previsualización
+    // Previsualizar imagen antes de subir
     const reader = new FileReader();
     reader.onload = function(e) {
       const wrapper = document.querySelector('.profile-photo-wrapper');
@@ -451,23 +451,43 @@ function handleProfilePhoto(input) {
         img.alt = 'Foto de perfil';
         wrapper.appendChild(img);
       }
-      
-      // Actualizar el campo hidden
-      document.getElementById('foto_perfil_hidden').value = e.target.result;
-      
-      // Mostrar botón de eliminar
-      const removeBtn = document.querySelector('.profile-photo-remove');
-      if (!removeBtn) {
-        const btnContainer = document.querySelector('.profile-photo-container .d-flex');
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.className = 'profile-photo-button profile-photo-remove';
-        removeButton.innerHTML = '<i class="bi bi-trash"></i> Eliminar';
-        removeButton.onclick = removeProfilePhoto;
-        btnContainer.appendChild(removeButton);
-      }
     };
     reader.readAsDataURL(file);
+    
+    // Subir archivo al servidor
+    const formData = new FormData();
+    formData.append('foto_file', file);
+    
+    fetch('/controllers/tutor_foto_subir.php', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        document.getElementById('foto_perfil_hidden').value = data.ruta;
+        
+        // Mostrar botón de eliminar
+        const removeBtn = document.querySelector('.profile-photo-remove');
+        if (!removeBtn) {
+          const btnContainer = document.querySelector('.profile-photo-container .d-flex');
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.className = 'profile-photo-button profile-photo-remove';
+          removeButton.innerHTML = '<i class="bi bi-trash"></i> Eliminar';
+          removeButton.onclick = removeProfilePhoto;
+          btnContainer.appendChild(removeButton);
+        }
+      } else {
+        alert('Error al subir la foto: ' + data.error);
+        input.value = '';
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al subir la foto. Por favor intenta nuevamente.');
+      input.value = '';
+    });
   }
 }
 
