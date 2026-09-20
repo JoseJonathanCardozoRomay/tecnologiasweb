@@ -28,7 +28,7 @@ include __DIR__ . '/../layouts/header.php';
     <?php endif; ?>
 
     <div class="card card-custom p-4 p-md-5">
-      <form method="POST" autocomplete="off">
+      <form method="POST" autocomplete="off"><?=csrfField()?>
         <div class="row g-3">
           <div class="col-md-12">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Rol del Usuario *</label>
@@ -62,7 +62,11 @@ include __DIR__ . '/../layouts/header.php';
             <input type="text" name="usuario" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>" placeholder="usuario123" required>
           </div>
 
-          <div class="col-md-12">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Teléfono</label>
+            <input type="text" name="telefono" maxlength="20" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($_POST['telefono'] ?? '') ?>" placeholder="70000000">
+          </div>
+          <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Contraseña Inicial *</label>
             <input type="password" name="clave" class="form-control rounded-3 py-2" minlength="6" placeholder="Mínimo 6 caracteres" required>
             <div class="form-text">La contraseña se guardará encriptada con Bcrypt de forma segura.</div>

@@ -1,0 +1,3 @@
+<?php
+require_once __DIR__.'/../includes/verificar_sesion.php';require_once __DIR__.'/../includes/funciones.php';requireRole(['administrador','estudiante']);require_once __DIR__.'/../config/conexion.php';require_once __DIR__.'/../models/EvaluacionModel.php';
+$em=new EvaluacionModel($pdo);$idEstudiante=null;if(esEstudiante()){require_once __DIR__.'/../models/EstudianteModel.php';$e=(new EstudianteModel($pdo))->obtenerPorUsuario((int)$_SESSION['id_usuario']);$idEstudiante=$e?(int)$e['id_estudiante']:0;}$registros=$em->obtenerTodas($idEstudiante);$tituloPagina='Evaluaciones de Tutorías - Sistema de Tutorías';require_once __DIR__.'/../views/evaluaciones/listar.php';

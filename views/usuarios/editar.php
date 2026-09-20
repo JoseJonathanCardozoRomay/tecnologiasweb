@@ -28,7 +28,7 @@ include __DIR__ . '/../layouts/header.php';
     <?php endif; ?>
 
     <div class="card card-custom p-4 p-md-5">
-      <form method="POST" autocomplete="off">
+      <form method="POST" autocomplete="off"><?=csrfField()?>
         <input type="hidden" name="id_usuario" value="<?= htmlspecialchars($usuario_actual['id_usuario']) ?>">
 
         <div class="row g-3">
@@ -67,8 +67,16 @@ include __DIR__ . '/../layouts/header.php';
           </div>
 
           <div class="col-md-6">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Teléfono</label>
+            <input type="text" name="telefono" maxlength="20" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($usuario_actual['telefono'] ?? '') ?>">
+          </div>
+          <div class="col-md-6">
             <label class="form-label fw-semibold text-secondary small text-uppercase">Nombre de Usuario *</label>
             <input type="text" name="usuario" class="form-control rounded-3 py-2" value="<?= htmlspecialchars($usuario_actual['usuario']) ?>" required>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Nueva contraseña (opcional)</label>
+            <input type="password" name="clave" minlength="6" class="form-control rounded-3 py-2" placeholder="Dejar vacío para conservar la actual">
           </div>
         </div>
 

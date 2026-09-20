@@ -1,27 +1,43 @@
 <?php
-require_once __DIR__ . '/../includes/verificar_sesion.php';
-require_once __DIR__ . '/../config/conexion.php';
-require_once __DIR__ . '/../models/CarreraModel.php';
+declare(strict_types=1);
 
-$carreraModel = new CarreraModel($pdo);
+require_once __DIR__.'/../includes/verificar_sesion.php';
+require_once __DIR__.'/../includes/funciones.php';
+requireRole(['administrador']);
+require_once __DIR__.'/../config/conexion.php';
+require_once __DIR__.'/../models/CarreraModel.php';
+
+$m = new CarreraModel($pdo);
 $errores = [];
+$nombre = normalizarTexto((string)($_POST['nombre_carrera'] ?? ''));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nombre = trim($_POST['nombre_carrera'] ?? '');
+    exigirCsrf();
 
-    if (empty($nombre)) {
-        $errores[] = "El nombre de la carrera es obligatorio.";
+    if (!textoValido($nombre, 3, 150)) {
+        $errores[] = 'El nombre debe tener entre 3 y 150 caracteres.';
+    } elseif (!preg_match('/^[\p{L}0-9][\p{L}0-9 .&()\'\/-]*$/u', $nombre)) {
+        $errores[] = 'El nombre contiene caracteres no permitidos.';
     }
 
-    if (empty($errores)) {
+    if (!$errores) {
+        $similar = $m->nombreSimilar($nombre);
+        if ($similar !== false) {
+            $errores[] = 'Ya existe una carrera igual o demasiado similar: ' . $similar . '.';
+        }
+    }
+
+    if (!$errores) {
         try {
-            $carreraModel->crear($nombre);
-            header("Location: carreras_listar.php");
-            exit;
+            $m->crear($nombre);
+            registrarAccion($pdo, 'CREAR', 'Carreras', 'Se registró la carrera ' . $nombre . '.');
+            flash('success', 'Carrera registrada correctamente.');
+            redirect('carreras_listar.php');
         } catch (PDOException $e) {
-            $errores[] = "Error al registrar la carrera: " . $e->getMessage();
+            $errores[] = 'No se pudo registrar la carrera. El nombre puede estar repetido.';
         }
     }
 }
 
-require_once __DIR__ . '/../views/carreras/crear.php';
+$tituloPagina = 'Nueva Carrera - Sistema de Tutorías';
+require __DIR__.'/../views/carreras/crear.php';

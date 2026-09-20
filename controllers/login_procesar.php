@@ -1,52 +1,27 @@
 <?php
-session_start();
-require_once '../config/conexion.php';
-require_once '../models/UsuarioModel.php';
+require_once __DIR__.'/../includes/funciones.php';
+iniciarSesion();
+require_once __DIR__.'/../config/conexion.php';
+require_once __DIR__.'/../models/UsuarioModel.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../views/login/login.php');
-    exit;
+if($_SERVER['REQUEST_METHOD']!=='POST'){redirect('/views/login/login.php');}
+if(!validarCsrf($_POST['csrf_token']??null)){flash('danger','La sesión de seguridad expiró. Recarga la página e inténtalo nuevamente.');redirect('/views/login/login.php');}
+
+$usuarioInput=trim((string)($_POST['usuario']??''));
+$contrasenaInput=(string)($_POST['contrasena']??'');
+if($usuarioInput===''||$contrasenaInput===''){flash('danger','Completa usuario/correo y contraseña.');redirect('/views/login/login.php');}
+
+$modelo=new UsuarioModel($pdo);$usuario=$modelo->obtenerPorUsuario($usuarioInput);
+$valido=$usuario&&$usuario['estado']==='activo'&&password_verify($contrasenaInput,$usuario['contrasena_hash']);
+if($valido){
+    session_regenerate_id(true);
+    $_SESSION['id_usuario']=(int)$usuario['id_usuario'];
+    $_SESSION['nombre']=trim(($usuario['nombre']??'').' '.($usuario['apellido']??''));
+    $_SESSION['rol']=$usuario['nombre_rol'];
+    $_SESSION['ultimo_acceso']=date('Y-m-d H:i:s');
+    registrarAuditoria($pdo,(int)$usuario['id_usuario'],'exitoso','LOGIN','Autenticación','Inicio de sesión correcto.');
+    redirect(dashboardPorRol($usuario['nombre_rol']));
 }
-
-$usuarioInput = trim($_POST['usuario'] ?? '');
-$contrasenaInput = $_POST['contrasena'] ?? '';
-
-$modelo = new UsuarioModel($pdo);
-$usuario = $modelo->obtenerPorUsuario($usuarioInput);
-
-if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaInput, $usuario['contrasena_hash'])) {
-    // Login correcto
-    $_SESSION['id_usuario'] = $usuario['id_usuario'];
-    $_SESSION['nombre'] = $usuario['nombre'];
-    $_SESSION['rol'] = $usuario['nombre_rol'];
-
-    // Registrar acceso exitoso
-    $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (?, ?, 'exitoso')")
-        ->execute([$usuario['id_usuario'], $_SERVER['REMOTE_ADDR']]);
-
-    // Redirección según rol
-    switch ($usuario['nombre_rol']) {
-        case 'administrador':
-            header('Location: ../controllers/usuarios_listar.php');
-            break;
-        case 'tutor':
-            header('Location: ../views/tutor/panel.php'); // aún no existe, lo crearemos después
-            break;
-        case 'estudiante':
-            header('Location: ../views/estudiante/panel.php'); // aún no existe
-            break;
-        default:
-            header('Location: ../views/login/login.php');
-    }
-    exit;
-
-} else {
-    // Login fallido — registrar si el usuario existe
-    if ($usuario) {
-        $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (?, ?, 'fallido')")
-            ->execute([$usuario['id_usuario'], $_SERVER['REMOTE_ADDR']]);
-    }
-    $_SESSION['login_error'] = 'Usuario o contraseña incorrectos, o cuenta inactiva.';
-    header('Location: ../views/login/login.php');
-    exit;
-}
+registrarAuditoria($pdo,$usuario?(int)$usuario['id_usuario']:null,'fallido','LOGIN','Autenticación','Intento de inicio de sesión fallido.');
+flash('danger','Usuario o contraseña incorrectos, o la cuenta está inactiva.');
+redirect('/views/login/login.php');

@@ -1,129 +1,28 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-$rolSesion = $_SESSION['rol'] ?? '';
-$nombreSesion = $_SESSION['nombre'] ?? 'Usuario';
+require_once __DIR__ . '/../../includes/funciones.php';
+iniciarSesion();
+$rolSesion=$_SESSION['rol']??'';
+$nombreSesion=$_SESSION['nombre']??'Usuario';
+$path=$_SERVER['PHP_SELF']??'';
+$inicio=dashboardPorRol($rolSesion);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= $tituloPagina ?? 'Sistema de Tutorías - UPDS' ?></title>
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Bootstrap 5.3 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <style>
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: #f4f6f9;
-      color: #334155;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .navbar-custom {
-      background: linear-gradient(135deg, #0f2b48 0%, #1e4b7a 100%);
-    }
-    .card-custom {
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      background: #fff;
-    }
-    .badge-admin { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
-    .badge-tutor { background-color: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
-    .badge-estudiante { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-  </style>
-</head>
-<body>
-
-<?php if (isset($_SESSION['id_usuario'])): ?>
-<!-- Navbar principal del sistema -->
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm sticky-top">
-  <div class="container">
-    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/controllers/usuarios_listar.php">
-      <i class="bi bi-mortarboard-fill text-warning fs-4"></i>
-      <span>Sistema de Tutorías</span>
-      <span class="badge bg-warning text-dark ms-1 d-none d-sm-inline-block" style="font-size: 0.7rem;">UPDS</span>
-    </a>
-
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="navbarMain">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <?php if ($rolSesion === 'administrador'): ?>
-          <li class="nav-item">
-            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'usuarios') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/usuarios_listar.php">
-              <i class="bi bi-people-fill"></i> Usuarios
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'materias') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/materias_listar.php">
-              <i class="bi bi-journal-bookmark-fill"></i> Materias
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], 'carreras') !== false ? 'active fw-bold' : 'text-white-50' ?> d-flex align-items-center gap-1" href="/controllers/carreras_listar.php">
-              <i class="bi bi-mortarboard"></i> Carreras
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white-50 d-flex align-items-center gap-1" href="#" onclick="Swal.fire('Próximo Módulo', 'Módulo de Gestión General de Tutorías en desarrollo', 'info');">
-              <i class="bi bi-calendar-check-fill"></i> Tutorías
-            </a>
-          </li>
-        <?php elseif ($rolSesion === 'tutor'): ?>
-          <li class="nav-item">
-            <a class="nav-link active d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-calendar-range"></i> Mis Horarios
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white-50 d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-card-checklist"></i> Sesiones Asignadas
-            </a>
-          </li>
-        <?php elseif ($rolSesion === 'estudiante'): ?>
-          <li class="nav-item">
-            <a class="nav-link active d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-search"></i> Buscar Tutorías
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white-50 d-flex align-items-center gap-1" href="#">
-              <i class="bi bi-clock-history"></i> Mis Solicitudes
-            </a>
-          </li>
-        <?php endif; ?>
-      </ul>
-
-      <!-- Perfil de usuario y botón salir -->
-      <div class="d-flex align-items-center gap-3">
-        <div class="text-end text-white d-none d-md-block">
-          <div class="fw-semibold" style="font-size: 0.9rem;"><?= htmlspecialchars($nombreSesion) ?></div>
-          <span class="badge rounded-pill text-uppercase px-2" style="font-size: 0.65rem; background: rgba(255,255,255,0.2);">
-            <?= htmlspecialchars($rolSesion) ?>
-          </span>
-        </div>
-        <a href="/controllers/logout.php" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1">
-          <i class="bi bi-box-arrow-right"></i>
-          <span>Salir</span>
-        </a>
-      </div>
-    </div>
-  </div>
-</nav>
-<?php endif; ?>
-
-<main class="container py-4 flex-grow-1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><?=e($tituloPagina??'Sistema de Tutorías - UPDS')?></title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root{--upds-navy:#0f2b48;--upds-blue:#1e4b7a;--surface:#fff;--bg:#f5f7fb;--ink:#243447;--muted:#6b7a90}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}.navbar-custom{background:linear-gradient(135deg,var(--upds-navy),var(--upds-blue));}.brand-mark{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center}.nav-link{border-radius:8px;margin:.12rem}.nav-link.active{background:rgba(255,255,255,.14);color:#fff!important}.card-custom{border:0;border-radius:18px;box-shadow:0 8px 28px rgba(15,43,72,.06);background:var(--surface)}.page-title{font-weight:800;letter-spacing:-.02em}.eyebrow{text-transform:uppercase;font-size:.72rem;font-weight:700;letter-spacing:.12em;color:var(--upds-blue)}.metric-card{background:#fff;border-radius:16px;padding:1rem;box-shadow:0 5px 18px rgba(15,43,72,.05);display:flex;align-items:center;gap:.85rem}.metric-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.15rem}.metric-value{font-size:1.5rem;font-weight:800;line-height:1}.metric-label{font-size:.78rem;color:var(--muted);margin-top:.25rem}.quick-link{display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border-radius:14px;background:#fff;text-decoration:none;color:var(--ink);box-shadow:0 5px 18px rgba(15,43,72,.05);transition:.18s}.quick-link:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(15,43,72,.08)}.form-control,.form-select{border-radius:11px;padding:.7rem .85rem}.table>:not(caption)>*>*{padding:1rem}.table thead th{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#708198}.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.nav-section{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.45);margin:.6rem .75rem .25rem}
+</style></head><body>
+<?php if(isset($_SESSION['id_usuario'])): ?><nav class="navbar navbar-expand-xl navbar-dark navbar-custom shadow-sm sticky-top"><div class="container-fluid px-3 px-lg-4">
+<a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="<?=$inicio?>"><span class="brand-mark"><i class="bi bi-mortarboard-fill text-warning"></i></span><span>Sistema de Tutorías <small class="opacity-75">UPDS</small></span></a>
+<button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"><span class="navbar-toggler-icon"></span></button>
+<div class="collapse navbar-collapse" id="navbarMain"><ul class="navbar-nav me-auto mb-2 mb-xl-0">
+<?php if($rolSesion==='administrador'): ?><li class="nav-item"><a class="nav-link <?=$path==='/controllers/dashboard.php'?'active':''?>" href="/controllers/dashboard.php"><i class="bi bi-grid-1x2 me-1"></i>Inicio</a></li><li><span class="nav-section d-none d-xl-block">Gestión</span></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'usuarios')?'active':''?>" href="/controllers/usuarios_listar.php"><i class="bi bi-people me-1"></i>Usuarios</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'estudiantes')?'active':''?>" href="/controllers/estudiantes_listar.php"><i class="bi bi-person-badge me-1"></i>Estudiantes</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'tutores')?'active':''?>" href="/controllers/tutores_listar.php"><i class="bi bi-person-video3 me-1"></i>Tutores</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'carreras')?'active':''?>" href="/controllers/carreras_listar.php"><i class="bi bi-mortarboard me-1"></i>Carreras</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'materias')?'active':''?>" href="/controllers/materias_listar.php"><i class="bi bi-journal-bookmark me-1"></i>Materias</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'disponibilidad')?'active':''?>" href="/controllers/disponibilidad_listar.php"><i class="bi bi-calendar-week me-1"></i>Horarios</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'tutorias')?'active':''?>" href="/controllers/tutorias_listar.php"><i class="bi bi-calendar-check me-1"></i>Tutorías</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'evaluaciones')?'active':''?>" href="/controllers/evaluaciones_listar.php"><i class="bi bi-star me-1"></i>Evaluaciones</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'reportes')?'active':''?>" href="/controllers/reportes.php"><i class="bi bi-bar-chart-line me-1"></i>Reportes</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'auditoria')?'active':''?>" href="/controllers/auditoria_listar.php"><i class="bi bi-shield-check me-1"></i>Auditoría</a></li>
+<?php elseif($rolSesion==='tutor'): ?><li class="nav-item"><a class="nav-link <?=$path==='/views/tutor/panel.php'?'active':''?>" href="/views/tutor/panel.php"><i class="bi bi-grid-1x2 me-1"></i>Inicio</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'tutorias')?'active':''?>" href="/controllers/tutorias_listar.php"><i class="bi bi-inbox me-1"></i>Solicitudes y sesiones</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'disponibilidad')?'active':''?>" href="/controllers/disponibilidad_listar.php"><i class="bi bi-calendar-week me-1"></i>Disponibilidad</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'tutor_mis_materias')?'active':''?>" href="/controllers/tutor_mis_materias.php"><i class="bi bi-journals me-1"></i>Mis materias</a></li>
+<?php elseif($rolSesion==='estudiante'): ?><li class="nav-item"><a class="nav-link <?=$path==='/views/estudiante/panel.php'?'active':''?>" href="/views/estudiante/panel.php"><i class="bi bi-grid-1x2 me-1"></i>Inicio</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'tutorias')?'active':''?>" href="/controllers/tutorias_listar.php"><i class="bi bi-calendar-check me-1"></i>Mis tutorías</a></li><li class="nav-item"><a class="nav-link <?=str_contains($path,'evaluaciones')?'active':''?>" href="/controllers/evaluaciones_listar.php"><i class="bi bi-star me-1"></i>Evaluaciones</a></li><?php endif; ?></ul>
+<div class="d-flex align-items-center gap-2"><a class="text-white text-decoration-none d-none d-md-flex align-items-center gap-2 px-2" href="/controllers/perfil.php"><span class="brand-mark" style="width:34px;height:34px"><i class="bi bi-person"></i></span><span><small class="d-block text-white-50"><?=e($rolSesion)?></small><strong style="font-size:.88rem"><?=e($nombreSesion)?></strong></span></a><a href="/controllers/logout.php" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Salir</a></div>
+</div></div></nav><?php endif; ?><main class="container-fluid px-3 px-lg-4 py-4 flex-grow-1">
