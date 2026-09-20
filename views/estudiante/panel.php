@@ -56,14 +56,14 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="row g-4">
   <div class="col-12">
-    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, #0d5c3a 0%, #198754 100%) !important;">
+    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, var(--upds-navy) 0%, var(--upds-navy-deep) 100%) !important;">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
           <h2 class="fw-bold mb-1">¡Hola, <?= htmlspecialchars($_SESSION['nombre']) ?>! 👋</h2>
           <p class="mb-0 text-white-50">Carrera: <?= htmlspecialchars($estudiante['nombre_carrera']) ?> &bull; Semestre <?= $estudiante['semestre'] ?> &bull; R.U: <?= htmlspecialchars($estudiante['registro_universitario']) ?></p>
         </div>
         <div>
-          <a href="/controllers/tutorias_solicitar.php" class="btn btn-accent fw-bold d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
+          <a href="/controllers/tutorias_solicitar.php" class="btn btn-light fw-bold d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
             <i class="bi bi-calendar-plus-fill"></i>
             <span>+ Solicitar Nueva Tutoría</span>
           </a>
@@ -74,36 +74,36 @@ include __DIR__ . '/../layouts/header.php';
 
   <!-- Métricas del estudiante -->
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-accent border-4">
-      <div class="text-accent fs-1 mb-2"><i class="bi bi-hourglass-split"></i></div>
+    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-warning) !important;">
+      <div class="mb-2" style="color: var(--upds-warning); font-size: 2rem;"><i class="bi bi-hourglass-split"></i></div>
       <h3 class="fw-bold mb-0 text-dark"><?= $pendientes ?></h3>
       <p class="text-muted small mb-0">Solicitudes en Espera de Confirmación</p>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-info border-4">
-      <div class="text-info fs-1 mb-2"><i class="bi bi-calendar-event"></i></div>
+    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-info) !important;">
+      <div class="mb-2" style="color: var(--upds-info); font-size: 2rem;"><i class="bi bi-calendar-event"></i></div>
       <h3 class="fw-bold mb-0 text-dark"><?= $confirmadas ?></h3>
       <p class="text-muted small mb-0">Tutorías Confirmadas / Próximas</p>
     </div>
   </div>
   <div class="col-md-4">
-     <div class="card card-custom p-4 text-center border-start border-success border-4">
-       <div class="text-success fs-1 mb-2"><i class="bi bi-award"></i></div>
+     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-success) !important;">
+       <div class="mb-2" style="color: var(--upds-success); font-size: 2rem;"><i class="bi bi-award"></i></div>
        <h3 class="fw-bold mb-0 text-dark"><?= $realizadas ?></h3>
        <p class="text-muted small mb-0">Tutorías Completadas</p>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-warning border-4">
-       <div class="text-warning fs-1 mb-2"><i class="bi bi-arrow-repeat"></i></div>
+     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-academic) !important;">
+       <div class="mb-2" style="color: var(--upds-academic); font-size: 2rem;"><i class="bi bi-arrow-repeat"></i></div>
        <h3 class="fw-bold mb-0 text-dark"><?= $enProceso ?></h3>
        <p class="text-muted small mb-0">Tutorías En Proceso</p>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-secondary border-4">
-       <div class="text-secondary fs-1 mb-2"><i class="bi bi-pause-circle"></i></div>
+     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-muted) !important;">
+       <div class="mb-2" style="color: var(--upds-muted); font-size: 2rem;"><i class="bi bi-pause-circle"></i></div>
        <h3 class="fw-bold mb-0 text-dark"><?= $detenidas ?></h3>
        <p class="text-muted small mb-0">Tutorías Detenidas</p>
      </div>
@@ -134,11 +134,11 @@ include __DIR__ . '/../layouts/header.php';
             <?php foreach ($misTutorias as $t): ?>
               <?php
                 $badgeEstado = 'badge-accent';
-                if ($t['estado'] === 'confirmada') $badgeEstado = 'bg-info text-white';
-                if ($t['estado'] === 'realizada') $badgeEstado = 'bg-success text-white';
-                if ($t['estado'] === 'cancelada') $badgeEstado = 'bg-danger text-white';
-                if ($t['estado'] === 'en_proceso') $badgeEstado = 'bg-warning text-dark';
-                if ($t['estado'] === 'detenido') $badgeEstado = 'bg-secondary text-white';
+                if ($t['estado'] === 'confirmada') $badgeEstado = 'status-confirmed';
+                if ($t['estado'] === 'realizada') $badgeEstado = 'status-completed';
+                if ($t['estado'] === 'cancelada') $badgeEstado = 'status-cancelled';
+                if ($t['estado'] === 'en_proceso') $badgeEstado = 'status-pending';
+                if ($t['estado'] === 'detenido') $badgeEstado = 'status-inactive';
                 $etiquetaEstado = [
                     'pendiente'  => 'Pendiente',
                     'confirmada' => 'Confirmada',

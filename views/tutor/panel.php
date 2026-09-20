@@ -41,7 +41,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="row g-4">
   <div class="col-12">
-    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, #1e3a5f 0%, #0d6efd 100%) !important;">
+    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, var(--upds-navy) 0%, var(--upds-navy-deep) 100%) !important;">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
           <h2 class="fw-bold mb-1">¡Bienvenido(a), Prof. <?= htmlspecialchars($_SESSION['nombre']) ?>! 👋</h2>
@@ -59,36 +59,36 @@ include __DIR__ . '/../layouts/header.php';
 
   <!-- Métricas en vivo -->
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-warning border-4">
-      <div class="text-warning fs-1 mb-2"><i class="bi bi-clock"></i></div>
+    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-warning) !important;">
+      <div class="mb-2" style="color: var(--upds-warning); font-size: 2rem;"><i class="bi bi-clock"></i></div>
       <h3 class="fw-bold mb-0 text-dark"><?= $pendientes ?></h3>
       <p class="text-muted small mb-0">Solicitudes Pendientes</p>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-info border-4">
-      <div class="text-info fs-1 mb-2"><i class="bi bi-calendar-check"></i></div>
+    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-info) !important;">
+      <div class="mb-2" style="color: var(--upds-info); font-size: 2rem;"><i class="bi bi-calendar-check"></i></div>
       <h3 class="fw-bold mb-0 text-dark"><?= $confirmadas ?></h3>
       <p class="text-muted small mb-0">Sesiones Agendadas/Confirmadas</p>
     </div>
   </div>
   <div class="col-md-4">
-     <div class="card card-custom p-4 text-center border-start border-success border-4">
-       <div class="text-success fs-1 mb-2"><i class="bi bi-check2-circle"></i></div>
+     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-success) !important;">
+       <div class="mb-2" style="color: var(--upds-success); font-size: 2rem;"><i class="bi bi-check2-circle"></i></div>
        <h3 class="fw-bold mb-0 text-dark"><?= $realizadas ?></h3>
        <p class="text-muted small mb-0">Tutorías Realizadas con Éxito</p>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-warning border-4">
-       <div class="text-warning fs-1 mb-2"><i class="bi bi-arrow-repeat"></i></div>
+     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-academic) !important;">
+       <div class="mb-2" style="color: var(--upds-academic); font-size: 2rem;"><i class="bi bi-arrow-repeat"></i></div>
        <h3 class="fw-bold mb-0 text-dark"><?= $enProceso ?></h3>
        <p class="text-muted small mb-0">Sesiones En Proceso</p>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-secondary border-4">
-       <div class="text-secondary fs-1 mb-2"><i class="bi bi-pause-circle"></i></div>
+     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-muted) !important;">
+       <div class="mb-2" style="color: var(--upds-muted); font-size: 2rem;"><i class="bi bi-pause-circle"></i></div>
        <h3 class="fw-bold mb-0 text-dark"><?= $detenidas ?></h3>
        <p class="text-muted small mb-0">Sesiones Detenidas</p>
      </div>
@@ -109,14 +109,33 @@ include __DIR__ . '/../layouts/header.php';
       <div class="card-body">
         <div class="row">
           <div class="col-md-3 text-center">
-            <?php if (!empty($tutor['foto_perfil'])): ?>
-              <img src="<?= htmlspecialchars($tutor['foto_perfil']) ?>" alt="Foto de perfil" class="rounded-circle mb-2" style="width: 100px; height: 100px; object-fit: cover;">
-            <?php else: ?>
-              <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mb-2" style="width: 100px; height: 100px; margin: 0 auto;">
-                <i class="bi bi-person fs-1 text-muted"></i>
+            <div class="profile-photo-container">
+              <div class="profile-photo-wrapper" onclick="document.getElementById('profile-photo-input').click()">
+                <?php if (!empty($tutor['foto_perfil'])): ?>
+                  <img src="<?= htmlspecialchars($tutor['foto_perfil']) ?>" alt="Foto de perfil">
+                <?php else: ?>
+                  <div class="profile-photo-placeholder">
+                    <?= strtoupper(substr($tutor['nombre'], 0, 1) . substr($tutor['apellido'], 0, 1)) ?>
+                  </div>
+                <?php endif; ?>
+                <div class="profile-photo-overlay">
+                  <i class="bi bi-camera me-1"></i> Cambiar foto
+                </div>
               </div>
-            <?php endif; ?>
-            <h6 class="fw-bold mb-0"><?= htmlspecialchars($tutor['nombre'] . ' ' . $tutor['apellido']) ?></h6>
+              <input type="file" id="profile-photo-input" class="profile-photo-input" accept="image/*" onchange="handleProfilePhoto(this)">
+              <input type="hidden" name="foto_perfil" id="foto_perfil_hidden" value="<?= htmlspecialchars($tutor['foto_perfil'] ?? '') ?>">
+              <div class="d-flex gap-2">
+                <button type="button" class="profile-photo-button" onclick="document.getElementById('profile-photo-input').click()">
+                  <i class="bi bi-upload"></i> Subir foto
+                </button>
+                <?php if (!empty($tutor['foto_perfil'])): ?>
+                  <button type="button" class="profile-photo-button profile-photo-remove" onclick="removeProfilePhoto()">
+                    <i class="bi bi-trash"></i> Eliminar
+                  </button>
+                <?php endif; ?>
+              </div>
+            </div>
+            <h6 class="fw-bold mb-0 mt-3"><?= htmlspecialchars($tutor['nombre'] . ' ' . $tutor['apellido']) ?></h6>
             <small class="text-muted"><?= htmlspecialchars($tutor['correo']) ?></small>
           </div>
           <div class="col-md-9">
@@ -227,12 +246,12 @@ include __DIR__ . '/../layouts/header.php';
           <tbody>
             <?php foreach ($misTutorias as $t): ?>
               <?php
-                $badgeEstado = 'bg-warning text-dark';
-                if ($t['estado'] === 'confirmada') $badgeEstado = 'bg-info text-white';
-                if ($t['estado'] === 'realizada') $badgeEstado = 'bg-success text-white';
-                if ($t['estado'] === 'cancelada') $badgeEstado = 'bg-danger text-white';
-                if ($t['estado'] === 'en_proceso') $badgeEstado = 'bg-warning text-dark';
-                if ($t['estado'] === 'detenido') $badgeEstado = 'bg-secondary text-white';
+                $badgeEstado = 'status-pending';
+                if ($t['estado'] === 'confirmada') $badgeEstado = 'status-confirmed';
+                if ($t['estado'] === 'realizada') $badgeEstado = 'status-completed';
+                if ($t['estado'] === 'cancelada') $badgeEstado = 'status-cancelled';
+                if ($t['estado'] === 'en_proceso') $badgeEstado = 'status-pending';
+                if ($t['estado'] === 'detenido') $badgeEstado = 'status-inactive';
                 $etiquetaEstado = [
                     'pendiente'  => 'Pendiente',
                     'confirmada' => 'Confirmada',
@@ -396,5 +415,85 @@ include __DIR__ . '/../layouts/header.php';
     </div>
   </div>
 </div>
+
+<script>
+function handleProfilePhoto(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido.');
+      input.value = '';
+      return;
+    }
+    
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen no debe superar los 5MB.');
+      input.value = '';
+      return;
+    }
+    
+    // Crear URL temporal para previsualización
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const wrapper = document.querySelector('.profile-photo-wrapper');
+      const existingImg = wrapper.querySelector('img');
+      const existingPlaceholder = wrapper.querySelector('.profile-photo-placeholder');
+      
+      if (existingImg) {
+        existingImg.src = e.target.result;
+      } else if (existingPlaceholder) {
+        existingPlaceholder.remove();
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.alt = 'Foto de perfil';
+        wrapper.appendChild(img);
+      }
+      
+      // Actualizar el campo hidden
+      document.getElementById('foto_perfil_hidden').value = e.target.result;
+      
+      // Mostrar botón de eliminar
+      const removeBtn = document.querySelector('.profile-photo-remove');
+      if (!removeBtn) {
+        const btnContainer = document.querySelector('.profile-photo-container .d-flex');
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'profile-photo-button profile-photo-remove';
+        removeButton.innerHTML = '<i class="bi bi-trash"></i> Eliminar';
+        removeButton.onclick = removeProfilePhoto;
+        btnContainer.appendChild(removeButton);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeProfilePhoto() {
+  if (confirm('¿Estás seguro de que deseas eliminar tu foto de perfil?')) {
+    const wrapper = document.querySelector('.profile-photo-wrapper');
+    const existingImg = wrapper.querySelector('img');
+    
+    if (existingImg) {
+      existingImg.remove();
+      const placeholder = document.createElement('div');
+      placeholder.className = 'profile-photo-placeholder';
+      placeholder.textContent = '<?= strtoupper(substr($tutor['nombre'], 0, 1) . substr($tutor['apellido'], 0, 1)) ?>';
+      wrapper.appendChild(placeholder);
+    }
+    
+    document.getElementById('foto_perfil_hidden').value = '';
+    document.getElementById('profile-photo-input').value = '';
+    
+    // Eliminar botón de eliminar
+    const removeBtn = document.querySelector('.profile-photo-remove');
+    if (removeBtn) {
+      removeBtn.remove();
+    }
+  }
+}
+</script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>

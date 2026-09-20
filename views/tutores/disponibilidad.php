@@ -141,8 +141,33 @@ include __DIR__ . '/../layouts/header.php';
           <textarea name="biografia" class="form-control form-control-sm" rows="2" placeholder="Breve descripción profesional..."><?= htmlspecialchars($tutor['biografia'] ?? '') ?></textarea>
         </div>
         <div class="mb-3">
-          <label class="form-label small text-muted">Foto de Perfil (URL)</label>
-          <input type="text" name="foto_perfil" class="form-control form-control-sm" value="<?= htmlspecialchars($tutor['foto_perfil'] ?? '') ?>" placeholder="https://ejemplo.com/foto.jpg">
+          <label class="form-label small text-muted">Foto de Perfil</label>
+          <div class="profile-photo-container mb-2">
+            <div class="profile-photo-wrapper" style="width: 80px; height: 80px;" onclick="document.getElementById('edit-profile-photo-input').click()">
+              <?php if (!empty($tutor['foto_perfil'])): ?>
+                <img src="<?= htmlspecialchars($tutor['foto_perfil']) ?>" alt="Foto de perfil">
+              <?php else: ?>
+                <div class="profile-photo-placeholder" style="font-size: 1.5rem;">
+                  <?= strtoupper(substr($tutor['nombre'], 0, 1) . substr($tutor['apellido'], 0, 1)) ?>
+                </div>
+              <?php endif; ?>
+              <div class="profile-photo-overlay">
+                <i class="bi bi-camera"></i>
+              </div>
+            </div>
+            <input type="file" id="edit-profile-photo-input" class="profile-photo-input" accept="image/*" onchange="handleEditProfilePhoto(this)">
+            <input type="hidden" name="foto_perfil" id="edit-foto_perfil_hidden" value="<?= htmlspecialchars($tutor['foto_perfil'] ?? '') ?>">
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('edit-profile-photo-input').click()">
+              <i class="bi bi-upload me-1"></i> Subir foto
+            </button>
+            <?php if (!empty($tutor['foto_perfil'])): ?>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEditProfilePhoto()">
+                <i class="bi bi-trash me-1"></i> Eliminar
+              </button>
+            <?php endif; ?>
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label small text-muted">LinkedIn / Perfil Profesional</label>
@@ -163,5 +188,80 @@ include __DIR__ . '/../layouts/header.php';
     </div>
   </div>
 </div>
+
+<script>
+function handleEditProfilePhoto(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido.');
+      input.value = '';
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen no debe superar los 5MB.');
+      input.value = '';
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const wrapper = document.querySelector('.profile-photo-wrapper');
+      const existingImg = wrapper.querySelector('img');
+      const existingPlaceholder = wrapper.querySelector('.profile-photo-placeholder');
+      
+      if (existingImg) {
+        existingImg.src = e.target.result;
+      } else if (existingPlaceholder) {
+        existingPlaceholder.remove();
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.alt = 'Foto de perfil';
+        wrapper.appendChild(img);
+      }
+      
+      document.getElementById('edit-foto_perfil_hidden').value = e.target.result;
+      
+      const removeBtn = document.querySelector('.btn-outline-danger');
+      if (!removeBtn) {
+        const btnContainer = document.querySelector('.d-flex.gap-2');
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'btn btn-sm btn-outline-danger';
+        removeButton.innerHTML = '<i class="bi bi-trash me-1"></i> Eliminar';
+        removeButton.onclick = removeEditProfilePhoto;
+        btnContainer.appendChild(removeButton);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeEditProfilePhoto() {
+  if (confirm('¿Estás seguro de que deseas eliminar tu foto de perfil?')) {
+    const wrapper = document.querySelector('.profile-photo-wrapper');
+    const existingImg = wrapper.querySelector('img');
+    
+    if (existingImg) {
+      existingImg.remove();
+      const placeholder = document.createElement('div');
+      placeholder.className = 'profile-photo-placeholder';
+      placeholder.style.fontSize = '1.5rem';
+      placeholder.textContent = '<?= strtoupper(substr($tutor['nombre'], 0, 1) . substr($tutor['apellido'], 0, 1)) ?>';
+      wrapper.appendChild(placeholder);
+    }
+    
+    document.getElementById('edit-foto_perfil_hidden').value = '';
+    document.getElementById('edit-profile-photo-input').value = '';
+    
+    const removeBtn = document.querySelector('.btn-outline-danger');
+    if (removeBtn) {
+      removeBtn.remove();
+    }
+  }
+}
+</script>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
