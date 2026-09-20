@@ -30,7 +30,7 @@ if (empty($estudiante['id_carrera'])) {
     include __DIR__ . '/../layouts/header.php';
     $emptyIcono = 'bi-person-badge';
     $emptyTitulo = 'Tu perfil académico aún no tiene carrera asignada';
-    $emptyTexto = 'Contacta al administrador para completar tu registro (carrera y semestre). Mientras tanto no podrás solicitar tutorías.';
+    $emptyTexto = 'Contacte al administrador para completar su registro (carrera y semestre). Mientras tanto no podrá solicitar tutorías.';
     $emptyAccion = '<a href="mailto:admin@tutorias.local" class="btn btn-primary rounded-3"><i class="bi bi-envelope-fill me-1"></i>Contactar Administrador</a>'
         . ' <a href="/controllers/notificaciones_listar.php" class="btn btn-outline-secondary rounded-3"><i class="bi bi-bell me-1"></i>Ver notificaciones</a>';
     include __DIR__ . '/../partials/empty_state.php';
@@ -56,16 +56,16 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="row g-4">
   <div class="col-12">
-    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, var(--upds-navy) 0%, var(--upds-navy-deep) 100%) !important;">
+    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, var(--upds-navy) 0%, var(--upds-accent) 100%) !important;">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
-          <h2 class="fw-bold mb-1">¡Hola, <?= htmlspecialchars($_SESSION['nombre']) ?>! 👋</h2>
+          <h2 class="fw-bold mb-1">Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?></h2>
           <p class="mb-0 text-white-50">Carrera: <?= htmlspecialchars($estudiante['nombre_carrera']) ?> &bull; Semestre <?= $estudiante['semestre'] ?> &bull; R.U: <?= htmlspecialchars($estudiante['registro_universitario']) ?></p>
         </div>
         <div>
           <a href="/controllers/tutorias_solicitar.php" class="btn btn-light fw-bold d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
             <i class="bi bi-calendar-plus-fill"></i>
-            <span>+ Solicitar Nueva Tutoría</span>
+            <span>Solicitar Tutoría</span>
           </a>
         </div>
       </div>
@@ -74,38 +74,38 @@ include __DIR__ . '/../layouts/header.php';
 
   <!-- Métricas del estudiante -->
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-warning) !important;">
-      <div class="mb-2" style="color: var(--upds-warning); font-size: 2rem;"><i class="bi bi-hourglass-split"></i></div>
-      <h3 class="fw-bold mb-0 text-dark"><?= $pendientes ?></h3>
-      <p class="text-muted small mb-0">Solicitudes en Espera de Confirmación</p>
+    <div class="card card-custom p-4 text-center kpi-card kpi-warning">
+      <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+      <div class="kpi-value"><?= $pendientes ?></div>
+      <div class="kpi-label">Solicitudes en Espera</div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-info) !important;">
-      <div class="mb-2" style="color: var(--upds-info); font-size: 2rem;"><i class="bi bi-calendar-event"></i></div>
-      <h3 class="fw-bold mb-0 text-dark"><?= $confirmadas ?></h3>
-      <p class="text-muted small mb-0">Tutorías Confirmadas / Próximas</p>
+    <div class="card card-custom p-4 text-center kpi-card kpi-info">
+      <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
+      <div class="kpi-value"><?= $confirmadas ?></div>
+      <div class="kpi-label">Tutorías Confirmadas</div>
     </div>
   </div>
   <div class="col-md-4">
-     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-success) !important;">
-       <div class="mb-2" style="color: var(--upds-success); font-size: 2rem;"><i class="bi bi-award"></i></div>
-       <h3 class="fw-bold mb-0 text-dark"><?= $realizadas ?></h3>
-       <p class="text-muted small mb-0">Tutorías Completadas</p>
+     <div class="card card-custom p-4 text-center kpi-card kpi-success">
+       <div class="kpi-icon"><i class="bi bi-award"></i></div>
+       <div class="kpi-value"><?= $realizadas ?></div>
+       <div class="kpi-label">Tutorías Completadas</div>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-academic) !important;">
-       <div class="mb-2" style="color: var(--upds-academic); font-size: 2rem;"><i class="bi bi-arrow-repeat"></i></div>
-       <h3 class="fw-bold mb-0 text-dark"><?= $enProceso ?></h3>
-       <p class="text-muted small mb-0">Tutorías En Proceso</p>
+     <div class="card card-custom p-4 text-center kpi-card kpi-academic">
+       <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+       <div class="kpi-value"><?= $enProceso ?></div>
+       <div class="kpi-label">Tutorías En Proceso</div>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-muted) !important;">
-       <div class="mb-2" style="color: var(--upds-muted); font-size: 2rem;"><i class="bi bi-pause-circle"></i></div>
-       <h3 class="fw-bold mb-0 text-dark"><?= $detenidas ?></h3>
-       <p class="text-muted small mb-0">Tutorías Detenidas</p>
+     <div class="card card-custom p-4 text-center kpi-card kpi-inactive">
+       <div class="kpi-icon"><i class="bi bi-pause-circle"></i></div>
+       <div class="kpi-value"><?= $detenidas ?></div>
+       <div class="kpi-label">Tutorías Detenidas</div>
      </div>
   </div>
 
@@ -125,6 +125,7 @@ include __DIR__ . '/../layouts/header.php';
               <th class="ps-4">Fecha y Horario</th>
               <th>Materia</th>
               <th>Docente Tutor</th>
+              <th>Bloque Horario</th>
               <th>Modalidad / Lugar</th>
               <th>Estado</th>
               <th class="text-end pe-4">Acciones</th>
@@ -165,17 +166,38 @@ include __DIR__ . '/../layouts/header.php';
                   <small class="text-muted"><?= htmlspecialchars($t['tut_correo']) ?></small>
                 </td>
                 <td>
-                  <span class="badge bg-light text-dark border">
-                    <?= ucfirst($t['modalidad']) ?>
-                  </span>
+                  <?php if (!empty($t['nombre_bloque'])): ?>
+                    <span class="badge bg-light text-dark border"><?= htmlspecialchars($t['nombre_bloque']) ?></span>
+                    <div class="small text-muted"><?= substr($t['hora_inicio'], 0, 5) ?> - <?= substr($t['hora_fin'], 0, 5) ?></div>
+                  <?php else: ?>
+                    <span class="text-muted small">—</span>
+                  <?php endif; ?>
+                </td>
+                <td>
                   <?php if (!empty($t['lugar_o_enlace'])): ?>
+                    <span class="badge bg-light text-dark border">
+                      <?php if ($t['modalidad'] === 'virtual'): ?>
+                        <i class="bi bi-camera-video me-1"></i>Virtual
+                      <?php else: ?>
+                        <i class="bi bi-geo-alt me-1"></i>Presencial
+                      <?php endif; ?>
+                    </span>
                     <div class="small text-muted text-truncate" style="max-width: 150px;" title="<?= htmlspecialchars($t['lugar_o_enlace']) ?>">
                       <?= htmlspecialchars($t['lugar_o_enlace']) ?>
                     </div>
+                  <?php elseif ($t['estado'] === 'en_proceso'): ?>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i>En asignación...</span>
+                  <?php elseif ($t['estado'] === 'confirmada' || $t['estado'] === 'pendiente'): ?>
+                    <span class="badge bg-info text-white"><i class="bi bi-info-circle me-1"></i>Pendiente de asignación</span>
                   <?php else: ?>
-                    <div class="small text-muted text-truncate" style="max-width: 150px;" title="Aún se está asignando el lugar/enlace">
-                      <i class="bi bi-hourglass-split me-1"></i>En proceso de asignación
-                    </div>
+                    <span class="badge bg-light text-dark border">
+                      <?php if ($t['modalidad'] === 'virtual'): ?>
+                        <i class="bi bi-camera-video me-1"></i>Virtual
+                      <?php else: ?>
+                        <i class="bi bi-geo-alt me-1"></i>Presencial
+                      <?php endif; ?>
+                    </span>
+                    <div class="text-muted small">No definido</div>
                   <?php endif; ?>
                 </td>
                 <td>
@@ -233,11 +255,11 @@ include __DIR__ . '/../layouts/header.php';
                                 <div class="mb-3 text-center">
                                   <label class="form-label fw-semibold small text-uppercase text-secondary d-block">Calificación (1 a 5 estrellas)</label>
                                   <select name="calificacion" class="form-select form-select-lg text-center fw-bold text-accent border-accent" required>
-                                    <option value="5">⭐⭐⭐⭐⭐ 5 - Excelente</option>
-                                    <option value="4">⭐⭐⭐⭐ 4 - Muy Buena</option>
-                                    <option value="3">⭐⭐⭐ 3 - Regular</option>
-                                    <option value="2">⭐⭐ 2 - Necesita Mejorar</option>
-                                    <option value="1">⭐ 1 - Deficiente</option>
+                                    <option value="5">5 - Excelente</option>
+                                    <option value="4">4 - Muy Buena</option>
+                                    <option value="3">3 - Regular</option>
+                                    <option value="2">2 - Necesita Mejorar</option>
+                                    <option value="1">1 - Deficiente</option>
                                   </select>
                                 </div>
 
@@ -268,9 +290,9 @@ include __DIR__ . '/../layouts/header.php';
             <?php endforeach; ?>
             <?php if (empty($misTutorias)): ?>
               <tr>
-                <td colspan="6" class="text-center py-5 text-muted">
+                <td colspan="7" class="text-center py-5 text-muted">
                   <i class="bi bi-calendar-plus fs-1 d-block mb-2 text-secondary"></i>
-                  Aún no has solicitado tutorías. ¡Haz clic en <strong>+ Solicitar Nueva Tutoría</strong> para agendar tu primera sesión!
+                  No tienes solicitudes de tutoría registradas. Puedes solicitar tu primera sesión haciendo clic en <strong>Solicitar Tutoría</strong>.
                 </td>
               </tr>
             <?php endif; ?>

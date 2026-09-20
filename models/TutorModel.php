@@ -95,51 +95,57 @@ class TutorModel
         return $stmt->fetch();
     }
 
-    public function actualizarPerfil($id_tutor, $especialidad, $biografia)
+    public function obtenerPerfilCompleto($id_tutor)
     {
-        $stmt = $this->pdo->prepare("UPDATE tutores SET especialidad = :esp, biografia = :bio WHERE id_tutor = :id");
-        return $stmt->execute([
-            ':esp' => trim($especialidad),
-            ':bio' => trim($biografia),
-            ':id'  => $id_tutor
-        ]);
+        $sql = "SELECT t.*, u.nombre, u.apellido, u.correo, u.telefono, u.usuario,
+                       (SELECT COUNT(*) FROM tutorias tu WHERE tu.id_tutor = t.id_tutor AND tu.estado = 'realizada') AS sesiones_realizadas,
+                       (SELECT ROUND(AVG(ev.calificacion), 1) FROM evaluaciones_tutoria ev INNER JOIN tutorias t2 ON ev.id_tutoria = t2.id_tutoria WHERE t2.id_tutor = t.id_tutor) AS calificacion_promedio
+                FROM tutores t
+                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                WHERE t.id_tutor = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $id_tutor]);
+        return $stmt->fetch();
     }
 
     public function actualizarPerfilCompleto($id_tutor, $datos)
     {
-        $campos = [];
-        $params = [':id' => $id_tutor];
-        
+        $sets = [];
+        $params = [];
+
         if (isset($datos['especialidad'])) {
-            $campos[] = 'especialidad = :esp';
-            $params[':esp'] = trim($datos['especialidad']);
+            $sets[] = 'especialidad = :especialidad';
+            $params[':especialidad'] = trim($datos['especialidad']);
         }
         if (isset($datos['biografia'])) {
-            $campos[] = 'biografia = :bio';
-            $params[':bio'] = trim($datos['biografia']);
-        }
-        if (isset($datos['foto_perfil'])) {
-            $campos[] = 'foto_perfil = :foto';
-            $params[':foto'] = trim($datos['foto_perfil']);
+            $sets[] = 'biografia = :biografia';
+            $params[':biografia'] = trim($datos['biografia']);
         }
         if (isset($datos['perfil_linkedin'])) {
-            $campos[] = 'perfil_linkedin = :linkedin';
+            $sets[] = 'perfil_linkedin = :linkedin';
             $params[':linkedin'] = trim($datos['perfil_linkedin']);
         }
         if (isset($datos['certificaciones'])) {
-            $campos[] = 'certificaciones = :cert';
-            $params[':cert'] = trim($datos['certificaciones']);
+            $sets[] = 'certificaciones = :certificaciones';
+            $params[':certificaciones'] = trim($datos['certificaciones']);
         }
         if (isset($datos['areas_expertise'])) {
-            $campos[] = 'areas_expertise = :areas';
-            $params[':areas'] = trim($datos['areas_expertise']);
+            $sets[] = 'areas_expertise = :expertise';
+            $params[':expertise'] = trim($datos['areas_expertise']);
         }
-        
-        if (empty($campos)) {
+        if (array_key_exists('foto_perfil', $datos)) {
+            $sets[] = 'foto_perfil = :foto';
+            $params[':foto'] = $datos['foto_perfil'] ?: null;
+        }
+
+        if (empty($sets)) {
             return false;
         }
-        
-        $sql = "UPDATE tutores SET " . implode(', ', $campos) . " WHERE id_tutor = :id";
+
+        $setsSql = implode(', ', $sets);
+        $params[':id'] = $id_tutor;
+
+        $sql = "UPDATE tutores SET {$setsSql} WHERE id_tutor = :id";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($params);
     }

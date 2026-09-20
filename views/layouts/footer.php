@@ -86,6 +86,21 @@
       if (result.isConfirmed) enviarPostSeguro(url, { motivo: result.value.trim() });
     });
   }
+  function confirmarTransicion(url, mensaje, tipo = 'info') {
+    Swal.fire({
+      icon: tipo,
+      title: mensaje,
+      showCancelButton: true,
+      confirmButtonColor: tipo === 'warning' ? '#f59e0b' : '#002b49',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      customClass: { popup: 'swal-upds-popup' }
+    }).then((result) => {
+      if (result.isConfirmed) enviarPostSeguro(url);
+    });
+  }
 </script>
 </body>
 </html>

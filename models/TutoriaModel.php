@@ -219,13 +219,15 @@ class TutoriaModel
     {
         $sql = "SELECT tu.*, ut.nombre AS tut_nombre, ut.apellido AS tut_apellido, ut.correo AS tut_correo,
                        m.nombre_materia, c.nombre_carrera, ev.calificacion, ev.comentario AS ev_comentario,
-                       ss.asistio, ss.temas_tratados, ss.avance, ss.recomendaciones
+                       ss.asistio, ss.temas_tratados, ss.avance, ss.recomendaciones,
+                       bh.nombre_bloque
                 FROM tutorias tu INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
                 INNER JOIN usuarios ut ON t.id_usuario = ut.id_usuario
                 INNER JOIN materias m ON tu.id_materia = m.id_materia
                 LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
                 LEFT JOIN evaluaciones_tutoria ev ON tu.id_tutoria = ev.id_tutoria
                 LEFT JOIN seguimiento_sesion ss ON tu.id_tutoria = ss.id_tutoria
+                LEFT JOIN bloques_horarios bh ON tu.id_bloque = bh.id_bloque
                 WHERE tu.id_estudiante = :id_est ORDER BY tu.fecha DESC, tu.hora_inicio DESC LIMIT :limite OFFSET :offset";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':id_est', $id_estudiante, PDO::PARAM_INT);

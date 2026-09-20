@@ -31,7 +31,7 @@ if (!$idTutor) {
     exit;
 }
 
-$tutor = $tutorModel->obtenerPorId($idTutor);
+$tutor = $tutorModel->obtenerPerfilCompleto($idTutor);
 if (!$tutor) {
     header("Location: tutores_listar.php");
     exit;
@@ -59,18 +59,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 3. Actualizar perfil profesional completo
-    if ($accion === 'actualizar_perfil') {
-        $datosPerfil = [
-            'especialidad' => $_POST['especialidad'] ?? '',
-            'biografia' => $_POST['biografia'] ?? '',
-            'foto_perfil' => $_POST['foto_perfil'] ?? '',
+    if ($accion === 'actualizar_perfil_completo') {
+        $datos = [
+            'especialidad'    => $_POST['especialidad'] ?? '',
+            'biografia'      => $_POST['biografia'] ?? '',
             'perfil_linkedin' => $_POST['perfil_linkedin'] ?? '',
             'certificaciones' => $_POST['certificaciones'] ?? '',
             'areas_expertise' => $_POST['areas_expertise'] ?? '',
+            'foto_perfil'    => $_POST['foto_perfil'] ?? null,  // ruta relativa, no data URI
         ];
-        $tutorModel->actualizarPerfilCompleto($idTutor, $datosPerfil);
-        $tutor = $tutorModel->obtenerPorId($idTutor);
-        flash_set('success', 'Perfil profesional actualizado con éxito.');
+        if ($tutorModel->actualizarPerfilCompleto($idTutor, $datos)) {
+            flash_set('success', 'Perfil profesional actualizado con éxito.');
+        } else {
+            $errores[] = 'No se pudo actualizar el perfil.';
+        }
+        $tutor = $tutorModel->obtenerPerfilCompleto($idTutor);
     }
 }
 

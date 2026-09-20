@@ -41,10 +41,10 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="row g-4">
   <div class="col-12">
-    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, var(--upds-navy) 0%, var(--upds-navy-deep) 100%) !important;">
+    <div class="card card-custom p-4 text-white shadow" style="background: linear-gradient(135deg, var(--upds-navy) 0%, var(--upds-accent) 100%) !important;">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
-          <h2 class="fw-bold mb-1">¡Bienvenido(a), Prof. <?= htmlspecialchars($_SESSION['nombre']) ?>! 👋</h2>
+          <h2 class="fw-bold mb-1">Bienvenido, Prof. <?= htmlspecialchars($_SESSION['nombre']) ?></h2>
           <p class="mb-0 text-white-50">Portal Docente de Tutorías Académicas &bull; <?= htmlspecialchars($tutor['especialidad'] ?? 'Docencia') ?></p>
         </div>
         <div class="d-flex gap-2">
@@ -59,38 +59,38 @@ include __DIR__ . '/../layouts/header.php';
 
   <!-- Métricas en vivo -->
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-warning) !important;">
-      <div class="mb-2" style="color: var(--upds-warning); font-size: 2rem;"><i class="bi bi-clock"></i></div>
-      <h3 class="fw-bold mb-0 text-dark"><?= $pendientes ?></h3>
-      <p class="text-muted small mb-0">Solicitudes Pendientes</p>
+    <div class="card card-custom p-4 text-center kpi-card kpi-warning">
+      <div class="kpi-icon"><i class="bi bi-clock"></i></div>
+      <div class="kpi-value"><?= $pendientes ?></div>
+      <div class="kpi-label">Solicitudes Pendientes</div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-info) !important;">
-      <div class="mb-2" style="color: var(--upds-info); font-size: 2rem;"><i class="bi bi-calendar-check"></i></div>
-      <h3 class="fw-bold mb-0 text-dark"><?= $confirmadas ?></h3>
-      <p class="text-muted small mb-0">Sesiones Agendadas/Confirmadas</p>
+    <div class="card card-custom p-4 text-center kpi-card kpi-info">
+      <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
+      <div class="kpi-value"><?= $confirmadas ?></div>
+      <div class="kpi-label">Sesiones Confirmadas</div>
     </div>
   </div>
   <div class="col-md-4">
-     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-success) !important;">
-       <div class="mb-2" style="color: var(--upds-success); font-size: 2rem;"><i class="bi bi-check2-circle"></i></div>
-       <h3 class="fw-bold mb-0 text-dark"><?= $realizadas ?></h3>
-       <p class="text-muted small mb-0">Tutorías Realizadas con Éxito</p>
+     <div class="card card-custom p-4 text-center kpi-card kpi-success">
+       <div class="kpi-icon"><i class="bi bi-check2-circle"></i></div>
+       <div class="kpi-value"><?= $realizadas ?></div>
+       <div class="kpi-label">Tutorías Realizadas</div>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-academic) !important;">
-       <div class="mb-2" style="color: var(--upds-academic); font-size: 2rem;"><i class="bi bi-arrow-repeat"></i></div>
-       <h3 class="fw-bold mb-0 text-dark"><?= $enProceso ?></h3>
-       <p class="text-muted small mb-0">Sesiones En Proceso</p>
+     <div class="card card-custom p-4 text-center kpi-card kpi-academic">
+       <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+       <div class="kpi-value"><?= $enProceso ?></div>
+       <div class="kpi-label">Sesiones En Proceso</div>
      </div>
   </div>
   <div class="col-md-6">
-     <div class="card card-custom p-4 text-center border-start border-4" style="border-color: var(--upds-muted) !important;">
-       <div class="mb-2" style="color: var(--upds-muted); font-size: 2rem;"><i class="bi bi-pause-circle"></i></div>
-       <h3 class="fw-bold mb-0 text-dark"><?= $detenidas ?></h3>
-       <p class="text-muted small mb-0">Sesiones Detenidas</p>
+     <div class="card card-custom p-4 text-center kpi-card kpi-inactive">
+       <div class="kpi-icon"><i class="bi bi-pause-circle"></i></div>
+       <div class="kpi-value"><?= $detenidas ?></div>
+       <div class="kpi-label">Sesiones Detenidas</div>
      </div>
   </div>
 
@@ -383,17 +383,17 @@ include __DIR__ . '/../layouts/header.php';
                       </a>
                     <?php elseif ($t['estado'] === 'confirmada'): ?>
                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=en_proceso"
-                         class="btn btn-sm btn-warning text-dark d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Iniciar la sesión">
+                         class="btn btn-sm btn-warning text-dark d-flex align-items-center gap-1" onclick="confirmarTransicion(this.href, '¿Iniciar esta sesión? Esta acción registra el inicio de la tutoría.'); return false;" title="Iniciar la sesión">
                         <i class="bi bi-play-circle"></i> Iniciar Sesión
                       </a>
                     <?php elseif ($t['estado'] === 'en_proceso'): ?>
                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=realizada"
-                         class="btn btn-sm btn-success d-flex align-items-center gap-1" onclick="enviarPostSeguro(this.href); return false;" title="Finalizar con éxito">
+                         class="btn btn-sm btn-success d-flex align-items-center gap-1" onclick="confirmarTransicion(this.href, '¿Finalizar esta sesión como realizada?'); return false;" title="Finalizar con éxito">
                         <i class="bi bi-check2-all"></i> Finalizar con Éxito
                       </a>
                       <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=detenido"
-                         class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="confirmarDetencion(this.href); return false;" title="Detener la sesión">
-                        <i class="bi bi-pause-circle"></i> Detener
+                         class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="confirmarTransicion(this.href, '¿Detener esta sesión? El estudiante será notificado.', 'warning'); return false;" title="Detener la sesión">
+                        <i class="bi bi-pause-circle"></i> Detener Sesión
                       </a>
                     <?php endif; ?>
                   </div>
@@ -404,7 +404,7 @@ include __DIR__ . '/../layouts/header.php';
               <tr>
                 <td colspan="6" class="text-center py-5 text-muted">
                   <i class="bi bi-calendar-check fs-1 d-block mb-2 text-secondary"></i>
-                  Aún no tienes solicitudes de tutorías asignadas.
+                  No tiene solicitudes de tutorías asignadas en este momento.
                 </td>
               </tr>
             <?php endif; ?>
