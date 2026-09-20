@@ -19,7 +19,6 @@ if (isset($_SESSION['id_usuario'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#002b49">
   <title>Iniciar Sesión - Sistema de Tutorías UPDS</title>
-  <!-- Reemplazar el logo provisional de assets/img/logo-upds.svg por el logo oficial cuando esté disponible. -->
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +33,7 @@ if (isset($_SESSION['id_usuario'])) {
       <section class="col-lg-6 login-brand-panel" aria-labelledby="loginBrandTitle">
         <div class="login-brand-copy">
           <img class="login-logo" src="/assets/img/logo-upds.svg" alt="UPDS">
+          <div class="login-logo-eslogan">Profesionales <span class="login-logo-plus">+</span> humanos</div>
           <div class="login-kicker">Universidad Privada Domingo Savio · Sede Tarija</div>
           <h1 id="loginBrandTitle" class="login-title">Sistema de Tutorías Académicas</h1>
           <p class="login-lead">Un espacio institucional para conectar estudiantes y tutores con acompañamiento académico oportuno.</p>
