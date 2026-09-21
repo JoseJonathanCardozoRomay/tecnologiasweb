@@ -150,6 +150,15 @@ class TutorModel
         return $stmt->execute($params);
     }
 
+    public function actualizarFotoPerfil($id_tutor, $ruta_foto)
+    {
+        $stmt = $this->pdo->prepare("UPDATE tutores SET foto_perfil = :foto WHERE id_tutor = :id");
+        return $stmt->execute([
+            ':foto' => $ruta_foto,
+            ':id'   => $id_tutor
+        ]);
+    }
+
     public function obtenerBloquesSeleccionados($id_tutor)
     {
         $sql = "SELECT tbs.id_bloque, bh.nombre_bloque, bh.hora_inicio, bh.hora_fin, bh.descripcion

@@ -41,13 +41,20 @@ include __DIR__ . '/../../layouts/header.php';
       </thead>
       <tbody>
         <?php foreach ($periodos as $p): ?>
+          <?php
+          $fechaActual = date('Y-m-d');
+          $periodoCulminado = $p['fecha_fin'] < $fechaActual;
+          $periodoVigente = $p['fecha_inicio'] <= $fechaActual && $p['fecha_fin'] >= $fechaActual;
+          ?>
           <tr>
             <td class="ps-4"><span class="badge badge-accent px-2 py-1"><?= htmlspecialchars($p['codigo']) ?></span></td>
             <td class="fw-semibold text-dark"><?= htmlspecialchars($p['nombre']) ?></td>
             <td><i class="bi bi-calendar-event text-success me-1"></i><?= date('d/m/Y', strtotime($p['fecha_inicio'])) ?></td>
             <td><i class="bi bi-calendar-x text-danger me-1"></i><?= date('d/m/Y', strtotime($p['fecha_fin'])) ?></td>
             <td>
-              <?php if ((int) $p['activo'] === 1): ?>
+              <?php if ($periodoCulminado): ?>
+                <span class="badge bg-dark bg-opacity-10 text-dark border-dark-subtle px-2 py-1"><i class="bi bi-check-circle me-1"></i>Culminado</span>
+              <?php elseif ((int) $p['activo'] === 1): ?>
                 <span class="badge bg-success bg-opacity-10 text-success border-success-subtle px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Activo</span>
               <?php else: ?>
                 <span class="badge bg-secondary bg-opacity-10 text-secondary border-secondary-subtle px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Inactivo</span>
@@ -59,15 +66,21 @@ include __DIR__ . '/../../layouts/header.php';
                         onclick='prepararEditar(<?= json_encode($p, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>
                   <i class="bi bi-pencil-fill"></i>
                 </button>
-                <form method="POST" class="d-inline">
-                  <?php require_once __DIR__ . '/../../../includes/csrf.php'; echo csrf_campo(); ?>
-                  <input type="hidden" name="accion" value="<?= (int) $p['activo'] === 1 ? 'desactivar' : 'activar' ?>">
-                  <input type="hidden" name="id_periodo" value="<?= $p['id_periodo'] ?>">
-                  <button type="submit" class="btn btn-outline-<?= (int) $p['activo'] === 1 ? 'warning' : 'success' ?> btn-sm rounded-end-2"
-                          title="<?= (int) $p['activo'] === 1 ? 'Desactivar' : 'Activar' ?>">
-                    <i class="bi <?= (int) $p['activo'] === 1 ? 'bi-pause-fill' : 'bi-play-fill' ?>"></i>
+                <?php if (!$periodoCulminado): ?>
+                  <form method="POST" class="d-inline">
+                    <?php require_once __DIR__ . '/../../../includes/csrf.php'; echo csrf_campo(); ?>
+                    <input type="hidden" name="accion" value="<?= (int) $p['activo'] === 1 ? 'desactivar' : 'activar' ?>">
+                    <input type="hidden" name="id_periodo" value="<?= $p['id_periodo'] ?>">
+                    <button type="submit" class="btn btn-outline-<?= (int) $p['activo'] === 1 ? 'warning' : 'success' ?> btn-sm rounded-end-2"
+                            title="<?= (int) $p['activo'] === 1 ? 'Desactivar' : 'Activar' ?>">
+                      <i class="bi <?= (int) $p['activo'] === 1 ? 'bi-pause-fill' : 'bi-play-fill' ?>"></i>
+                    </button>
+                  </form>
+                <?php else: ?>
+                  <button type="button" class="btn btn-outline-secondary btn-sm rounded-end-2" disabled title="Periodo culminado - no se puede modificar">
+                    <i class="bi bi-lock-fill"></i>
                   </button>
-                </form>
+                <?php endif; ?>
               </div>
             </td>
           </tr>

@@ -34,6 +34,7 @@ $confirmadas = (int) ($metricasTutor['confirmadas'] ?? 0);
 $realizadas = (int) ($metricasTutor['realizadas'] ?? 0);
 $enProceso = (int) ($metricasTutor['en_proceso'] ?? 0);
 $detenidas = (int) ($metricasTutor['detenido'] ?? 0);
+$canceladas = (int) ($metricasTutor['cancelada'] ?? 0);
 
 $tituloPagina = 'Panel del Docente Tutor - UPDS';
 include __DIR__ . '/../layouts/header.php';
@@ -58,127 +59,41 @@ include __DIR__ . '/../layouts/header.php';
   </div>
 
   <!-- Métricas en vivo -->
-  <div class="col-md-4">
-    <div class="card card-custom p-4 text-center kpi-card kpi-warning">
-      <div class="kpi-icon"><i class="bi bi-clock"></i></div>
-      <div class="kpi-value"><?= $pendientes ?></div>
-      <div class="kpi-label">Solicitudes Pendientes</div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card card-custom p-4 text-center kpi-card kpi-info">
-      <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
-      <div class="kpi-value"><?= $confirmadas ?></div>
-      <div class="kpi-label">Sesiones Confirmadas</div>
-    </div>
-  </div>
-  <div class="col-md-4">
-     <div class="card card-custom p-4 text-center kpi-card kpi-success">
-       <div class="kpi-icon"><i class="bi bi-check2-circle"></i></div>
-       <div class="kpi-value"><?= $realizadas ?></div>
-       <div class="kpi-label">Tutorías Realizadas</div>
-     </div>
-  </div>
-  <div class="col-md-6">
-     <div class="card card-custom p-4 text-center kpi-card kpi-academic">
-       <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
-       <div class="kpi-value"><?= $enProceso ?></div>
-       <div class="kpi-label">Sesiones En Proceso</div>
-     </div>
-  </div>
-  <div class="col-md-6">
-     <div class="card card-custom p-4 text-center kpi-card kpi-inactive">
-       <div class="kpi-icon"><i class="bi bi-pause-circle"></i></div>
-       <div class="kpi-value"><?= $detenidas ?></div>
-       <div class="kpi-label">Sesiones Detenidas</div>
-     </div>
-  </div>
-
-  <!-- Perfil Profesional -->
-  <div class="col-12">
-    <div class="card card-custom shadow-sm">
-      <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
-          <i class="bi bi-person-lines-fill text-primary"></i>
-          <span>Perfil Profesional</span>
-        </h5>
-        <a href="/controllers/tutores_disponibilidad.php?id=<?= $idTutor ?>" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-pencil me-1"></i> Editar Perfil
-        </a>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+      <div class="card card-custom p-3 text-center border-start border-warning border-4">
+        <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Pendientes</small>
+        <h3 class="fw-bold mb-0 text-warning"><?= $pendientes ?></h3>
       </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-3 text-center">
-            <div class="profile-photo-container">
-              <div class="profile-photo-wrapper" onclick="document.getElementById('profile-photo-input').click()">
-                <?php if (!empty($tutor['foto_perfil'])): ?>
-                  <img src="<?= htmlspecialchars($tutor['foto_perfil']) ?>" alt="Foto de perfil">
-                <?php else: ?>
-                  <div class="profile-photo-placeholder">
-                    <?= strtoupper(substr($tutor['nombre'], 0, 1) . substr($tutor['apellido'], 0, 1)) ?>
-                  </div>
-                <?php endif; ?>
-                <div class="profile-photo-overlay">
-                  <i class="bi bi-camera me-1"></i> Cambiar foto
-                </div>
-              </div>
-              <input type="file" id="profile-photo-input" class="profile-photo-input" accept="image/*" onchange="handleProfilePhoto(this)">
-              <input type="hidden" name="foto_perfil" id="foto_perfil_hidden" value="<?= htmlspecialchars($tutor['foto_perfil'] ?? '') ?>">
-              <div class="d-flex gap-2">
-                <button type="button" class="profile-photo-button" onclick="document.getElementById('profile-photo-input').click()">
-                  <i class="bi bi-upload"></i> Subir foto
-                </button>
-                <?php if (!empty($tutor['foto_perfil'])): ?>
-                  <button type="button" class="profile-photo-button profile-photo-remove" onclick="removeProfilePhoto()">
-                    <i class="bi bi-trash"></i> Eliminar
-                  </button>
-                <?php endif; ?>
-              </div>
-            </div>
-            <h6 class="fw-bold mb-0 mt-3"><?= htmlspecialchars($tutor['nombre'] . ' ' . $tutor['apellido']) ?></h6>
-            <small class="text-muted"><?= htmlspecialchars($tutor['correo']) ?></small>
-          </div>
-          <div class="col-md-9">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="small text-muted text-uppercase fw-semibold">Especialidad</label>
-                <div class="fw-medium"><?= htmlspecialchars($tutor['especialidad'] ?? 'No especificada') ?></div>
-              </div>
-              <?php if (!empty($tutor['perfil_linkedin'])): ?>
-                <div class="col-md-6 mb-3">
-                  <label class="small text-muted text-uppercase fw-semibold">LinkedIn</label>
-                  <div>
-                    <a href="<?= htmlspecialchars($tutor['perfil_linkedin']) ?>" target="_blank" class="text-primary text-decoration-none">
-                      <i class="bi bi-linkedin me-1"></i> Ver perfil
-                    </a>
-                  </div>
-                </div>
-              <?php endif; ?>
-              <?php if (!empty($tutor['biografia'])): ?>
-                <div class="col-12 mb-3">
-                  <label class="small text-muted text-uppercase fw-semibold">Biografía</label>
-                  <div class="text-muted"><?= nl2br(htmlspecialchars($tutor['biografia'])) ?></div>
-                </div>
-              <?php endif; ?>
-              <?php if (!empty($tutor['certificaciones'])): ?>
-                <div class="col-12 mb-3">
-                  <label class="small text-muted text-uppercase fw-semibold">Certificaciones / Títulos</label>
-                  <div class="text-muted"><?= nl2br(htmlspecialchars($tutor['certificaciones'])) ?></div>
-                </div>
-              <?php endif; ?>
-              <?php if (!empty($tutor['areas_expertise'])): ?>
-                <div class="col-12 mb-3">
-                  <label class="small text-muted text-uppercase fw-semibold">Áreas de Expertise</label>
-                  <div>
-                    <?php foreach (explode(',', $tutor['areas_expertise']) as $area): ?>
-                      <span class="badge bg-light text-dark border me-1 mb-1"><?= htmlspecialchars(trim($area)) ?></span>
-                    <?php endforeach; ?>
-                  </div>
-                </div>
-              <?php endif; ?>
-            </div>
-          </div>
-        </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card card-custom p-3 text-center border-start border-info border-4">
+        <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Confirmadas</small>
+        <h3 class="fw-bold mb-0 text-info"><?= $confirmadas ?></h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card card-custom p-3 text-center border-start border-success border-4">
+        <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Realizadas</small>
+        <h3 class="fw-bold mb-0 text-success"><?= $realizadas ?></h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card card-custom p-3 text-center border-start border-primary border-4">
+        <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">En Proceso</small>
+        <h3 class="fw-bold mb-0 text-primary"><?= $enProceso ?></h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card card-custom p-3 text-center border-start border-secondary border-4">
+        <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Detenidas</small>
+        <h3 class="fw-bold mb-0 text-secondary"><?= $detenidas ?></h3>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="card card-custom p-3 text-center border-start border-danger border-4">
+        <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Canceladas</small>
+        <h3 class="fw-bold mb-0 text-danger"><?= $canceladas ?></h3>
       </div>
     </div>
   </div>

@@ -73,8 +73,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($accion === 'activar' || $accion === 'desactivar') {
             $id = filter_var($_POST['id_periodo'] ?? null, FILTER_VALIDATE_INT);
             if ($id) {
-                $periodoModel->cambiarActivo($id, $accion === 'activar');
-                flash_set('success', $accion === 'activar' ? 'Periodo activado.' : 'Periodo desactivado.');
+                $periodo = $periodoModel->obtenerPorId($id);
+                if ($periodo) {
+                    $fechaActual = date('Y-m-d');
+                    $periodoCulminado = $periodo['fecha_fin'] < $fechaActual;
+                    if ($periodoCulminado) {
+                        flash_set('error', 'No se puede modificar un periodo culminado.');
+                    } else {
+                        $periodoModel->cambiarActivo($id, $accion === 'activar');
+                        flash_set('success', $accion === 'activar' ? 'Periodo activado.' : 'Periodo desactivado.');
+                    }
+                }
             }
             header('Location: admin_periodos.php');
             exit;

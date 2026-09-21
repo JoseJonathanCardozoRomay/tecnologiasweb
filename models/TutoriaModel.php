@@ -297,7 +297,8 @@ class TutoriaModel
             SUM(estado = 'confirmada') AS confirmadas,
             SUM(estado = 'realizada') AS realizadas,
             SUM(estado = 'en_proceso') AS en_proceso,
-            SUM(estado = 'detenido') AS detenido
+            SUM(estado = 'detenido') AS detenido,
+            SUM(estado = 'cancelada') AS cancelada
             FROM tutorias WHERE id_tutor = :id_tutor");
         $stmt->execute([':id_tutor' => $id_tutor]);
         return $stmt->fetch();

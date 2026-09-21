@@ -6,28 +6,40 @@ include __DIR__ . '/../layouts/header.php';
 
 <!-- Métricas de Tutorías -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-2">
     <div class="card card-custom p-3 text-center border-start border-primary border-4">
-      <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Total Sesiones</small>
+      <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Total</small>
       <h3 class="fw-bold mb-0 text-dark"><?= $metricas['total'] ?? 0 ?></h3>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-2">
     <div class="card card-custom p-3 text-center border-start border-accent border-4">
       <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Pendientes</small>
       <h3 class="fw-bold mb-0 text-accent"><?= $metricas['pendientes'] ?? 0 ?></h3>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-2">
     <div class="card card-custom p-3 text-center border-start border-info border-4">
       <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Confirmadas</small>
       <h3 class="fw-bold mb-0 text-info"><?= $metricas['confirmadas'] ?? 0 ?></h3>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-2">
     <div class="card card-custom p-3 text-center border-start border-success border-4">
       <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Realizadas</small>
       <h3 class="fw-bold mb-0 text-success"><?= $metricas['realizadas'] ?? 0 ?></h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card card-custom p-3 text-center border-start border-warning border-4">
+      <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">En Proceso</small>
+      <h3 class="fw-bold mb-0 text-warning"><?= $metricas['en_proceso'] ?? 0 ?></h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card card-custom p-3 text-center border-start border-danger border-4">
+      <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem;">Canceladas</small>
+      <h3 class="fw-bold mb-0 text-danger"><?= $metricas['canceladas'] ?? 0 ?></h3>
     </div>
   </div>
 </div>
@@ -65,6 +77,9 @@ include __DIR__ . '/../layouts/header.php';
   </a>
   <a href="<?= urlLista(['estado' => 'detenido', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'detenido' ? 'btn-secondary fw-bold' : 'btn-outline-secondary' ?> rounded-pill px-3">
      <i class="bi bi-pause-circle me-1"></i>Detenidas
+  </a>
+  <a href="<?= urlLista(['estado' => 'cancelada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger text-white fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
+     <i class="bi bi-x-circle me-1"></i>Canceladas
   </a>
   <a href="<?= urlLista(['estado' => 'cancelada', 'pagina' => 1]) ?>" class="btn btn-sm <?= $filtroEstado === 'cancelada' ? 'btn-danger fw-bold' : 'btn-outline-danger' ?> rounded-pill px-3">
      <i class="bi bi-x-circle me-1"></i>Canceladas

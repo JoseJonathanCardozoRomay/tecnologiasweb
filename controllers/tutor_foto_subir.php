@@ -110,8 +110,15 @@ if (!move_uploaded_file($tmpName, $rutaDestino)) {
 // La ruta RELATIVA para guardar en la BD
 $rutaRelativa = 'assets/img/tutores/' . $nuevoNombre;
 
+// Guardar la ruta en la base de datos
+if (!$tutorModel->actualizarFotoPerfil($idTutor, $rutaRelativa)) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Error al guardar la ruta en la base de datos.']);
+    exit;
+}
+
 echo json_encode([
     'ok' => true,
     'ruta' => $rutaRelativa,
-    'mensaje' => 'Foto subida correctamente.'
+    'mensaje' => 'Foto subida y guardada correctamente.'
 ]);
