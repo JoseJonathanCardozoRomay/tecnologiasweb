@@ -57,31 +57,13 @@ if ($idTutoria && in_array($nuevoEstado, $estadosValidos, true)) {
 
             // Las notificaciones nunca deben impedir el cambio de estado.
             try {
-                $notificacionModel = new NotificacionModel($pdo);
-                $materia = $actual['nombre_materia'] ?? 'la tutoría';
-                if ($nuevoEstado === 'confirmada') {
-                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'confirmada',
-                        'Tu tutoría de ' . $materia . ' fue confirmada.', '/views/estudiante/panel.php');
-                } elseif ($nuevoEstado === 'en_proceso') {
-                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'en_proceso',
-                        'Tu tutoría de ' . $materia . ' está en proceso.', '/views/estudiante/panel.php');
-                } elseif ($nuevoEstado === 'detenido') {
-                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'detenido',
-                        'Tu tutoría de ' . $materia . ' fue detenida.', '/views/estudiante/panel.php');
-                } elseif ($nuevoEstado === 'realizada') {
-                    $notificacionModel->crear($actual['estudiante_id_usuario'], 'realizada',
-                        'Tu tutoría de ' . $materia . ' se marcó como realizada. Ya puedes calificarla.', '/views/estudiante/panel.php');
-                } elseif ($nuevoEstado === 'cancelada') {
-                    $mensaje = 'Una tutoría de ' . $materia . ' fue cancelada. Motivo: ' . $motivoCancelacion;
-                    if ($rol === 'administrador') {
-                        $notificacionModel->crear($actual['estudiante_id_usuario'], 'cancelada', $mensaje, '/views/estudiante/panel.php');
-                        $notificacionModel->crear($actual['tutor_id_usuario'], 'cancelada', $mensaje, '/views/tutor/panel.php');
-                    } elseif ($rol === 'tutor') {
-                        $notificacionModel->crear($actual['estudiante_id_usuario'], 'cancelada', $mensaje, '/views/estudiante/panel.php');
-                    } else {
-                        $notificacionModel->crear($actual['tutor_id_usuario'], 'cancelada', $mensaje, '/views/tutor/panel.php');
-                    }
-                }
+                (new NotificacionModel($pdo))->notificarCambioEstado(
+                    $actual,
+                    $nuevoEstado,
+                    $rol,
+                    $motivoCancelacion,
+                    (int) ($_SESSION['id_usuario'] ?? 0)
+                );
             } catch (Throwable $e) {
                 error_log($e->getMessage());
             }

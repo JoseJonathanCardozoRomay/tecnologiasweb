@@ -33,7 +33,20 @@ include __DIR__ . '/../partials/page_header.php';
         </div>
         <div class="flex-grow-1">
           <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border-secondary-subtle text-uppercase"><?= htmlspecialchars($n['tipo']) ?></span>
+            <?php
+            $etiquetasTipo = [
+                'nueva_solicitud' => 'Nueva solicitud',
+                'confirmada'      => 'Confirmada',
+                'en_proceso'      => 'En proceso',
+                'detenido'        => 'Detenida',
+                'realizada'       => 'Realizada',
+                'cancelada'       => 'Cancelada',
+                'seguimiento'     => 'Seguimiento',
+            ];
+            $tipoClave = (string) ($n['tipo'] ?? '');
+            $tipoVisible = $etiquetasTipo[$tipoClave] ?? $tipoClave;
+            ?>
+            <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border-secondary-subtle"><?= htmlspecialchars($tipoVisible) ?></span>
             <?php if (empty($n['leida'])): ?>
               <span class="badge rounded-pill bg-danger">Nueva</span>
             <?php else: ?>

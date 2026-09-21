@@ -438,8 +438,9 @@ class TutoriaModel
             if ($this->hayCruceEstudiante($datos['id_estudiante'], $datos['fecha'], $datos['hora_inicio'], $datos['hora_fin'])) { $this->pdo->rollBack(); return ['ok' => false, 'error' => 'El estudiante ya tiene una tutoría en ese horario.']; }
             if ($this->contarActivasPorEstudiante($datos['id_estudiante']) >= TUTORIA_MAX_ACTIVAS) { $this->pdo->rollBack(); return ['ok' => false, 'error' => 'El estudiante alcanzó el máximo de ' . TUTORIA_MAX_ACTIVAS . ' tutorías activas.']; }
             $this->crear($datos);
+            $idTutoria = (int) $this->pdo->lastInsertId();
             $this->pdo->commit();
-            return ['ok' => true, 'error' => null];
+            return ['ok' => true, 'error' => null, 'id' => $idTutoria];
         } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             error_log($e->getMessage());

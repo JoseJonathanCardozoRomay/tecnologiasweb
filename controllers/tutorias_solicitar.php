@@ -133,15 +133,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errores[] = $resultado['error'];
             } else {
                 try {
+                    $notificacionModel = new NotificacionModel($pdo);
+                    $idTutoriaCreada = (int) ($resultado['id'] ?? 0);
                     $tutorSolicitado = $tutorModel->obtenerPorId((int) $datos['id_tutor']);
                     if ($tutorSolicitado && !empty($tutorSolicitado['id_usuario'])) {
-                        (new NotificacionModel($pdo))->crear(
-                            $tutorSolicitado['id_usuario'],
-                            'nueva_solicitud',
-                            'Tienes una nueva solicitud de tutoría.',
-                            '/views/tutor/panel.php'
+                        $notificacionModel->generarNotificacionSolicitud(
+                            (int) $tutorSolicitado['id_usuario'],
+                            $idTutoriaCreada,
+                            (int) $datos['id_materia'],
+                            (int) $datos['id_estudiante']
                         );
                     }
+                    $notificacionModel->generarNotificacionParaAdmin(
+                        $idTutoriaCreada,
+                        (int) $datos['id_materia'],
+                        (int) $datos['id_estudiante'],
+                        (int) $datos['id_tutor'],
+                        $idUsuario
+                    );
                 } catch (Throwable $e) {
                     error_log($e->getMessage());
                 }
