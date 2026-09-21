@@ -25,10 +25,17 @@ if (!empty($_SESSION['id_usuario'])) {
     }
 }
 function campanaNotificaciones($noLeidas) {
+    $noLeidas = (int) $noLeidas;
     $insignia = $noLeidas > 0
-        ? '<span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: .6rem;">' . (int) $noLeidas . '</span>'
+        ? '<span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: .6rem;">' . $noLeidas . '</span>'
         : '';
-    return '<a href="/controllers/notificaciones_listar.php" class="position-relative d-inline-flex align-items-center justify-content-center p-2 text-decoration-none" aria-label="Notificaciones" title="Notificaciones">'
+    // .campana-notif fija un color propio: sin él, la campana heredaba el color de
+    // enlace (azul marino) y desaparecía sobre los fondos azul oscuro del navbar.
+    $clases = 'campana-notif position-relative d-inline-flex align-items-center justify-content-center p-2 text-decoration-none';
+    if ($noLeidas > 0) {
+        $clases .= ' campana-activa';
+    }
+    return '<a href="/controllers/notificaciones_listar.php" class="' . $clases . '" aria-label="Notificaciones' . ($noLeidas > 0 ? ': ' . $noLeidas . ' sin leer' : '') . '" title="Notificaciones">'
         . '<i class="bi bi-bell" aria-hidden="true"></i>' . $insignia . '</a>';
 }
 ?>

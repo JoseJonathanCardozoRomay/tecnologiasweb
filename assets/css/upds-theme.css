@@ -164,6 +164,28 @@ a:hover { color: var(--upds-navy-deep); }
 .student-main { width: 100%; margin-left: 0; }
 .mobile-menu-bar { display: none; }
 
+/* Campana de notificaciones: sin color propio heredaba el color de enlace
+   (azul marino) y quedaba invisible sobre los fondos azul oscuro. */
+.campana-notif {
+  color: var(--upds-navy);
+  font-size: 1.15rem;
+  transition: color .18s ease, transform .18s ease;
+}
+.campana-notif:hover { color: var(--upds-accent-dark); transform: scale(1.1); }
+.campana-notif.campana-activa { color: var(--upds-danger); }
+/* Sobre fondo oscuro (navbar del estudiante y menú móvil): blanco puro, máximo contraste. */
+.student-navbar .campana-notif,
+.mobile-menu-bar .campana-notif { color: #fff; }
+.student-navbar .campana-notif:hover,
+.mobile-menu-bar .campana-notif:hover { color: var(--upds-warning); }
+.student-navbar .campana-notif.campana-activa,
+.mobile-menu-bar .campana-notif.campana-activa { animation: campana-temblar 2.4s ease-in-out infinite; }
+@keyframes campana-temblar {
+  0%, 88%, 100% { transform: rotate(0); }
+  92% { transform: rotate(12deg); }
+  96% { transform: rotate(-12deg); }
+}
+
 .page-header { border-bottom: 1px solid var(--upds-border); padding-bottom: 1rem; }
 .page-title { color: var(--upds-navy); font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .25rem; }
 .page-description { color: var(--upds-muted); font-size: .9rem; }
