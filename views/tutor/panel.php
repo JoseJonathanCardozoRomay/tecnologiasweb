@@ -7,6 +7,8 @@ require_once __DIR__ . '/../../models/TutorModel.php';
 require_once __DIR__ . '/../../models/TutoriaModel.php';
 require_once __DIR__ . '/../../models/BloqueModel.php';
 require_once __DIR__ . '/../../includes/lista_helper.php';
+require_once __DIR__ . '/../../includes/csrf.php';
+require_once __DIR__ . '/../../includes/flash.php';
 
 $tutorModel = new TutorModel($pdo);
 $tutoriaModel = new TutoriaModel($pdo);
@@ -22,6 +24,29 @@ if (!$tutor) {
 }
 
 $idTutor = $tutor['id_tutor'];
+
+// Actualizar perfil profesional desde el panel del tutor
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'actualizar_perfil_completo') {
+    csrf_validar();
+    $datos = [
+        'especialidad'    => $_POST['especialidad'] ?? '',
+        'biografia'       => $_POST['biografia'] ?? '',
+        'perfil_linkedin' => $_POST['perfil_linkedin'] ?? '',
+        'certificaciones' => $_POST['certificaciones'] ?? '',
+        'areas_expertise' => $_POST['areas_expertise'] ?? '',
+        'foto_perfil'     => $_POST['foto_perfil'] ?? null,  // ruta relativa, no data URI
+    ];
+    if ($tutorModel->actualizarPerfilCompleto($idTutor, $datos)) {
+        flash_set('success', 'Perfil profesional actualizado con éxito.');
+    } else {
+        flash_set('error', 'No se pudo actualizar el perfil.');
+    }
+    header('Location: /views/tutor/panel.php#perfil');
+    exit;
+}
+
+// Recargar perfil con todos los campos profesionales
+$tutor = $tutorModel->obtenerPerfilCompleto($idTutor) ?: $tutor;
 $totalRegistros = $tutoriaModel->contarPorTutor($idTutor);
 $pag = paginacionCalcular($totalRegistros, paginacionParametros(10));
 $misTutorias = $tutoriaModel->obtenerPorTutorPaginadas($idTutor, $pag['por_pagina'], $pag['offset']);
@@ -136,7 +161,97 @@ include __DIR__ . '/../layouts/header.php';
     </div>
   </div>
 
-   <!-- Listado de tutorías asignadas -->
+   <!-- Perfil Profesional del docente -->
+  <div class="col-12" id="perfil">
+    <div class="card card-custom shadow-sm">
+      <div class="card-header bg-white py-3 border-0">
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-person-lines-fill text-primary"></i>
+          <span>Mi Perfil Profesional</span>
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <?= csrf_campo(); ?>
+          <input type="hidden" name="accion" value="actualizar_perfil_completo">
+
+          <div class="row g-4">
+            <!-- Avatar + foto -->
+            <div class="col-12 col-lg-4">
+              <div class="d-flex flex-column align-items-center">
+                <div class="profile-photo-container">
+                  <div class="profile-photo-wrapper">
+                    <?php if (!empty($tutor['foto_perfil'])): ?>
+                      <img src="/<?= htmlspecialchars($tutor['foto_perfil']) ?>" alt="Foto de perfil">
+                    <?php else: ?>
+                      <div class="profile-photo-placeholder">
+                        <?= strtoupper(substr($tutor['nombre'] ?? 'T', 0, 1) . substr($tutor['apellido'] ?? '', 0, 1)) ?>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                  <button type="button" class="profile-photo-button" onclick="document.getElementById('profile-photo-input').click()">
+                    <i class="bi bi-camera"></i> Cambiar foto
+                  </button>
+                  <?php if (!empty($tutor['foto_perfil'])): ?>
+                    <button type="button" class="profile-photo-button profile-photo-remove" onclick="removeProfilePhoto()">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                  <?php endif; ?>
+                </div>
+                <input type="file" id="profile-photo-input" class="profile-photo-input" accept="image/jpeg,image/png,image/webp" onchange="handleProfilePhoto(this)">
+                <input type="hidden" name="foto_perfil" id="foto_perfil_hidden" value="<?= htmlspecialchars($tutor['foto_perfil'] ?? '') ?>">
+                <small class="text-muted mt-2 text-center">JPG, PNG o WebP. Máximo 2 MB.</small>
+              </div>
+            </div>
+
+            <!-- Campos del perfil -->
+            <div class="col-12 col-lg-8">
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">Especialidad principal</label>
+                  <input type="text" name="especialidad" class="form-control form-control-sm"
+                         value="<?= htmlspecialchars($tutor['especialidad'] ?? '') ?>"
+                         placeholder="Ej: Desarrollo Web, Bases de Datos, Redes...">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small text-muted">Perfil de LinkedIn</label>
+                  <input type="url" name="perfil_linkedin" class="form-control form-control-sm"
+                         value="<?= htmlspecialchars($tutor['perfil_linkedin'] ?? '') ?>"
+                         placeholder="https://www.linkedin.com/in/...">
+                </div>
+                <div class="col-12">
+                  <label class="form-label small text-muted">Biografía / Presentación</label>
+                  <textarea name="biografia" class="form-control form-control-sm" rows="3"
+                            placeholder="Cuéntanos sobre tu trayectoria académica y profesional..."><?= htmlspecialchars($tutor['biografia'] ?? '') ?></textarea>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small text-muted">Certificaciones y títulos</label>
+                  <textarea name="certificaciones" class="form-control form-control-sm" rows="2"
+                            placeholder="Ej: Ingeniero de Sistemas UPDS (2020), AWS Cloud Practitioner (2023)..."><?= htmlspecialchars($tutor['certificaciones'] ?? '') ?></textarea>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small text-muted">Áreas de expertise</label>
+                  <input type="text" name="areas_expertise" class="form-control form-control-sm"
+                         value="<?= htmlspecialchars($tutor['areas_expertise'] ?? '') ?>"
+                         placeholder="Ej: Desarrollo Web, Bases de Datos, Inteligencia Artificial (separar con comas)">
+                  <div class="form-text">Separa cada área con comas. Estos temas aparecerán como badges en tu perfil.</div>
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-primary btn-sm px-4">
+                    <i class="bi bi-check2-circle me-1"></i> Actualizar Perfil Profesional
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listado de tutorías asignadas -->
   <div class="col-12">
     <div class="card card-custom shadow-sm overflow-hidden">
       <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
@@ -338,25 +453,25 @@ function handleProfilePhoto(input) {
     
     // Validar que sea una imagen
     if (!file.type.startsWith('image/')) {
-      alert('Por favor selecciona un archivo de imagen válido.');
+      mostrarToast('Por favor selecciona un archivo de imagen válido.', 'warning');
       input.value = '';
       return;
     }
-    
+
     // Validar tamaño (máximo 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('La imagen no debe superar los 2MB.');
+      mostrarToast('La imagen no debe superar los 2 MB.', 'warning');
       input.value = '';
       return;
     }
-    
+
     // Previsualizar imagen antes de subir
     const reader = new FileReader();
     reader.onload = function(e) {
       const wrapper = document.querySelector('.profile-photo-wrapper');
       const existingImg = wrapper.querySelector('img');
       const existingPlaceholder = wrapper.querySelector('.profile-photo-placeholder');
-      
+
       if (existingImg) {
         existingImg.src = e.target.result;
       } else if (existingPlaceholder) {
@@ -368,11 +483,11 @@ function handleProfilePhoto(input) {
       }
     };
     reader.readAsDataURL(file);
-    
+
     // Subir archivo al servidor
     const formData = new FormData();
     formData.append('foto_file', file);
-    
+
     fetch('/controllers/tutor_foto_subir.php', {
       method: 'POST',
       body: formData
@@ -381,11 +496,11 @@ function handleProfilePhoto(input) {
     .then(data => {
       if (data.ok) {
         document.getElementById('foto_perfil_hidden').value = data.ruta;
-        
+
         // Mostrar botón de eliminar
         const removeBtn = document.querySelector('.profile-photo-remove');
         if (!removeBtn) {
-          const btnContainer = document.querySelector('.profile-photo-container .d-flex');
+          const btnContainer = document.querySelector('#perfil .d-flex.gap-2');
           const removeButton = document.createElement('button');
           removeButton.type = 'button';
           removeButton.className = 'profile-photo-button profile-photo-remove';
@@ -394,13 +509,13 @@ function handleProfilePhoto(input) {
           btnContainer.appendChild(removeButton);
         }
       } else {
-        alert('Error al subir la foto: ' + data.error);
+        mostrarToast('Error al subir la foto: ' + data.error, 'danger');
         input.value = '';
       }
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('Error al subir la foto. Por favor intenta nuevamente.');
+      mostrarToast('Error al subir la foto. Por favor intenta nuevamente.', 'danger');
       input.value = '';
     });
   }

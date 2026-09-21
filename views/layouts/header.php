@@ -45,8 +45,10 @@ function campanaNotificaciones($noLeidas) {
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
   <link rel="stylesheet" href="/assets/css/upds-theme.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <?php if ($esEstudiante): ?>
@@ -101,8 +103,15 @@ function campanaNotificaciones($noLeidas) {
         <?php endif; ?>
       </nav>
       <div class="sidebar-user d-flex align-items-center gap-2">
-        <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
-        <div class="flex-grow-1"><div class="sidebar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="sidebar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+        <?php if ($rolSesion === 'tutor'): ?>
+          <a href="/views/tutor/panel.php#perfil" class="d-flex align-items-center gap-2 flex-grow-1 text-decoration-none" title="Ir a mi perfil profesional">
+            <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
+            <div class="flex-grow-1"><div class="sidebar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="sidebar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+          </a>
+        <?php else: ?>
+          <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
+          <div class="flex-grow-1"><div class="sidebar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="sidebar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+        <?php endif; ?>
         <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-link text-white p-1" aria-label="Cerrar sesión" title="Cerrar sesión"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
       </div>
     </aside>
@@ -143,17 +152,42 @@ function campanaNotificaciones($noLeidas) {
         <div class="topbar-title"><?= htmlspecialchars($tituloSeccion) ?></div>
         <div class="topbar-user">
           <span class="text-primary"><?= campanaNotificaciones($notificacionesNoLeidas) ?></span>
-          <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
-          <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+          <?php if ($rolSesion === 'tutor'): ?>
+            <a href="/views/tutor/panel.php#perfil" class="d-flex align-items-center gap-2 text-decoration-none" title="Ir a mi perfil profesional" aria-label="Ir a mi perfil profesional">
+              <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
+              <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+            </a>
+          <?php else: ?>
+            <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
+            <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+          <?php endif; ?>
           <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
         </div>
       </header>
 <?php endif; ?>
 
 <main class="app-content">
-<?php foreach ($mensajesFlash as $flash): ?>
-  <div class="alert alert-<?= htmlspecialchars($flash['tipo']) ?> alert-dismissible fade show" role="alert">
-    <?= htmlspecialchars($flash['mensaje']) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-  </div>
-<?php endforeach; ?>
+<!-- Mensajes flash convertidos en toasts (esquina superior derecha) -->
+<?php if (!empty($mensajesFlash)): ?>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="contenedor-toasts" style="z-index: 1090;">
+  <?php foreach ($mensajesFlash as $flash):
+      $tipoFlash = $flash['tipo'] === 'error' ? 'danger' : htmlspecialchars($flash['tipo']);
+      $iconoFlash = [
+          'success' => 'bi-check-circle-fill',
+          'danger'  => 'bi-exclamation-octagon-fill',
+          'warning' => 'bi-exclamation-triangle-fill',
+          'info'    => 'bi-info-circle-fill',
+      ][$tipoFlash] ?? 'bi-info-circle-fill';
+  ?>
+    <div class="toast toast-upds toast-<?= $tipoFlash ?>" role="alert" aria-live="assertive" aria-atomic="true"
+         data-bs-delay="6000" data-bs-autohide="true">
+      <div class="toast-header">
+        <i class="bi <?= $iconoFlash ?> me-2 text-<?= $tipoFlash ?>"></i>
+        <strong class="me-auto"><?= ['success' => 'Éxito', 'danger' => 'Error', 'warning' => 'Atención', 'info' => 'Información'][$tipoFlash] ?? 'Aviso' ?></strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+      </div>
+      <div class="toast-body"><?= htmlspecialchars($flash['mensaje']) ?></div>
+    </div>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>

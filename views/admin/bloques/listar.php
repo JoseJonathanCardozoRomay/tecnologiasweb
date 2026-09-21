@@ -4,19 +4,13 @@ $tituloPagina = 'Bloques Horarios - Sistema de Tutorías';
 include __DIR__ . '/../../layouts/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
- <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-clock text-primary"></i>
-      <span>Bloques Horarios</span>
-    </h2>
-    <p class="text-muted mb-0">Define los bloques (Morning / Noon / Afternoon / Night) que el estudiante puede seleccionar al solicitar una tutoría.</p>
- </div>
- <button type="button" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3" data-bs-toggle="modal" data-bs-target="#modalBloque" onclick="prepararCrear()">
-    <i class="bi bi-plus-circle-fill"></i>
-    <span class="fw-semibold">Nuevo Bloque</span>
- </button>
-</div>
+<?php
+$titulo = 'Bloques Horarios';
+$descripcion = 'Define los bloques (Mañana / Mediodía / Tarde / Noche) que el estudiante puede seleccionar al solicitar una tutoría.';
+$icono = 'bi-clock';
+$accion = '<button type="button" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3" data-bs-toggle="modal" data-bs-target="#modalBloque" onclick="prepararCrear()"><i class="bi bi-plus-circle-fill"></i><span class="fw-semibold">Nuevo Bloque</span></button>';
+include __DIR__ . '/../../partials/page_header.php';
+?>
 
 <?php if (!empty($errores)): ?>
  <div class="alert alert-danger py-2 px-3 rounded-3 shadow-sm mb-4">

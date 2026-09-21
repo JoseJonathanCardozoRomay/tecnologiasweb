@@ -4,22 +4,14 @@ $tituloPagina = 'Gestión de Usuarios - Sistema de Tutorías';
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-  <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-people-fill text-primary"></i>
-      <span>Usuarios del Sistema</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
-    </h2>
-    <p class="text-muted mb-0">Administra las cuentas de administradores, tutores y estudiantes registrados.</p>
-  </div>
-  <div>
-    <a href="usuarios_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
-      <i class="bi bi-person-plus-fill"></i>
-      <span class="fw-semibold">Nuevo Usuario</span>
-    </a>
-  </div>
-</div>
+<?php
+$titulo = 'Usuarios del Sistema';
+$descripcion = 'Administra las cuentas de administradores, tutores y estudiantes registrados.';
+$icono = 'bi-people-fill';
+$contador = $totalRegistros;
+$accion = '<a href="usuarios_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3"><i class="bi bi-person-plus-fill"></i><span class="fw-semibold">Nuevo Usuario</span></a>';
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
@@ -27,7 +19,7 @@ include __DIR__ . '/../layouts/header.php';
       <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
       <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
       <input type="hidden" name="pagina" value="1">
-      <select name="estado" class="form-select" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="activo" <?= $estado === 'activo' ? 'selected' : '' ?>>Activos</option><option value="pendiente" <?= $estado === 'pendiente' ? 'selected' : '' ?>>Pendientes</option><option value="inactivo" <?= $estado === 'inactivo' ? 'selected' : '' ?>>Inactivos</option></select>
+      <select name="estado" class="form-select select2-enabled" style="width: 170px;" data-placeholder="Todos los estados" data-allow-clear="false" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="activo" <?= $estado === 'activo' ? 'selected' : '' ?>>Activos</option><option value="pendiente" <?= $estado === 'pendiente' ? 'selected' : '' ?>>Pendientes</option><option value="inactivo" <?= $estado === 'inactivo' ? 'selected' : '' ?>>Inactivos</option></select>
       <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
       <input type="search" name="q" value="<?= htmlspecialchars($q) ?>" class="form-control bg-light border-start-0" placeholder="Buscar por nombre, usuario...">
       <button class="btn btn-primary" type="submit">Buscar</button>

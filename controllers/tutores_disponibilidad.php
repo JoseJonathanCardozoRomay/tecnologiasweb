@@ -58,23 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('success', 'Materias asignadas actualizadas con éxito.');
     }
 
-    // 3. Actualizar perfil profesional completo
-    if ($accion === 'actualizar_perfil_completo') {
-        $datos = [
-            'especialidad'    => $_POST['especialidad'] ?? '',
-            'biografia'      => $_POST['biografia'] ?? '',
-            'perfil_linkedin' => $_POST['perfil_linkedin'] ?? '',
-            'certificaciones' => $_POST['certificaciones'] ?? '',
-            'areas_expertise' => $_POST['areas_expertise'] ?? '',
-            'foto_perfil'    => $_POST['foto_perfil'] ?? null,  // ruta relativa, no data URI
-        ];
-        if ($tutorModel->actualizarPerfilCompleto($idTutor, $datos)) {
-            flash_set('success', 'Perfil profesional actualizado con éxito.');
-        } else {
-            $errores[] = 'No se pudo actualizar el perfil.';
-        }
-        $tutor = $tutorModel->obtenerPerfilCompleto($idTutor);
-    }
 }
 
 $materiasAsignadas = $tutorModel->obtenerMaterias($idTutor);

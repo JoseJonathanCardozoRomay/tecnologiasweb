@@ -4,26 +4,15 @@ $tituloPagina = 'Gestión de Carreras - Sistema de Tutorías';
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-  <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-mortarboard text-primary"></i>
-      <span>Carreras Universitarias</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
-    </h2>
-    <p class="text-muted mb-0">Programas académicos de la Universidad Privada Domingo Savio.</p>
-  </div>
-  <div class="d-flex gap-2">
-    <a href="materias_listar.php" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-3">
-      <i class="bi bi-journal-bookmark"></i>
-      <span>Ver Materias</span>
-    </a>
-    <a href="carreras_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
-      <i class="bi bi-plus-circle-fill"></i>
-      <span class="fw-semibold">Nueva Carrera</span>
-    </a>
-  </div>
-</div>
+<?php
+$titulo = 'Carreras Universitarias';
+$descripcion = 'Programas académicos de la Universidad Privada Domingo Savio.';
+$icono = 'bi-mortarboard';
+$contador = $totalRegistros;
+$accion = '<a href="materias_listar.php" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-3"><i class="bi bi-journal-bookmark"></i><span>Ver Materias</span></a>'
+        . '<a href="carreras_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3"><i class="bi bi-plus-circle-fill"></i><span class="fw-semibold">Nueva Carrera</span></a>';
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0">

@@ -4,26 +4,15 @@ $tituloPagina = 'Gestión de Materias - Sistema de Tutorías';
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-  <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-journal-bookmark-fill text-primary"></i>
-      <span>Materias Académicas</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
-    </h2>
-    <p class="text-muted mb-0">Catálogo de asignaturas disponibles para tutorías académicas.</p>
-  </div>
-  <div class="d-flex gap-2">
-    <a href="carreras_listar.php" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-3">
-      <i class="bi bi-mortarboard"></i>
-      <span>Ver Carreras</span>
-    </a>
-    <a href="materias_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
-      <i class="bi bi-plus-circle-fill"></i>
-      <span class="fw-semibold">Nueva Materia</span>
-    </a>
-  </div>
-</div>
+<?php
+$titulo = 'Materias Académicas';
+$descripcion = 'Catálogo de asignaturas disponibles para tutorías académicas.';
+$icono = 'bi-journal-bookmark-fill';
+$contador = $totalRegistros;
+$accion = '<a href="carreras_listar.php" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-3"><i class="bi bi-mortarboard"></i><span>Ver Carreras</span></a>'
+        . '<a href="materias_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3"><i class="bi bi-plus-circle-fill"></i><span class="fw-semibold">Nueva Materia</span></a>';
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
@@ -33,7 +22,7 @@ include __DIR__ . '/../layouts/header.php';
       <input type="hidden" name="pagina" value="1">
       
       <!-- Selector de carrera -->
-      <select name="id_carrera" class="form-select" style="max-width: 200px;">
+      <select name="id_carrera" class="form-select select2-enabled" style="max-width: 220px;" data-placeholder="Todas las carreras" data-allow-clear="false">
         <option value="0">Todas las carreras</option>
         <?php foreach ($carreras as $c): ?>
           <option value="<?= $c['id_carrera'] ?>" <?= $id_carrera == $c['id_carrera'] ? 'selected' : '' ?>>

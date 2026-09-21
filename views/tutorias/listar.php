@@ -4,6 +4,13 @@ $tituloPagina = 'Gestión de Tutorías - UPDS';
 include __DIR__ . '/../layouts/header.php';
 ?>
 
+<?php
+$titulo = 'Gestión de Tutorías';
+$descripcion = 'Supervisa las solicitudes y el avance de las sesiones de tutoría académica.';
+$icono = 'bi-calendar-check';
+include __DIR__ . '/../partials/page_header.php';
+?>
+
 <!-- Métricas de Tutorías -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-2">
@@ -44,19 +51,13 @@ include __DIR__ . '/../layouts/header.php';
   </div>
 </div>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
-  <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-calendar-check-fill text-primary"></i>
-      <span>Registro General de Tutorías</span>
-    </h2>
-    <p class="text-muted mb-0">Supervisión académica de sesiones solicitadas, agendadas y completadas.</p>
-  </div>
-  <a href="tutorias_solicitar.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
-    <i class="bi bi-calendar-plus-fill"></i>
-    <span class="fw-semibold">+ Agendar Tutoría</span>
-  </a>
-</div>
+<?php
+$titulo = 'Registro General de Tutorías';
+$descripcion = 'Supervisión académica de sesiones solicitadas, agendadas y completadas.';
+$icono = 'bi-calendar-check-fill';
+$accion = '<a href="tutorias_solicitar.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3"><i class="bi bi-calendar-plus-fill"></i><span class="fw-semibold">+ Agendar Tutoría</span></a>';
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <!-- Filtros de Estado y periodo -->
 <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
@@ -90,7 +91,7 @@ include __DIR__ . '/../layouts/header.php';
     <input type="hidden" name="orden" value="<?= htmlspecialchars($ordenActual) ?>">
     <input type="hidden" name="dir" value="<?= htmlspecialchars($dirActual) ?>">
     <input type="hidden" name="pagina" value="1">
-    <select name="periodo" class="form-select form-select-sm" onchange="this.form.submit()">
+    <select name="periodo" class="form-select form-select-sm select2-enabled" style="width: 190px;" data-placeholder="Todos los periodos" data-allow-clear="false" onchange="this.form.submit()">
       <option value="">Todos los periodos</option>
       <?php foreach ($periodos as $periodo): ?><option value="<?= htmlspecialchars($periodo) ?>" <?= $filtroPeriodo === $periodo ? 'selected' : '' ?>><?= htmlspecialchars($periodo) ?></option><?php endforeach; ?>
     </select>

@@ -7,7 +7,71 @@
 <?php if ($esEstudiante): ?></div><?php else: ?></div></div><?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="/assets/js/select2-init.js"></script>
 <script>
+  // =========================================================
+  // Toasts (notificaciones flotantes en español)
+  // =========================================================
+  // Tipos admitidos: success, danger, warning, info.
+  // Uso desde JavaScript: mostrarToast('Guardado con éxito', 'success');
+  const TOAST_CONFIG = {
+    success: { icono: 'bi-check-circle-fill', titulo: 'Éxito' },
+    danger:  { icono: 'bi-exclamation-octagon-fill', titulo: 'Error' },
+    warning: { icono: 'bi-exclamation-triangle-fill', titulo: 'Atención' },
+    info:    { icono: 'bi-info-circle-fill', titulo: 'Información' }
+  };
+  function mostrarToast(mensaje, tipo = 'info', opciones = {}) {
+    const config = TOAST_CONFIG[tipo] || TOAST_CONFIG.info;
+    let contenedor = document.getElementById('contenedor-toasts');
+    if (!contenedor) {
+      contenedor = document.createElement('div');
+      contenedor.id = 'contenedor-toasts';
+      contenedor.className = 'toast-container position-fixed top-0 end-0 p-3';
+      contenedor.style.zIndex = '1090';
+      document.body.appendChild(contenedor);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-upds toast-' + tipo;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.dataset.bsDelay = String(opciones.retardo ?? 6000);
+    toast.dataset.bsAutohide = 'true';
+    const crearTexto = (contenido) => document.createTextNode(contenido);
+    const encabezado = document.createElement('div');
+    encabezado.className = 'toast-header';
+    const icono = document.createElement('i');
+    icono.className = 'bi ' + config.icono + ' me-2 text-' + tipo;
+    const titulo = document.createElement('strong');
+    titulo.className = 'me-auto';
+    titulo.textContent = opciones.titulo || config.titulo;
+    const cerrar = document.createElement('button');
+    cerrar.type = 'button';
+    cerrar.className = 'btn-close';
+    cerrar.setAttribute('data-bs-dismiss', 'toast');
+    cerrar.setAttribute('aria-label', 'Cerrar');
+    encabezado.append(icono, titulo, cerrar);
+    const cuerpo = document.createElement('div');
+    cuerpo.className = 'toast-body';
+    cuerpo.appendChild(crearTexto(mensaje));
+    toast.append(encabezado, cuerpo);
+    contenedor.appendChild(toast);
+    const instancia = bootstrap.Toast.getOrCreateInstance(toast);
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    instancia.show();
+    return instancia;
+  }
+  window.mostrarToast = mostrarToast;
+
+  // Muestra al cargar los toasts generados en el servidor (mensajes flash).
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#contenedor-toasts .toast').forEach((toast) => {
+      bootstrap.Toast.getOrCreateInstance(toast).show();
+    });
+  });
+
   function enviarPostSeguro(url, extras = {}) {
     const destino = new URL(url, window.location.href);
     const formulario = document.createElement('form');

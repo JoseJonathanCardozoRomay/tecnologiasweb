@@ -6,15 +6,13 @@ include __DIR__ . '/../layouts/header.php';
 
 <div class="row justify-content-center">
   <div class="col-lg-6">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h3 class="fw-bold mb-0 d-flex align-items-center gap-2">
-        <i class="bi bi-plus-circle-fill text-primary"></i>
-        <span>Nueva Carrera</span>
-      </h3>
-      <a href="carreras_listar.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-        <i class="bi bi-arrow-left"></i> Volver
-      </a>
-    </div>
+    <?php
+    $titulo = 'Nueva Carrera';
+    $descripcion = 'Registra un programa académico en el sistema.';
+    $icono = 'bi-plus-circle-fill';
+    $accion = '<a href="carreras_listar.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"><i class="bi bi-arrow-left"></i> Volver</a>';
+    include __DIR__ . '/../partials/page_header.php';
+    ?>
 
     <?php if (!empty($errores)): ?>
       <div class="alert alert-danger py-2 px-3 rounded-3 shadow-sm mb-4">

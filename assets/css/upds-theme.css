@@ -159,8 +159,10 @@ a:hover { color: var(--upds-navy-deep); }
 .student-main { width: 100%; margin-left: 0; }
 .mobile-menu-bar { display: none; }
 
-.page-title { color: var(--upds-navy); font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
+.page-header { border-bottom: 1px solid var(--upds-border); padding-bottom: 1rem; }
+.page-title { color: var(--upds-navy); font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .25rem; }
 .page-description { color: var(--upds-muted); font-size: .9rem; }
+.page-action { flex-shrink: 0; }
 .breadcrumb-nav .breadcrumb { font-size: .74rem; }
 .breadcrumb-item.active { color: var(--upds-muted); }
 .card-custom, .table-card, .kpi-card { background: var(--upds-surface); border: 1px solid var(--upds-border); border-radius: 10px; box-shadow: var(--upds-shadow); }
@@ -376,4 +378,125 @@ a:hover { color: var(--upds-navy-deep); }
 
 .profile-photo-remove:hover {
   background: #dc2626;
+}
+
+/* =========================================================
+   Select2 — Ajustes visuales al tema UPDS
+   Convierte el buscador en coherente con los form-control de Bootstrap 5.
+   ========================================================= */
+.select2-container--default .select2-selection--single {
+  height: calc(1.5em + 1rem + 2px);
+  border: 1px solid var(--upds-border);
+  border-radius: var(--bs-border-radius-sm);
+  display: flex;
+  align-items: center;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: var(--upds-text);
+  line-height: 1.5;
+  padding-left: .9rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+  color: var(--upds-muted);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 100%;
+  right: .35rem;
+}
+
+.select2-container--default .select2-selection--multiple {
+  min-height: calc(1.5em + 1rem + 2px);
+  border: 1px solid var(--upds-border);
+  border-radius: var(--bs-border-radius-sm);
+}
+
+.select2-container .select2-selection--single .select2-selection__clear {
+  margin-right: .25rem;
+  color: var(--upds-muted);
+}
+
+/* Estados de foco coherentes con el anillo de Bootstrap */
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single,
+.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container--default.select2-container--open .select2-selection--multiple {
+  border-color: var(--upds-accent);
+  box-shadow: 0 0 0 .2rem var(--bs-focus-ring-color);
+}
+
+/* Lista de resultados */
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+  background-color: var(--upds-navy);
+  color: #fff;
+}
+
+.select2-container--default .select2-results__option--selected {
+  background-color: var(--upds-navy-soft);
+  color: var(--upds-navy);
+}
+
+.select2-dropdown {
+  border: 1px solid var(--upds-border);
+  border-radius: var(--bs-border-radius-sm);
+  box-shadow: var(--upds-shadow);
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  border: 1px solid var(--upds-border);
+  border-radius: 6px;
+}
+
+/* Permite que el buscador ocupe el 100% dentro de columnas flex */
+.select2-container {
+  width: 100% !important;
+}
+
+/* =========================================================
+   Toasts — Notificaciones flotantes con identidad UPDS
+   ========================================================= */
+.toast-upds {
+  min-width: 320px;
+  border: none;
+  border-left: 5px solid var(--upds-navy);
+  border-radius: var(--bs-border-radius-sm);
+  box-shadow: 0 10px 24px rgba(0, 43, 73, .18);
+  background: var(--upds-surface);
+  overflow: hidden;
+}
+
+.toast-upds .toast-header {
+  border-bottom: 1px solid var(--upds-border);
+  background: transparent;
+  padding: .6rem .9rem .45rem;
+}
+
+.toast-upds .toast-header strong {
+  font-size: .85rem;
+  color: var(--upds-text);
+}
+
+.toast-upds .toast-body {
+  padding: .6rem .9rem .8rem;
+  color: var(--upds-text);
+  font-size: .875rem;
+}
+
+/* Franja de color según el tipo de mensaje */
+.toast-upds.toast-success { border-left-color: var(--upds-success); }
+.toast-upds.toast-danger  { border-left-color: var(--upds-danger); }
+.toast-upds.toast-warning { border-left-color: var(--upds-warning); }
+.toast-upds.toast-info    { border-left-color: var(--upds-info); }
+
+/* Animación de entrada suave */
+.toast-upds.toast {
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+@media (max-width: 575.98px) {
+  .toast-container { left: 0; right: 0; }
+  .toast-upds { width: 100%; min-width: 0; }
 }

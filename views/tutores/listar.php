@@ -4,22 +4,14 @@ $tituloPagina = 'Gestión de Docentes Tutores - UPDS';
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-  <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-person-video3 text-primary"></i>
-      <span>Docentes Tutores Académicos</span>
-      <span class="badge bg-primary bg-opacity-10 text-primary fs-6"><?= $totalRegistros ?></span>
-    </h2>
-    <p class="text-muted mb-0">Cuerpo docente capacitado para brindar asesorías y reforzamiento académico.</p>
-  </div>
-  <div>
-    <a href="usuarios_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
-      <i class="bi bi-person-plus-fill"></i>
-      <span class="fw-semibold">+ Nuevo Tutor</span>
-    </a>
-  </div>
-</div>
+<?php
+$titulo = 'Docentes Tutores Académicos';
+$descripcion = 'Cuerpo docente capacitado para brindar asesorías y reforzamiento académico.';
+$icono = 'bi-person-video3';
+$contador = $totalRegistros;
+$accion = '<a href="usuarios_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3"><i class="bi bi-person-plus-fill"></i><span class="fw-semibold">+ Nuevo Tutor</span></a>';
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0">

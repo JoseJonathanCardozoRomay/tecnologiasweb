@@ -4,22 +4,15 @@ $tituloPagina = 'Gestión de Estudiantes - UPDS';
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-  <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-mortarboard text-success"></i>
-      <span>Estudiantes Registrados</span>
-      <span class="badge bg-success bg-opacity-10 text-success fs-6"><?= $totalRegistros ?></span>
-    </h2>
-    <p class="text-muted mb-0">Listado de alumnos habilitados para solicitar tutorías académicas.</p>
-  </div>
-  <div>
-    <a href="usuarios_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3">
-      <i class="bi bi-person-plus-fill"></i>
-      <span class="fw-semibold">+ Nuevo Estudiante</span>
-    </a>
-  </div>
-</div>
+<?php
+$titulo = 'Estudiantes Registrados';
+$descripcion = 'Listado de alumnos habilitados para solicitar tutorías académicas.';
+$icono = 'bi-mortarboard';
+$contador = $totalRegistros;
+$colorContador = 'success';
+$accion = '<a href="usuarios_crear.php" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-3 py-2 rounded-3"><i class="bi bi-person-plus-fill"></i><span class="fw-semibold">+ Nuevo Estudiante</span></a>';
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <div class="card card-custom shadow-sm overflow-hidden">
   <div class="card-header bg-white py-3 border-0">

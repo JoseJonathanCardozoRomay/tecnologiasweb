@@ -549,4 +549,132 @@ class TutoriaModel
 
         return compact('metricas', 'materias', 'tutores', 'satisfaccion', 'asistencia');
     }
+
+    // =====================================================
+    // Datos agregados para gráficos de reportes (Chart.js)
+    // =====================================================
+
+    /**
+     * Devuelve las tutorías agrupadas por estado.
+     * Incluye SIEMPRE los 6 estados del flujo (con 0 si no tienen registros)
+     * para que el gráfico muestre todas las categorías.
+     * @return array<int, array{estado:string, cantidad:int}>
+     */
+    public function obtenerConteoPorEstado($periodo = null)
+    {
+        $etiquetas = [
+            'pendiente'  => 'Pendiente',
+            'confirmada' => 'Confirmada',
+            'en_proceso' => 'En Proceso',
+            'realizada'  => 'Realizada',
+            'detenido'   => 'Detenido',
+            'cancelada'  => 'Cancelada',
+        ];
+
+        $sql = "SELECT estado, COUNT(*) AS cantidad FROM tutorias";
+        $params = [];
+        if (!empty($periodo)) {
+            $sql .= " WHERE periodo = :periodo";
+            $params[':periodo'] = $periodo;
+        }
+        $sql .= " GROUP BY estado";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        $conteo = [];
+        foreach ($stmt->fetchAll() as $fila) {
+            $conteo[$fila['estado']] = (int) $fila['cantidad'];
+        }
+
+        $resultado = [];
+        foreach ($etiquetas as $estado => $nombre) {
+            $resultado[] = [
+                'estado'  => $estado,
+                'nombre'  => $nombre,
+                'cantidad' => $conteo[$estado] ?? 0,
+            ];
+        }
+        return $resultado;
+    }
+
+    /**
+     * Distribución de tutorías por tutor (para gráfico de pastel).
+     * @return array<int, array{tutor:string, cantidad:int}>
+     */
+    public function obtenerConteoPorTutor($periodo = null)
+    {
+        $sql = "SELECT CONCAT(u.nombre, ' ', u.apellido) AS tutor, COUNT(*) AS cantidad
+                FROM tutorias tu
+                INNER JOIN tutores t ON tu.id_tutor = t.id_tutor
+                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario";
+        $params = [];
+        if (!empty($periodo)) {
+            $sql .= " WHERE tu.periodo = :periodo";
+            $params[':periodo'] = $periodo;
+        }
+        $sql .= " GROUP BY tu.id_tutor, u.nombre, u.apellido ORDER BY cantidad DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return array_map(static function ($fila) {
+            return ['tutor' => $fila['tutor'], 'cantidad' => (int) $fila['cantidad']];
+        }, $stmt->fetchAll());
+    }
+
+    /**
+     * Distribución de tutorías por materia (para gráfico de barras/lista).
+     * @return array<int, array{materia:string, cantidad:int}>
+     */
+    public function obtenerConteoPorMateria($periodo = null)
+    {
+        $sql = "SELECT m.nombre_materia AS materia, COUNT(*) AS cantidad
+                FROM tutorias tu
+                INNER JOIN materias m ON tu.id_materia = m.id_materia";
+        $params = [];
+        if (!empty($periodo)) {
+            $sql .= " WHERE tu.periodo = :periodo";
+            $params[':periodo'] = $periodo;
+        }
+        $sql .= " GROUP BY tu.id_materia, m.nombre_materia ORDER BY cantidad DESC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return array_map(static function ($fila) {
+            return ['materia' => $fila['materia'], 'cantidad' => (int) $fila['cantidad']];
+        }, $stmt->fetchAll());
+    }
+
+    /**
+     * Tutorías por mes dentro del periodo seleccionado (para gráfico de líneas).
+     * Devuelve etiquetas legibles en español (mes + año).
+     * @return array<int, array{mes:string, cantidad:int}>
+     */
+    public function obtenerConteoPorMes($periodo = null)
+    {
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+        ];
+
+        $sql = "SELECT YEAR(fecha) AS anio, MONTH(fecha) AS mes, COUNT(*) AS cantidad
+                FROM tutorias";
+        $params = [];
+        if (!empty($periodo)) {
+            $sql .= " WHERE periodo = :periodo";
+            $params[':periodo'] = $periodo;
+        }
+        $sql .= " GROUP BY YEAR(fecha), MONTH(fecha) ORDER BY anio ASC, mes ASC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        $resultado = [];
+        foreach ($stmt->fetchAll() as $fila) {
+            $numeroMes = (int) $fila['mes'];
+            $nombreMes = $meses[$numeroMes] ?? (string) $numeroMes;
+            $resultado[] = [
+                'mes'      => $nombreMes . ' de ' . $fila['anio'],
+                'cantidad' => (int) $fila['cantidad'],
+            ];
+        }
+        return $resultado;
+    }
 }

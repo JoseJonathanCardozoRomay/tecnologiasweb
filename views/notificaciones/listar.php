@@ -3,15 +3,14 @@ require_once __DIR__ . '/../layouts/header.php';
 require_once __DIR__ . '/../../includes/csrf.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
- <div>
-    <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-bell-fill text-primary"></i>
-      <span>Notificaciones</span>
-    </h2>
-    <p class="text-muted mb-0">Avisos internos sobre el estado de tus tutorías.</p>
- </div>
-  <?php if (!empty($notificaciones)): ?>
+<?php
+$titulo = 'Notificaciones';
+$descripcion = 'Avisos internos sobre el estado de tus tutorías.';
+$icono = 'bi-bell-fill';
+$accion = null;
+if (!empty($notificaciones)) {
+    ob_start();
+    ?>
     <form method="POST" action="/controllers/notificaciones_marcar.php" class="d-flex">
       <?php echo csrf_campo(); ?>
       <input type="hidden" name="todas" value="1">
@@ -19,8 +18,11 @@ require_once __DIR__ . '/../../includes/csrf.php';
         <i class="bi bi-check2-all"></i> Marcar todas como leídas
       </button>
     </form>
-  <?php endif; ?>
-</div>
+    <?php
+    $accion = ob_get_clean();
+}
+include __DIR__ . '/../partials/page_header.php';
+?>
 
 <div class="card card-custom shadow-sm overflow-hidden">
  <div class="list-group list-group-flush">
