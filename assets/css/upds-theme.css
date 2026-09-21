@@ -156,6 +156,11 @@ a:hover { color: var(--upds-navy-deep); }
 .student-navbar .navbar-brand, .student-navbar .nav-link { color: rgba(255,255,255,.78); }
 .student-navbar .nav-link:hover, .student-navbar .nav-link.active { color: #fff; }
 .student-navbar .nav-link.active { border-bottom: 2px solid var(--upds-accent); }
+/* El navbar del estudiante tiene fondo azul oscuro: aclaramos el nombre y el rol
+   para que sean legibles (por defecto heredan colores oscuros del topbar claro). */
+.student-navbar .topbar-user-name { color: #fff; }
+.student-navbar .topbar-user-role { color: rgba(255, 255, 255, .7); text-transform: capitalize; }
+.student-navbar .topbar-user .avatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, .25); }
 .student-main { width: 100%; margin-left: 0; }
 .mobile-menu-bar { display: none; }
 

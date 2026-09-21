@@ -66,11 +66,14 @@ function campanaNotificaciones($noLeidas) {
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item"><a class="nav-link <?= menuActivo('estudiante/panel') ? 'active' : '' ?>" href="/views/estudiante/panel.php"><i class="bi bi-calendar2-check me-1" aria-hidden="true"></i>Mis Tutorías</a></li>
             <li class="nav-item"><a class="nav-link <?= menuActivo('solicitar') ? 'active' : '' ?>" href="/controllers/tutorias_solicitar.php"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Solicitar Tutoría</a></li>
+            <li class="nav-item"><a class="nav-link <?= menuActivo('estudiante/perfil') ? 'active' : '' ?>" href="/views/estudiante/perfil.php"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>Mi Perfil</a></li>
           </ul>
           <div class="topbar-user">
             <span class="text-white"><?= campanaNotificaciones($notificacionesNoLeidas) ?></span>
-            <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
-            <div><div class="topbar-user-name"><?= htmlspecialchars($nombreSesion) ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+            <a href="/views/estudiante/perfil.php" class="d-flex align-items-center gap-2 text-decoration-none" title="Ver mi perfil" aria-label="Ver mi perfil">
+              <?= avatar($nombreSesion, $apellidoSesion, $rolSesion) ?>
+              <div><div class="topbar-user-name"><?= htmlspecialchars("{$nombreSesion} {$apellidoSesion}") ?></div><div class="topbar-user-role"><?= htmlspecialchars($rolSesion) ?></div></div>
+            </a>
             <a href="/controllers/logout.php" onclick="cerrarSesion(event)" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Salir</a>
           </div>
         </div>
