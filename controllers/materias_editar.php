@@ -1,46 +1,43 @@
 <?php
-require_once __DIR__ . '/../includes/verificar_sesion.php';
-require_once __DIR__ . '/../config/conexion.php';
+/**
+ * Controlador para la modificación de materias
+ */
 require_once __DIR__ . '/../models/MateriaModel.php';
-require_once __DIR__ . '/../models/CarreraModel.php';
 
-$materiaModel = new MateriaModel($pdo);
-$carreraModel = new CarreraModel($pdo);
+$modelo = new MateriaModel();
+$id_materia = $_GET['id'] ?? 0;
+$materia = $modelo->obtenerPorId($id_materia);
 
-$id = $_GET['id'] ?? $_POST['id_materia'] ?? null;
-if (!$id) {
-    header("Location: materias_listar.php");
+if (!$materia) {
+    header('Location: index.php?accion=materias_listar');
     exit;
 }
 
-$errores = [];
+$carreras = $modelo->listarCarreras();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nombre_materia = trim($_POST['nombre_materia'] ?? '');
+    $id_carrera = !empty($_POST['id_carrera']) ? $_POST['id_carrera'] : null;
+    
+    if (empty($nombre_materia)) {
+        header("Location: index.php?accion=materias_editar&id=$id_materia&mensaje=campo_vacio");
+        exit;
+    }
+
     $datos = [
-        'nombre_materia' => trim($_POST['nombre_materia'] ?? ''),
-        'id_carrera'     => $_POST['id_carrera'] ?? null,
+        'nombre_materia' => $nombre_materia,
+        'id_carrera' => $id_carrera
     ];
 
-    if (empty($datos['nombre_materia'])) {
-        $errores[] = "El nombre de la materia es obligatorio.";
+    $resultado = $modelo->actualizar($id_materia, $datos);
+    
+    if (is_array($resultado) && isset($resultado['error'])) {
+        header("Location: index.php?accion=materias_editar&id=$id_materia&mensaje=error&detalle=" . urlencode($resultado['error']));
+        exit;
     }
 
-    if (empty($errores)) {
-        try {
-            $materiaModel->actualizar($id, $datos);
-            header("Location: materias_listar.php");
-            exit;
-        } catch (PDOException $e) {
-            $errores[] = "Error al actualizar la materia: " . $e->getMessage();
-        }
-    }
-}
-
-$materia_actual = $materiaModel->obtenerPorId($id);
-if (!$materia_actual) {
-    header("Location: materias_listar.php");
+    header('Location: index.php?accion=materias_listar&mensaje=registro_actualizado');
     exit;
 }
 
-$carreras = $carreraModel->obtenerTodas();
 require_once __DIR__ . '/../views/materias/editar.php';

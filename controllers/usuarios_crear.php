@@ -1,42 +1,38 @@
 <?php
-require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
-require_once __DIR__ . '/../models/RolModel.php';
 
-$usuarioModel = new UsuarioModel($pdo);
-$rolModel = new RolModel($pdo);
-$errores = [];
+$modelo = new UsuarioModel();
+$roles = $modelo->listarRoles();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $contrasena = trim($_POST['contrasena'] ?? '');
+    
+    if (empty($_POST['id_rol']) || empty($_POST['nombre']) || empty($_POST['apellido']) || 
+        empty($_POST['correo']) || empty($_POST['usuario']) || empty($contrasena)) {
+        header('Location: index.php?accion=usuarios_crear&mensaje=campos_vacios');
+        exit;
+    }
+
     $datos = [
-        'id_rol'   => $_POST['id_rol'] ?? '',
-        'nombre'   => trim($_POST['nombre'] ?? ''),
-        'apellido' => trim($_POST['apellido'] ?? ''),
-        'correo'   => trim($_POST['correo'] ?? ''),
-        'usuario'  => trim($_POST['usuario'] ?? ''),
-        'clave'    => $_POST['clave'] ?? '',
+        'id_rol' => $_POST['id_rol'],
+        'nombre' => trim($_POST['nombre']),
+        'apellido' => trim($_POST['apellido']),
+        'correo' => trim($_POST['correo']),
+        'usuario' => trim($_POST['usuario']),
+        'contrasena_hash' => password_hash($contrasena, PASSWORD_DEFAULT),
+        'telefono' => trim($_POST['telefono'] ?? ''),
+        'estado' => $_POST['estado'] ?? 'activo'
     ];
 
-    if (in_array('', [$datos['nombre'], $datos['apellido'], $datos['correo'], $datos['usuario'], $datos['clave']], true)) {
-        $errores[] = "Todos los campos son obligatorios.";
-    }
-    if (!filter_var($datos['correo'], FILTER_VALIDATE_EMAIL)) {
-        $errores[] = "El correo no tiene un formato válido.";
-    }
-    if (strlen($datos['clave']) < 6) {
-        $errores[] = "La contraseña debe tener al menos 6 caracteres.";
+    $resultado = $modelo->crear($datos);
+    
+    if (is_array($resultado) && isset($resultado['error'])) {
+        header('Location: index.php?accion=usuarios_crear&mensaje=error&detalle=' . urlencode($resultado['error']));
+        exit;
     }
 
-    if (empty($errores)) {
-        try {
-            $usuarioModel->crear($datos);
-            header("Location: usuarios_listar.php");
-            exit;
-        } catch (PDOException $e) {
-            $errores[] = "No se pudo registrar: el correo o el usuario ya existen.";
-        }
-    }
+    header('Location: index.php?accion=usuarios_listar&mensaje=registro_creado');
+    exit;
 }
 
-$roles = $rolModel->obtenerTodos();
 require_once __DIR__ . '/../views/usuarios/crear.php';

@@ -159,7 +159,10 @@ INSERT INTO carreras (id_carrera, nombre_carrera) VALUES
 (1, 'Ingeniería de Sistemas')
 ON DUPLICATE KEY UPDATE nombre_carrera = VALUES(nombre_carrera);
 
--- Materias
+-- Materiasound
+The requested URL was not found on this server.
+
+Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.2.12 Server at
 INSERT INTO materias (id_materia, nombre_materia, id_carrera) VALUES
 (1, 'Base de Datos I', 1),
 (2, 'Programación I', 1),
@@ -202,3 +205,60 @@ ON DUPLICATE KEY UPDATE usuario = VALUES(usuario);
 INSERT INTO estudiantes (id_estudiante, id_usuario, id_carrera, semestre, registro_universitario) VALUES
 (1, 3, 1, 4, 'RU-2026-98765')
 ON DUPLICATE KEY UPDATE semestre = VALUES(semestre);
+
+
+-- Notificaciones internas por usuario
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notificaciones (
+  id_notificacion INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  tipo VARCHAR(30) NOT NULL,
+  mensaje VARCHAR(255) NOT NULL,
+  url VARCHAR(200) NULL,
+  leida TINYINT(1) NOT NULL DEFAULT 0,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notif_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  INDEX idx_notif_usuario_leida (id_usuario, leida, fecha_creacion)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Periodos de tutoría (rango de fechas definido por coordinación/admin)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS periodos_tutoria (
+  id_periodo INT AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(20) NOT NULL UNIQUE,
+  nombre VARCHAR(100) NOT NULL,
+  fecha_inicio DATE NOT NULL,
+  fecha_fin DATE NOT NULL,
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  creado_por INT NULL,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_periodo_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Bloques horarios (Morning / Noon / Afternoon / Night) definidos por admin
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS bloques_horarios (
+  id_bloque INT AUTO_INCREMENT PRIMARY KEY,
+  nombre_bloque VARCHAR(30) NOT NULL UNIQUE,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  descripcion VARCHAR(200) NULL,
+  INDEX idx_bloque_hora (hora_inicio, hora_fin)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Seguimiento de la sesión (1:1 con tutorias)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS seguimiento_sesion (
+  id_seguimiento INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutoria INT NOT NULL UNIQUE,
+  asistio ENUM('si','no') NOT NULL,
+  temas_tratados TEXT NULL,
+  avance ENUM('sin_avance','parcial','logrado') NULL,
+  recomendaciones TEXT NULL,
+  fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_seguimiento_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

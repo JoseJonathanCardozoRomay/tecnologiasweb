@@ -1,9 +1,13 @@
-<?php
-require_once __DIR__ . '/../includes/verificar_sesion.php';
-require_once __DIR__ . '/../config/conexion.php';
-require_once __DIR__ . '/../models/CarreraModel.php';
+ <?php
+/**
+ * Listar Carreras — Solución
+ * Sin tocar modelo ni vistas
+ */
 
-$carreraModel = new CarreraModel($pdo);
-$carreras = $carreraModel->obtenerTodas();
+require_once __DIR__ . '/../config/conexion.php';
+
+$consulta = "SELECT * FROM carreras ORDER BY id_carrera";
+$carreras = $conexion->prepare($consulta);
+$carreras->execute();
 
 require_once __DIR__ . '/../views/carreras/listar.php';

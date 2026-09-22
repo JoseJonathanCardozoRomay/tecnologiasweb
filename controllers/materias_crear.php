@@ -1,34 +1,35 @@
 <?php
-require_once __DIR__ . '/../includes/verificar_sesion.php';
-require_once __DIR__ . '/../config/conexion.php';
+/**
+ * Controlador para el registro de nuevas materias
+ */
 require_once __DIR__ . '/../models/MateriaModel.php';
-require_once __DIR__ . '/../models/CarreraModel.php';
 
-$materiaModel = new MateriaModel($pdo);
-$carreraModel = new CarreraModel($pdo);
-
-$errores = [];
+$modelo = new MateriaModel();
+$carreras = $modelo->listarCarreras();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nombre_materia = trim($_POST['nombre_materia'] ?? '');
+    $id_carrera = !empty($_POST['id_carrera']) ? $_POST['id_carrera'] : null;
+    
+    if (empty($nombre_materia)) {
+        header('Location: index.php?accion=materias_crear&mensaje=campo_vacio');
+        exit;
+    }
+
     $datos = [
-        'nombre_materia' => trim($_POST['nombre_materia'] ?? ''),
-        'id_carrera'     => $_POST['id_carrera'] ?? null,
+        'nombre_materia' => $nombre_materia,
+        'id_carrera' => $id_carrera
     ];
 
-    if (empty($datos['nombre_materia'])) {
-        $errores[] = "El nombre de la materia es obligatorio.";
+    $resultado = $modelo->crear($datos);
+    
+    if (is_array($resultado) && isset($resultado['error'])) {
+        header('Location: index.php?accion=materias_crear&mensaje=error&detalle=' . urlencode($resultado['error']));
+        exit;
     }
 
-    if (empty($errores)) {
-        try {
-            $materiaModel->crear($datos);
-            header("Location: materias_listar.php");
-            exit;
-        } catch (PDOException $e) {
-            $errores[] = "Ocurrió un error al guardar la materia: " . $e->getMessage();
-        }
-    }
+    header('Location: index.php?accion=materias_listar&mensaje=registro_creado');
+    exit;
 }
 
-$carreras = $carreraModel->obtenerTodas();
 require_once __DIR__ . '/../views/materias/crear.php';

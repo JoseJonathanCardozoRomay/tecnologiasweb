@@ -1,17 +1,15 @@
 <?php
-require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 
-$usuarioModel = new UsuarioModel($pdo);
+$modelo = new UsuarioModel();
+$id_usuario = $_GET['id'] ?? 0;
 
-$id = $_GET['id'] ?? null;
-if ($id) {
-    try {
-        $usuarioModel->eliminar($id);
-    } catch (PDOException $e) {
-        die("No se pudo eliminar: este usuario tiene un perfil de estudiante o tutor asociado. Elimina primero ese registro.");
-    }
+$resultado = $modelo->eliminar($id_usuario);
+
+if (is_array($resultado) && isset($resultado['error'])) {
+    header('Location: index.php?accion=usuarios_listar&mensaje=error&detalle=' . urlencode($resultado['error']));
+    exit;
 }
 
-header("Location: usuarios_listar.php");
+header('Location: index.php?accion=usuarios_listar&mensaje=registro_eliminado');
 exit;

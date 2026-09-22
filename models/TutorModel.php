@@ -1,128 +1,122 @@
 <?php
-class TutorModel
-{
-    private $pdo;
+/**
+ * Modelo para la gestión de la entidad Tutor
+ * Sistema de Gestión de Tutorías
+ */
+require_once __DIR__ . '/../config/conexion.php';
 
-    public function __construct($pdo)
-    {
-        $this->pdo = $pdo;
+class TutorModel {
+    private $conexion;
+    private $tabla = 'tutores';
+
+    public function __construct() {
+        global $conexion;
+        $this->conexion = $conexion;
     }
 
-    public function obtenerTodos()
-    {
-        $sql = "SELECT t.id_tutor, t.id_usuario, t.especialidad, t.biografia,
-                       u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado,
-                       (SELECT COUNT(*) FROM tutor_materia tm WHERE tm.id_tutor = t.id_tutor) AS total_materias,
-                       (SELECT COUNT(*) FROM disponibilidad_tutor dt WHERE dt.id_tutor = t.id_tutor) AS total_horarios
-                FROM tutores t
-                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
-                ORDER BY u.nombre ASC";
-        return $this->pdo->query($sql)->fetchAll();
+    /**
+     * Obtiene todos los tutores con datos del usuario
+     */
+    public function listarTodos() {
+        $consulta = "SELECT t.*, u.nombre, u.apellido, u.correo, u.usuario
+                     FROM {$this->tabla} t
+                     INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                     ORDER BY u.apellido, u.nombre";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->execute();
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorId($id_tutor)
-    {
-        $sql = "SELECT t.*, u.nombre, u.apellido, u.correo, u.telefono, u.usuario, u.estado
-                FROM tutores t
-                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
-                WHERE t.id_tutor = :id";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':id' => $id_tutor]);
-        return $stmt->fetch();
+    /**
+     * Obtiene un tutor por su ID
+     */
+    public function obtenerPorId($id_tutor) {
+        $consulta = "SELECT t.*, u.nombre, u.apellido, u.correo, u.usuario
+                     FROM {$this->tabla} t
+                     INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                     WHERE t.id_tutor = :id_tutor";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->bindParam(':id_tutor', $id_tutor, PDO::PARAM_INT);
+        $sentencia->execute();
+        return $sentencia->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorUsuario($id_usuario)
-    {
-        $sql = "SELECT t.*, u.nombre, u.apellido, u.correo, u.telefono
-                FROM tutores t
-                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
-                WHERE t.id_usuario = :id_usuario";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':id_usuario' => $id_usuario]);
-        return $stmt->fetch();
-    }
-
-    public function actualizarPerfil($id_tutor, $especialidad, $biografia)
-    {
-        $stmt = $this->pdo->prepare("UPDATE tutores SET especialidad = :esp, biografia = :bio WHERE id_tutor = :id");
-        return $stmt->execute([
-            ':esp' => trim($especialidad),
-            ':bio' => trim($biografia),
-            ':id'  => $id_tutor
-        ]);
-    }
-
-    // Materias que domina el tutor
-    public function obtenerMaterias($id_tutor)
-    {
-        $sql = "SELECT m.id_materia, m.nombre_materia, c.nombre_carrera
-                FROM materias m
-                INNER JOIN tutor_materia tm ON m.id_materia = tm.id_materia
-                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
-                WHERE tm.id_tutor = :id_tutor
-                ORDER BY m.nombre_materia ASC";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':id_tutor' => $id_tutor]);
-        return $stmt->fetchAll();
-    }
-
-    public function asignarMaterias($id_tutor, $materias_ids = [])
-    {
-        $this->pdo->prepare("DELETE FROM tutor_materia WHERE id_tutor = :id_tutor")->execute([':id_tutor' => $id_tutor]);
-        if (!empty($materias_ids)) {
-            $stmt = $this->pdo->prepare("INSERT INTO tutor_materia (id_tutor, id_materia) VALUES (:id_tutor, :id_materia)");
-            foreach ($materias_ids as $id_materia) {
-                $stmt->execute([
-                    ':id_tutor'   => $id_tutor,
-                    ':id_materia' => $id_materia
-                ]);
+    /**
+     * Registra un nuevo tutor
+     */
+    public function crear($datos) {
+        try {
+            $consulta = "INSERT INTO {$this->tabla} 
+                (id_usuario, especialidad, biografia) 
+                VALUES (:id_usuario, :especialidad, :biografia)";
+            
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->execute($datos);
+            return true;
+        } catch (PDOException $error) {
+            if ($error->getCode() === '23000') {
+                return ['error' => 'El usuario seleccionado ya se encuentra registrado como tutor'];
             }
+            return ['error' => 'Error al registrar: ' . $error->getMessage()];
         }
-        return true;
     }
 
-    // Tutores disponibles para una materia específica (para agendar tutorías)
-    public function obtenerTutoresPorMateria($id_materia)
-    {
-        $sql = "SELECT t.id_tutor, u.nombre, u.apellido, t.especialidad
-                FROM tutores t
-                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
-                INNER JOIN tutor_materia tm ON t.id_tutor = tm.id_tutor
-                WHERE tm.id_materia = :id_materia AND u.estado = 'activo'
-                ORDER BY u.nombre ASC";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':id_materia' => $id_materia]);
-        return $stmt->fetchAll();
+    /**
+     * Actualiza la información de un tutor
+     */
+    public function actualizar($id_tutor, $datos) {
+        try {
+            $consulta = "UPDATE {$this->tabla} SET 
+                            especialidad = :especialidad,
+                            biografia = :biografia
+                         WHERE id_tutor = :id_tutor";
+            
+            $sentencia = $this->conexion->prepare($consulta);
+            $datos['id_tutor'] = $id_tutor;
+            $sentencia->execute($datos);
+            return true;
+        } catch (PDOException $error) {
+            return ['error' => 'Error al actualizar la información'];
+        }
     }
 
-    // Horarios de disponibilidad
-    public function obtenerDisponibilidad($id_tutor)
-    {
-        $sql = "SELECT * FROM disponibilidad_tutor WHERE id_tutor = :id_tutor ORDER BY 
-                FIELD(dia_semana, 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'), hora_inicio ASC";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':id_tutor' => $id_tutor]);
-        return $stmt->fetchAll();
+    /**
+     * Elimina un tutor
+     */
+    public function eliminar($id_tutor) {
+        try {
+            $consulta = "DELETE FROM {$this->tabla} WHERE id_tutor = :id_tutor";
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->bindParam(':id_tutor', $id_tutor, PDO::PARAM_INT);
+            $sentencia->execute();
+            return true;
+        } catch (PDOException $error) {
+            return ['error' => 'No es posible eliminar el registro: existen dependencias'];
+        }
     }
 
-    public function agregarDisponibilidad($id_tutor, $dia_semana, $hora_inicio, $hora_fin)
-    {
-        $stmt = $this->pdo->prepare("INSERT INTO disponibilidad_tutor (id_tutor, dia_semana, hora_inicio, hora_fin) 
-                                     VALUES (:id_tutor, :dia, :inicio, :fin)");
-        return $stmt->execute([
-            ':id_tutor' => $id_tutor,
-            ':dia'      => $dia_semana,
-            ':inicio'   => $hora_inicio,
-            ':fin'      => $hora_fin
-        ]);
+    /**
+     * Obtiene usuarios disponibles para asignar como tutores
+     * (excluye los que ya son tutores)
+     */
+    public function listarUsuariosDisponibles() {
+        $consulta = "SELECT u.id_usuario, u.nombre, u.apellido, u.usuario
+                     FROM usuarios u
+                     LEFT JOIN {$this->tabla} t ON u.id_usuario = t.id_usuario
+                     WHERE t.id_usuario IS NULL
+                     ORDER BY u.apellido, u.nombre";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->execute();
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function eliminarDisponibilidad($id_disp, $id_tutor)
-    {
-        $stmt = $this->pdo->prepare("DELETE FROM disponibilidad_tutor WHERE id_disponibilidad = :id AND id_tutor = :id_tutor");
-        return $stmt->execute([
-            ':id'       => $id_disp,
-            ':id_tutor' => $id_tutor
-        ]);
+    /**
+     * Obtiene todos los usuarios (para edición)
+     */
+    public function listarTodosUsuarios() {
+        $consulta = "SELECT * FROM usuarios ORDER BY apellido, nombre";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->execute();
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
     }
 }

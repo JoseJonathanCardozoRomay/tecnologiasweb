@@ -1,48 +1,96 @@
 <?php
-class CarreraModel
-{
-    private $pdo;
+/**
+ * Modelo para la gestión de la entidad Carrera
+ * Sistema de Gestión de Tutorías
+ */
+require_once __DIR__ . '/../config/conexion.php';
 
-    public function __construct($pdo)
-    {
-        $this->pdo = $pdo;
+class CarreraModel {
+    private $conexion;
+    private $tabla = 'carreras';
+
+    public function __construct() {
+        global $conexion;
+        $this->conexion = $conexion;
     }
 
-    public function obtenerTodas()
-    {
-        $sql = "SELECT c.id_carrera, c.nombre_carrera,
-                       (SELECT COUNT(*) FROM materias m WHERE m.id_carrera = c.id_carrera) AS total_materias,
-                       (SELECT COUNT(*) FROM estudiantes e WHERE e.id_carrera = c.id_carrera) AS total_estudiantes
-                FROM carreras c
-                ORDER BY c.nombre_carrera ASC";
-        return $this->pdo->query($sql)->fetchAll();
+    /**
+     * Obtiene el listado completo de carreras ordenadas alfabéticamente
+     * @return array Lista de carreras
+     */
+    public function listarTodas() {
+        $consulta = "SELECT * FROM {$this->tabla} ORDER BY nombre_carrera ASC";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->execute();
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorId($id)
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM carreras WHERE id_carrera = :id");
-        $stmt->execute([':id' => $id]);
-        return $stmt->fetch();
+    /**
+     * Recupera los datos de una carrera por su identificador
+     * @param int $id_carrera Identificador de la carrera
+     * @return array|false Datos de la carrera
+     */
+    public function obtenerPorId($id_carrera) {
+        $consulta = "SELECT * FROM {$this->tabla} WHERE id_carrera = :id_carrera";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->bindParam(':id_carrera', $id_carrera, PDO::PARAM_INT);
+        $sentencia->execute();
+        return $sentencia->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function crear($nombre)
-    {
-        $stmt = $this->pdo->prepare("INSERT INTO carreras (nombre_carrera) VALUES (:nombre)");
-        return $stmt->execute([':nombre' => trim($nombre)]);
+    /**
+     * Registra una nueva carrera en la base de datos
+     * @param string $nombre_carrera Nombre de la carrera
+     * @return bool|array Resultado de la operación
+     */
+    public function crear($nombre_carrera) {
+        try {
+            $consulta = "INSERT INTO {$this->tabla} (nombre_carrera) VALUES (:nombre_carrera)";
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->bindParam(':nombre_carrera', $nombre_carrera, PDO::PARAM_STR);
+            return $sentencia->execute();
+        } catch (PDOException $error) {
+            if ($error->getCode() === '23000') {
+                return ['error' => 'La carrera "' . $nombre_carrera . '" ya se encuentra registrada'];
+            }
+            return ['error' => 'Error al registrar la carrera'];
+        }
     }
 
-    public function actualizar($id, $nombre)
-    {
-        $stmt = $this->pdo->prepare("UPDATE carreras SET nombre_carrera = :nombre WHERE id_carrera = :id");
-        return $stmt->execute([
-            ':nombre' => trim($nombre),
-            ':id'     => $id
-        ]);
+    /**
+     * Modifica el nombre de una carrera existente
+     * @param int $id_carrera Identificador de la carrera
+     * @param string $nombre_carrera Nuevo nombre
+     * @return bool|array Resultado de la operación
+     */
+    public function actualizar($id_carrera, $nombre_carrera) {
+        try {
+            $consulta = "UPDATE {$this->tabla} SET nombre_carrera = :nombre_carrera WHERE id_carrera = :id_carrera";
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->bindParam(':nombre_carrera', $nombre_carrera, PDO::PARAM_STR);
+            $sentencia->bindParam(':id_carrera', $id_carrera, PDO::PARAM_INT);
+            return $sentencia->execute();
+        } catch (PDOException $error) {
+            if ($error->getCode() === '23000') {
+                return ['error' => 'La carrera "' . $nombre_carrera . '" ya se encuentra registrada'];
+            }
+            return ['error' => 'Error al actualizar el registro'];
+        }
     }
 
-    public function eliminar($id)
-    {
-        $stmt = $this->pdo->prepare("DELETE FROM carreras WHERE id_carrera = :id");
-        return $stmt->execute([':id' => $id]);
+    /**
+     * Elimina una carrera del sistema
+     * @param int $id_carrera Identificador de la carrera
+     * @return bool|array Resultado de la operación
+     */
+    public function eliminar($id_carrera) {
+        try {
+            $consulta = "DELETE FROM {$this->tabla} WHERE id_carrera = :id_carrera";
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->bindParam(':id_carrera', $id_carrera, PDO::PARAM_INT);
+            return $sentencia->execute();
+        } catch (PDOException $error) {
+            return ['error' => 'No es posible eliminar: existen registros asociados a esta carrera'];
+        }
     }
 }

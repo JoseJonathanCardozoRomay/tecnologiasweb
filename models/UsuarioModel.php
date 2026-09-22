@@ -1,85 +1,112 @@
 <?php
-class UsuarioModel
-{
-    private $pdo;
+/**
+ * Modelo para la gestión de la entidad Usuario
+ */
+require_once __DIR__ . '/../config/conexion.php';
 
-    public function __construct($pdo)
-    {
-        $this->pdo = $pdo;
+class UsuarioModel {
+    private $conexion;
+    private $tabla = 'usuarios';
+
+    public function __construct() {
+        global $conexion;
+        $this->conexion = $conexion;
     }
 
-    public function obtenerTodos()
-    {
-        $sql = "SELECT u.id_usuario, u.nombre, u.apellido, u.correo, u.usuario,
-                       r.nombre_rol, u.estado, u.fecha_registro
-                FROM usuarios u
-                INNER JOIN roles r ON u.id_rol = r.id_rol
-                ORDER BY u.id_usuario DESC";
-        return $this->pdo->query($sql)->fetchAll();
+    /**
+     * Obtiene todos los usuarios con nombre del rol
+     */
+    public function listarTodos() {
+        $consulta = "SELECT u.*, r.nombre_rol 
+                     FROM {$this->tabla} u 
+                     LEFT JOIN roles r ON u.id_rol = r.id_rol 
+                     ORDER BY u.id_usuario";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->execute();
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorId($id)
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE id_usuario = :id");
-        $stmt->execute([':id' => $id]);
-        return $stmt->fetch();
+    /**
+     * Obtiene un usuario por su ID
+     */
+    public function obtenerPorId($id_usuario) {
+        $consulta = "SELECT * FROM {$this->tabla} WHERE id_usuario = :id_usuario";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+        $sentencia->execute();
+        return $sentencia->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function crear($datos)
-    {
-        // password_hash genera un hash seguro (bcrypt) — NUNCA guardar la contraseña en texto plano
-        $hash = password_hash($datos['clave'], PASSWORD_DEFAULT);
-
-        $sql = "INSERT INTO usuarios (id_rol, nombre, apellido, correo, usuario, contrasena_hash)
-                VALUES (:id_rol, :nombre, :apellido, :correo, :usuario, :hash)";
-        $stmt = $this->pdo->prepare($sql);
-
-        return $stmt->execute([
-            ':id_rol'   => $datos['id_rol'],
-            ':nombre'   => $datos['nombre'],
-            ':apellido' => $datos['apellido'],
-            ':correo'   => $datos['correo'],
-            ':usuario'  => $datos['usuario'],
-            ':hash'     => $hash,
-        ]);
+    /**
+     * Crea un nuevo usuario
+     */
+    public function crear($datos) {
+        try {
+            $consulta = "INSERT INTO {$this->tabla} 
+                (id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado) 
+                VALUES (:id_rol, :nombre, :apellido, :correo, :usuario, :contrasena_hash, :telefono, :estado)";
+            
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->execute($datos);
+            return true;
+        } catch (PDOException $error) {
+            if ($error->getCode() === '23000') {
+                return ['error' => 'El correo o nombre de usuario ya están registrados'];
+            }
+            return ['error' => 'Error al crear el registro: ' . $error->getMessage()];
+        }
     }
 
-    public function actualizar($id, $datos)
-    {
-        $sql = "UPDATE usuarios
-                SET id_rol = :id_rol, nombre = :nombre, apellido = :apellido,
-                    correo = :correo, usuario = :usuario, estado = :estado
-                WHERE id_usuario = :id";
-        $stmt = $this->pdo->prepare($sql);
+    /**
+     * Actualiza un usuario existente
+     */
+    public function actualizar($id_usuario, $datos) {
+        try {
+            $campos = [];
+            $valores = [];
 
-        return $stmt->execute([
-            ':id_rol'   => $datos['id_rol'],
-            ':nombre'   => $datos['nombre'],
-            ':apellido' => $datos['apellido'],
-            ':correo'   => $datos['correo'],
-            ':usuario'  => $datos['usuario'],
-            ':estado'   => $datos['estado'],
-            ':id'       => $id,
-        ]);
+            foreach ($datos as $campo => $valor) {
+                $campos[] = "$campo = :$campo";
+                $valores[$campo] = $valor;
+            }
+            $valores['id_usuario'] = $id_usuario;
+
+            $consulta = "UPDATE {$this->tabla} SET " . implode(', ', $campos) . " 
+                         WHERE id_usuario = :id_usuario";
+            
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->execute($valores);
+            return true;
+        } catch (PDOException $error) {
+            if ($error->getCode() === '23000') {
+                return ['error' => 'El correo o nombre de usuario ya están registrados'];
+            }
+            return ['error' => 'Error al actualizar el registro'];
+        }
     }
 
-    public function eliminar($id)
-    {
-        $stmt = $this->pdo->prepare("DELETE FROM usuarios WHERE id_usuario = :id");
-        return $stmt->execute([':id' => $id]);
+    /**
+     * Elimina un usuario
+     */
+    public function eliminar($id_usuario) {
+        try {
+            $consulta = "DELETE FROM {$this->tabla} WHERE id_usuario = :id_usuario";
+            $sentencia = $this->conexion->prepare($consulta);
+            $sentencia->bindParam(':id_usuario', $id_usuario, PDO::PARAM_INT);
+            $sentencia->execute();
+            return true;
+        } catch (PDOException $error) {
+            return ['error' => 'No es posible eliminar el registro: existen dependencias'];
+        }
     }
 
-    public function obtenerPorUsuario($usuario) {
-    $sql = "SELECT u.*, r.nombre_rol 
-            FROM usuarios u
-            JOIN roles r ON u.id_rol = r.id_rol
-            WHERE u.usuario = :usuario1 OR u.correo = :usuario2
-            LIMIT 1";
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute([
-        'usuario1' => $usuario,
-        'usuario2' => $usuario
-    ]);
-    return $stmt->fetch();
-}
+    /**
+     * Obtiene lista de roles para el formulario
+     */
+    public function listarRoles() {
+        $consulta = "SELECT * FROM roles ORDER BY id_rol";
+        $sentencia = $this->conexion->prepare($consulta);
+        $sentencia->execute();
+        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -1,18 +1,18 @@
 <?php
-require_once __DIR__ . '/../includes/verificar_sesion.php';
-require_once __DIR__ . '/../config/conexion.php';
+/**
+ * Controlador para la eliminación de materias
+ */
 require_once __DIR__ . '/../models/MateriaModel.php';
 
-$id = $_GET['id'] ?? null;
+$modelo = new MateriaModel();
+$id_materia = $_GET['id'] ?? 0;
 
-if ($id) {
-    $materiaModel = new MateriaModel($pdo);
-    try {
-        $materiaModel->eliminar($id);
-    } catch (PDOException $e) {
-        // En caso de fallo por clave foránea existente
-    }
+$resultado = $modelo->eliminar($id_materia);
+
+if (is_array($resultado) && isset($resultado['error'])) {
+    header('Location: index.php?accion=materias_listar&mensaje=error&detalle=' . urlencode($resultado['error']));
+    exit;
 }
 
-header("Location: materias_listar.php");
+header('Location: index.php?accion=materias_listar&mensaje=registro_eliminado');
 exit;
