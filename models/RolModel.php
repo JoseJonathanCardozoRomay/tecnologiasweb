@@ -1,9 +1,7 @@
- <?php
+<?php
 /**
- * Modelo para la gestión de la entidad Rol
- * Maneja las operaciones de acceso a datos
+ * Modelo Rol
  */
-
 require_once __DIR__ . '/../config/conexion.php';
 
 class RolModel {
@@ -16,57 +14,41 @@ class RolModel {
     }
 
     public function listarTodos() {
-        $consulta = "SELECT * FROM {$this->tabla} ORDER BY id_rol";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->conexion->query("SELECT * FROM {$this->tabla} ORDER BY id_rol");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorId($id_rol) {
-        $consulta = "SELECT * FROM {$this->tabla} WHERE id_rol = :id_rol";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
-        $sentencia->execute();
-        return $sentencia->fetch(PDO::FETCH_ASSOC);
+    public function obtenerPorId($id) {
+        $stmt = $this->conexion->prepare("SELECT * FROM {$this->tabla} WHERE id_rol = :id");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function crear($nombre_rol) {
+    public function crear($nombre) {
         try {
-            $consulta = "INSERT INTO {$this->tabla} (nombre_rol) VALUES (:nombre_rol)";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':nombre_rol', $nombre_rol, PDO::PARAM_STR);
-            return $sentencia->execute();
-        } catch (PDOException $error) {
-            if ($error->getCode() === '23000') {
-                return ['error' => 'El rol "' . $nombre_rol . '" ya se encuentra registrado'];
-            }
-            return ['error' => 'Error al crear el registro'];
+            $stmt = $this->conexion->prepare("INSERT INTO {$this->tabla} (nombre_rol) VALUES (:nombre)");
+            $stmt->bindParam(':nombre', $nombre);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            return false;
         }
     }
 
-    public function actualizar($id_rol, $nombre_rol) {
+    public function actualizar($id, $nombre) {
         try {
-            $consulta = "UPDATE {$this->tabla} SET nombre_rol = :nombre_rol WHERE id_rol = :id_rol";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':nombre_rol', $nombre_rol, PDO::PARAM_STR);
-            $sentencia->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
-            return $sentencia->execute();
-        } catch (PDOException $error) {
-            if ($error->getCode() === '23000') {
-                return ['error' => 'El rol "' . $nombre_rol . '" ya se encuentra registrado'];
-            }
-            return ['error' => 'Error al actualizar el registro'];
+            $stmt = $this->conexion->prepare("UPDATE {$this->tabla} SET nombre_rol = :nombre WHERE id_rol = :id");
+            $stmt->bindParam(':nombre', $nombre);
+            $stmt->bindParam(':id', $id);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            return false;
         }
     }
 
-    public function eliminar($id_rol) {
-        try {
-            $consulta = "DELETE FROM {$this->tabla} WHERE id_rol = :id_rol";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':id_rol', $id_rol, PDO::PARAM_INT);
-            return $sentencia->execute();
-        } catch (PDOException $error) {
-            return ['error' => 'No es posible eliminar: existen dependencias'];
-        }
+    public function eliminar($id) {
+        $stmt = $this->conexion->prepare("DELETE FROM {$this->tabla} WHERE id_rol = :id");
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
     }
 }

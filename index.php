@@ -12,10 +12,10 @@ $rutas_publicas = [
 ];
 
 $rutas_privadas = [
-    'listar' => ['controllers/roles_listar.php', ['administrador']],
-    'rol_crear' => ['controllers/rol_crear.php', ['administrador']],
-    'rol_editar' => ['controllers/rol_editar.php', ['administrador']],
-    'rol_eliminar' => ['controllers/rol_eliminar.php', ['administrador']],
+    'listar'                => ['controllers/roles_listar.php', ['administrador']],
+    'rol_crear'             => ['controllers/rol_crear.php', ['administrador']],
+    'rol_editar'            => ['controllers/rol_editar.php', ['administrador']],
+    'rol_eliminar'          => ['controllers/rol_eliminar.php', ['administrador']],
     
     'usuarios_listar' => ['controllers/usuarios_listar.php', ['administrador']],
     'usuario_crear' => ['controllers/usuario_crear.php', ['administrador']],
