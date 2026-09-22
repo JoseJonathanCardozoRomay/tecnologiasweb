@@ -1,39 +1,43 @@
- <?php
-/**
- * Editar Periodo de Tutoría — Solución completa
- * Sin tocar modelo ni vistas
- */
+<?php
+require_once __DIR__ . '/../models/PeriodoTutoriaModel.php';
+require_once __DIR__ . '/../config/sesion.php';
 
-require_once __DIR__ . '/../config/conexion.php';
-
+$modelo = new PeriodoTutoriaModel();
 $error = '';
-$id = $_GET['id'] ?? 0;
 
-// Obtener datos del periodo
-$consulta = "SELECT * FROM periodos_tutoria WHERE id_periodo = ?";
-$stmt = $conexion->prepare($consulta);
-$stmt->execute([$id]);
-$periodo = $stmt->fetch(PDO::FETCH_ASSOC);
+$id = (int)($_GET['id'] ?? 0);
+if ($id <= 0) {
+    header('Location: index.php?accion=periodos_listar');
+    exit;
+}
 
-// Procesar formulario
+$periodo = $modelo->obtenerPorId($id);
+if (!$periodo) {
+    header('Location: index.php?accion=periodos_listar');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $codigo = $_POST['codigo'] ?? '';
-    $nombre = $_POST['nombre'] ?? '';
-    $fecha_inicio = $_POST['fecha_inicio'] ?? '';
-    $fecha_fin = $_POST['fecha_fin'] ?? '';
-    $activo = $_POST['activo'] ?? 0;
+    $datos = [
+        'codigo' => trim($_POST['codigo'] ?? ''),
+        'nombre' => trim($_POST['nombre'] ?? ''),
+        'fecha_inicio' => trim($_POST['fecha_inicio'] ?? ''),
+        'fecha_fin' => trim($_POST['fecha_fin'] ?? ''),
+        'activo' => (int)($_POST['activo'] ?? 1)
+    ];
 
-    if ($codigo && $nombre && $fecha_inicio && $fecha_fin) {
-        $actualizar = "UPDATE periodos_tutoria 
-                      SET codigo = ?, nombre = ?, fecha_inicio = ?, fecha_fin = ?, activo = ?
-                      WHERE id_periodo = ?";
-        $stmt_act = $conexion->prepare($actualizar);
-        $stmt_act->execute([$codigo, $nombre, $fecha_inicio, $fecha_fin, $activo, $id]);
-        
-        header("Location: index.php?accion=periodos_listar&mensaje=actualizado");
-        exit;
+    if (empty($datos['codigo']) || empty($datos['nombre']) || empty($datos['fecha_inicio']) || empty($datos['fecha_fin'])) {
+        $error = 'Completa todos los campos obligatorios';
     } else {
-        $error = "Todos los campos son obligatorios";
+        $resultado = $modelo->actualizar($id, $datos);
+        if ($resultado === true) {
+            header('Location: index.php?accion=periodos_listar');
+            exit;
+        } elseif ($resultado === 'existe') {
+            $error = 'El código "' . $datos['codigo'] . '" ya está en uso. Usa otro.';
+        } else {
+            $error = 'Error al actualizar';
+        }
     }
 }
 

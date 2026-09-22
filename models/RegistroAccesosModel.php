@@ -1,4 +1,4 @@
- <?php
+<?php
 require_once __DIR__ . '/../config/conexion.php';
 
 class RegistroAccesosModel {
@@ -11,79 +11,58 @@ class RegistroAccesosModel {
     }
 
     public function listarTodos() {
-        $consulta = "SELECT r.id_acceso, r.fecha_hora, r.ip_origen, r.resultado, r.id_usuario,
-                            u.nombre, u.apellido
-                     FROM {$this->tabla} r
-                     LEFT JOIN usuarios u ON r.id_usuario = u.id_usuario
-                     ORDER BY r.fecha_hora DESC";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT ra.*, u.nombre, u.apellido, u.usuario
+                FROM {$this->tabla} ra
+                LEFT JOIN usuarios u ON ra.id_usuario = u.id_usuario
+                ORDER BY ra.fecha_hora DESC";
+        $stmt = $this->conexion->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     public function obtenerPorId($id) {
-        $consulta = "SELECT r.*, u.nombre, u.apellido
-                     FROM {$this->tabla} r
-                     LEFT JOIN usuarios u ON r.id_usuario = u.id_usuario
-                     WHERE r.id_acceso = :id";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->bindParam(':id', $id, PDO::PARAM_INT);
-        $sentencia->execute();
-        return $sentencia->fetch(PDO::FETCH_ASSOC);
+        $sql = "SELECT * FROM {$this->tabla} WHERE id_acceso = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function crear($datos) {
         try {
-            $consulta = "INSERT INTO {$this->tabla} (id_usuario, ip_origen, resultado)
-                         VALUES (:id_usuario, :ip_origen, :resultado)";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute([
-                ':id_usuario'   => !empty($datos['id_usuario']) ? $datos['id_usuario'] : null,
-                ':ip_origen'    => $datos['ip_origen'],
-                ':resultado'    => $datos['resultado']
-            ]);
-            return true;
+            $sql = "INSERT INTO {$this->tabla} (id_usuario, ip_origen, resultado)
+                    VALUES (:idusu, :ip, :res)";
+            $stmt = $this->conexion->prepare($sql);
+            $stmt->bindValue(':idusu', $datos['id_usuario'], $datos['id_usuario'] ? PDO::PARAM_INT : PDO::PARAM_NULL);
+            $stmt->bindParam(':ip', $datos['ip_origen']);
+            $stmt->bindParam(':res', $datos['resultado']);
+            return $stmt->execute();
         } catch (PDOException $e) {
-            return ['error' => 'Error al registrar el acceso'];
+            return false;
         }
     }
 
-    public function editar($id, $datos) {
+    public function actualizar($id, $datos) {
         try {
-            $consulta = "UPDATE {$this->tabla} SET
-                id_usuario = :id_usuario,
-                ip_origen  = :ip_origen,
-                resultado  = :resultado
-                WHERE id_acceso = :id";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute([
-                ':id'           => $id,
-                ':id_usuario'   => !empty($datos['id_usuario']) ? $datos['id_usuario'] : null,
-                ':ip_origen'    => $datos['ip_origen'],
-                ':resultado'    => $datos['resultado']
-            ]);
-            return true;
+            $sql = "UPDATE {$this->tabla}
+                    SET id_usuario = :idusu,
+                        ip_origen = :ip,
+                        resultado = :res
+                    WHERE id_acceso = :id";
+            $stmt = $this->conexion->prepare($sql);
+            $stmt->bindValue(':idusu', $datos['id_usuario'], $datos['id_usuario'] ? PDO::PARAM_INT : PDO::PARAM_NULL);
+            $stmt->bindParam(':ip', $datos['ip_origen']);
+            $stmt->bindParam(':res', $datos['resultado']);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
         } catch (PDOException $e) {
-            return ['error' => 'Error al actualizar el acceso'];
+            return false;
         }
     }
 
     public function eliminar($id) {
-        try {
-            $consulta = "DELETE FROM {$this->tabla} WHERE id_acceso = :id";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':id', $id, PDO::PARAM_INT);
-            $sentencia->execute();
-            return true;
-        } catch (PDOException $e) {
-            return ['error' => 'No se pudo eliminar'];
-        }
-    }
-
-    public function listarUsuarios() {
-        $consulta = "SELECT id_usuario, nombre, apellido FROM usuarios ORDER BY apellido, nombre";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "DELETE FROM {$this->tabla} WHERE id_acceso = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
     }
 }

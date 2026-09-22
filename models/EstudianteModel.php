@@ -1,13 +1,8 @@
 <?php
-/**
- * Modelo Estudiante
- * Sistema de Gestión de Tutorías
- */
 require_once __DIR__ . '/../config/conexion.php';
 
 class EstudianteModel {
     private $conexion;
-    private $tabla = 'estudiantes';
 
     public function __construct() {
         global $conexion;
@@ -15,111 +10,150 @@ class EstudianteModel {
     }
 
     public function listarTodos() {
-        $consulta = "SELECT e.id_estudiante, e.codigo_estudiante, e.fecha_ingreso,
-                            u.nombre, u.apellido,
-                            c.nombre_carrera
-                     FROM {$this->tabla} e
-                     INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
-                     INNER JOIN carreras c ON e.id_carrera = c.id_carrera
-                     ORDER BY u.apellido, u.nombre";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT e.*, u.nombre, u.apellido, u.telefono, c.nombre_carrera
+                FROM estudiantes e
+                INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+                INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+                ORDER BY u.nombre, u.apellido";
+        $stmt = $this->conexion->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function obtenerPorId($id) {
-        $consulta = "SELECT e.*, u.nombre, u.apellido, c.nombre_carrera
-                     FROM {$this->tabla} e
-                     INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
-                     INNER JOIN carreras c ON e.id_carrera = c.id_carrera
-                     WHERE e.id_estudiante = :id";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->bindParam(':id', $id, PDO::PARAM_INT);
-        $sentencia->execute();
-        return $sentencia->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function crear($datos) {
+    public function guardarEstudiante($datos) {
         try {
-            $consulta = "INSERT INTO {$this->tabla} (id_usuario, id_carrera, codigo_estudiante, fecha_ingreso)
-                         VALUES (:id_usuario, :id_carrera, :codigo_estudiante, :fecha_ingreso)";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute([
-                ':id_usuario'        => $datos['id_usuario'],
-                ':id_carrera'        => $datos['id_carrera'],
-                ':codigo_estudiante' => $datos['codigo_estudiante'],
-                ':fecha_ingreso'     => $datos['fecha_ingreso']
-            ]);
-            return true;
-        } catch (PDOException $error) {
-            if ($error->getCode() === '23000') {
-                return ['error' => 'El código del estudiante ya existe'];
+            $this->conexion->beginTransaction();
+
+            // 1. Obtener rol de estudiante
+            $stmt = $this->conexion->prepare("SELECT id_rol FROM roles WHERE nombre_rol = 'estudiante' LIMIT 1");
+            $stmt->execute();
+            $rol = $stmt->fetch(PDO::FETCH_ASSOC);
+            $id_rol = $rol['id_rol'] ?? 3;
+
+            // 2. Generar usuario único
+            $usuario = strtolower($datos['nombre'] . '_' . $datos['apellido']);
+            $usuario = preg_replace('/[^a-z0-9_]/', '', $usuario);
+            $baseUsuario = $usuario;
+            $n = 1;
+            while (true) {
+                $chk = $this->conexion->prepare("SELECT 1 FROM usuarios WHERE usuario = :u LIMIT 1");
+                $chk->bindParam(':u', $usuario);
+                $chk->execute();
+                if (!$chk->fetch()) break;
+                $usuario = $baseUsuario . $n;
+                $n++;
             }
-            return ['error' => 'Error al registrar el estudiante'];
+
+            $correo = $usuario . '@correo.com';
+            $clave = password_hash('123456', PASSWORD_DEFAULT);
+
+            // 3. Crear usuario
+            $stmt = $this->conexion->prepare("INSERT INTO usuarios (id_rol, nombre, apellido, telefono, usuario, correo, contrasena_hash)
+                VALUES (:idr, :nom, :ape, :tel, :usu, :cor, :pwd)");
+            $stmt->bindParam(':idr', $id_rol);
+            $stmt->bindParam(':nom', $datos['nombre']);
+            $stmt->bindParam(':ape', $datos['apellido']);
+            $stmt->bindParam(':tel', $datos['telefono']);
+            $stmt->bindParam(':usu', $usuario);
+            $stmt->bindParam(':cor', $correo);
+            $stmt->bindParam(':pwd', $clave);
+            $stmt->execute();
+
+            $id_usuario = $this->conexion->lastInsertId();
+
+            // 4. Registro único — SIN error si no existe la columna
+            $registro = $datos['registro_universitario'];
+            $baseReg = $registro;
+            $m = 1;
+            
+            // Verificar si la columna existe antes de buscar duplicados
+            $colExiste = $this->conexion->query("SHOW COLUMNS FROM estudiantes LIKE 'registro_universitario'")->fetch();
+            if ($colExiste) {
+                while (true) {
+                    $chk = $this->conexion->prepare("SELECT 1 FROM estudiantes WHERE registro_universitario = :r LIMIT 1");
+                    $chk->bindParam(':r', $registro);
+                    $chk->execute();
+                    if (!$chk->fetch()) break;
+                    $registro = $baseReg . '_' . $m;
+                    $m++;
+                }
+            }
+
+            // 5. Crear estudiante
+            if ($colExiste) {
+                $stmt = $this->conexion->prepare("INSERT INTO estudiantes (id_usuario, id_carrera, semestre, registro_universitario)
+                    VALUES (:idu, :idc, :sem, :reg)");
+                $stmt->bindParam(':reg', $registro);
+            } else {
+                $stmt = $this->conexion->prepare("INSERT INTO estudiantes (id_usuario, id_carrera, semestre)
+                    VALUES (:idu, :idc, :sem)");
+            }
+            
+            $stmt->bindParam(':idu', $id_usuario);
+            $stmt->bindParam(':idc', $datos['id_carrera']);
+            $stmt->bindParam(':sem', $datos['semestre']);
+            $stmt->execute();
+
+            $this->conexion->commit();
+            return true;
+
+        } catch (PDOException $e) {
+            $this->conexion->rollBack();
+            return 'Error: ' . $e->getMessage();
         }
     }
 
-    public function editar($id, $datos) {
+    public function obtenerPorId($id) {
+        $sql = "SELECT e.*, u.nombre, u.apellido, u.telefono, c.nombre_carrera
+                FROM estudiantes e
+                INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+                INNER JOIN carreras c ON e.id_carrera = c.id_carrera
+                WHERE e.id_estudiante = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function actualizar($id, $datos) {
         try {
-            $consulta = "UPDATE {$this->tabla} SET
-                            id_usuario = :id_usuario,
-                            id_carrera = :id_carrera,
-                            codigo_estudiante = :codigo_estudiante,
-                            fecha_ingreso = :fecha_ingreso
-                         WHERE id_estudiante = :id";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute([
-                ':id'                => $id,
-                ':id_usuario'        => $datos['id_usuario'],
-                ':id_carrera'        => $datos['id_carrera'],
-                ':codigo_estudiante' => $datos['codigo_estudiante'],
-                ':fecha_ingreso'     => $datos['fecha_ingreso']
-            ]);
-            return true;
-        } catch (PDOException $error) {
-            if ($error->getCode() === '23000') {
-                return ['error' => 'El código del estudiante ya está en uso'];
+            $this->conexion->beginTransaction();
+            $est = $this->obtenerPorId($id);
+            $id_usuario = $est['id_usuario'];
+
+            $stmt = $this->conexion->prepare("UPDATE usuarios SET nombre=:nom, apellido=:ape, telefono=:tel WHERE id_usuario=:idu");
+            $stmt->bindParam(':nom', $datos['nombre']);
+            $stmt->bindParam(':ape', $datos['apellido']);
+            $stmt->bindParam(':tel', $datos['telefono']);
+            $stmt->bindParam(':idu', $id_usuario);
+            $stmt->execute();
+
+            $colExiste = $this->conexion->query("SHOW COLUMNS FROM estudiantes LIKE 'registro_universitario'")->fetch();
+            if ($colExiste) {
+                $stmt = $this->conexion->prepare("UPDATE estudiantes SET id_carrera=:idc, semestre=:sem, registro_universitario=:reg WHERE id_estudiante=:id");
+                $stmt->bindParam(':reg', $datos['registro_universitario']);
+            } else {
+                $stmt = $this->conexion->prepare("UPDATE estudiantes SET id_carrera=:idc, semestre=:sem WHERE id_estudiante=:id");
             }
-            return ['error' => 'Error al actualizar el estudiante'];
+            $stmt->bindParam(':idc', $datos['id_carrera']);
+            $stmt->bindParam(':sem', $datos['semestre']);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+
+            $this->conexion->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->conexion->rollBack();
+            return 'Error: ' . $e->getMessage();
         }
     }
 
     public function eliminar($id) {
-        try {
-            $consulta = "DELETE FROM {$this->tabla} WHERE id_estudiante = :id";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':id', $id, PDO::PARAM_INT);
-            $sentencia->execute();
-            return true;
-        } catch (PDOException $error) {
-            return ['error' => 'No se pudo eliminar el estudiante'];
+        $est = $this->obtenerPorId($id);
+        if ($est) {
+            $stmt = $this->conexion->prepare("DELETE FROM usuarios WHERE id_usuario=:idu");
+            $stmt->bindParam(':idu', $est['id_usuario']);
+            return $stmt->execute();
         }
-    }
-
-    public function listarUsuariosDisponibles() {
-        $consulta = "SELECT u.id_usuario, u.nombre, u.apellido
-                     FROM usuarios u
-                     LEFT JOIN {$this->tabla} e ON u.id_usuario = e.id_usuario
-                     WHERE e.id_usuario IS NULL
-                     ORDER BY u.apellido, u.nombre";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function listarCarreras() {
-        $consulta = "SELECT id_carrera, nombre_carrera FROM carreras ORDER BY nombre_carrera";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function obtenerUsuarioId($id_estudiante) {
-        $consulta = "SELECT id_usuario FROM {$this->tabla} WHERE id_estudiante = :id";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->bindParam(':id', $id_estudiante, PDO::PARAM_INT);
-        $sentencia->execute();
-        $resultado = $sentencia->fetch(PDO::FETCH_ASSOC);
-        return $resultado['id_usuario'] ?? 0;
+        return false;
     }
 }

@@ -1,7 +1,7 @@
-<?php
+ <?php
 require_once __DIR__ . '/../models/SeguimientoSesionModel.php';
 
 $modelo = new SeguimientoSesionModel();
-$seguimientos = $modelo->listar();
+$seguimientos = $modelo->listarTodos();
 
-require_once __DIR__ . '/../views/seguimientos/listar.php';
+require_once __DIR__ . '/../views/seguimiento/listar.php';

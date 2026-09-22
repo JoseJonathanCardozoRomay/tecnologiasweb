@@ -1,8 +1,4 @@
 <?php
-/**
- * Modelo Sesiones de Tutoría — CORREGIDO
- * Sistema de Gestión de Tutorías
- */
 require_once __DIR__ . '/../config/conexion.php';
 
 class TutoriaModel {
@@ -14,136 +10,123 @@ class TutoriaModel {
         $this->conexion = $conexion;
     }
 
-    public function listarTodos() {
-        $consulta = "SELECT t.id_tutoria, t.fecha, t.hora_inicio, t.hora_fin, t.modalidad, t.estado,
-                            e.codigo_estudiante,
-                            ue.nombre AS nom_est, ue.apellido AS ape_est,
-                            ut.nombre AS nom_tut, ut.apellido AS ape_tut,
-                            m.nombre_materia
-                     FROM {$this->tabla} t
-                     INNER JOIN estudiantes e ON t.id_estudiante = e.id_estudiante
-                     INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
-                     INNER JOIN tutores tut ON t.id_tutor = tut.id_tutor
-                     INNER JOIN usuarios ut ON tut.id_usuario = ut.id_usuario
-                     INNER JOIN materias m ON t.id_materia = m.id_materia
-                     ORDER BY t.fecha DESC, t.hora_inicio DESC";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+    public function listarTodas() {
+        $sql = "SELECT t.*,
+                       e.nombre AS est_nombre, e.apellido AS est_apellido,
+                       tu.nombre AS tut_nombre, tu.apellido AS tut_apellido,
+                       m.nombre_materia
+                FROM {$this->tabla} t
+                LEFT JOIN estudiantes est ON t.id_estudiante = est.id_estudiante
+                LEFT JOIN usuarios e ON est.id_usuario = e.id_usuario
+                LEFT JOIN tutores tut ON t.id_tutor = tut.id_tutor
+                LEFT JOIN usuarios tu ON tut.id_usuario = tu.id_usuario
+                LEFT JOIN materias m ON t.id_materia = m.id_materia
+                ORDER BY t.fecha DESC, t.hora_inicio DESC";
+        $stmt = $this->conexion->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public function obtenerPorId($id) {
-        $consulta = "SELECT t.*,
-                            ue.nombre AS nom_est, ue.apellido AS ape_est,
-                            ut.nombre AS nom_tut, ut.apellido AS ape_tut,
-                            m.nombre_materia
-                     FROM {$this->tabla} t
-                     INNER JOIN estudiantes e ON t.id_estudiante = e.id_estudiante
-                     INNER JOIN usuarios ue ON e.id_usuario = ue.id_usuario
-                     INNER JOIN tutores tut ON t.id_tutor = tut.id_tutor
-                     INNER JOIN usuarios ut ON tut.id_usuario = ut.id_usuario
-                     INNER JOIN materias m ON t.id_materia = m.id_materia
-                     WHERE t.id_tutoria = :id";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->bindParam(':id', $id, PDO::PARAM_INT);
-        $sentencia->execute();
-        return $sentencia->fetch(PDO::FETCH_ASSOC);
+    public function listarEstudiantes() {
+        $sql = "SELECT e.id_estudiante, u.nombre, u.apellido
+                FROM estudiantes e
+                INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+                ORDER BY u.nombre, u.apellido";
+        $stmt = $this->conexion->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function listarTutores() {
+        $sql = "SELECT t.id_tutor, u.nombre, u.apellido
+                FROM tutores t
+                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                ORDER BY u.nombre, u.apellido";
+        $stmt = $this->conexion->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function listarMaterias() {
+        $sql = "SELECT id_materia, nombre_materia FROM materias ORDER BY nombre_materia";
+        $stmt = $this->conexion->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     public function crear($datos) {
         try {
-            $consulta = "INSERT INTO {$this->tabla} 
-                (id_estudiante, id_tutor, id_materia, fecha, hora_inicio, hora_fin, modalidad, lugar_o_enlace, estado, observaciones)
-                VALUES (:id_estudiante, :id_tutor, :id_materia, :fecha, :hora_inicio, :hora_fin, :modalidad, :lugar_o_enlace, :estado, :observaciones)";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute([
-                ':id_estudiante'   => $datos['id_estudiante'],
-                ':id_tutor'        => $datos['id_tutor'],
-                ':id_materia'      => $datos['id_materia'],
-                ':fecha'           => $datos['fecha'],
-                ':hora_inicio'     => $datos['hora_inicio'],
-                ':hora_fin'        => $datos['hora_fin'],
-                ':modalidad'       => $datos['modalidad'],
-                ':lugar_o_enlace'  => $datos['lugar_o_enlace'],
-                ':estado'          => $datos['estado'],
-                ':observaciones'   => $datos['observaciones']
-            ]);
-            return true;
+            $estado = !empty($datos['estado']) ? $datos['estado'] : 'pendiente';
+            $sql = "INSERT INTO {$this->tabla} (id_estudiante, id_tutor, id_materia, fecha, hora_inicio, hora_fin, modalidad, lugar_o_enlace, observaciones, estado)
+                    VALUES (:idest, :idtut, :idmat, :fecha, :hinicio, :hfin, :modalidad, :lugar, :obs, :estado)";
+            $stmt = $this->conexion->prepare($sql);
+            $stmt->bindParam(':idest', $datos['id_estudiante']);
+            $stmt->bindParam(':idtut', $datos['id_tutor']);
+            $stmt->bindParam(':idmat', $datos['id_materia']);
+            $stmt->bindParam(':fecha', $datos['fecha']);
+            $stmt->bindParam(':hinicio', $datos['hora_inicio']);
+            $stmt->bindParam(':hfin', $datos['hora_fin']);
+            $stmt->bindParam(':modalidad', $datos['modalidad']);
+            $stmt->bindParam(':lugar', $datos['lugar_o_enlace']);
+            $stmt->bindParam(':obs', $datos['observaciones']);
+            $stmt->bindParam(':estado', $estado);
+            return $stmt->execute();
         } catch (PDOException $e) {
-            return ['error' => 'Error al registrar la tutoría'];
+            return false;
         }
     }
 
-    public function editar($id, $datos) {
+    public function obtenerPorId($id) {
+        $sql = "SELECT t.*,
+                       e.nombre AS est_nombre, e.apellido AS est_apellido,
+                       tu.nombre AS tut_nombre, tu.apellido AS tut_apellido,
+                       m.nombre_materia
+                FROM {$this->tabla} t
+                LEFT JOIN estudiantes est ON t.id_estudiante = est.id_estudiante
+                LEFT JOIN usuarios e ON est.id_usuario = e.id_usuario
+                LEFT JOIN tutores tut ON t.id_tutor = tut.id_tutor
+                LEFT JOIN usuarios tu ON tut.id_usuario = tu.id_usuario
+                LEFT JOIN materias m ON t.id_materia = m.id_materia
+                WHERE t.id_tutoria = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function actualizar($id, $datos) {
         try {
-            $consulta = "UPDATE {$this->tabla} SET
-                id_estudiante   = :id_estudiante,
-                id_tutor        = :id_tutor,
-                id_materia      = :id_materia,
-                fecha           = :fecha,
-                hora_inicio     = :hora_inicio,
-                hora_fin        = :hora_fin,
-                modalidad       = :modalidad,
-                lugar_o_enlace  = :lugar_o_enlace,
-                estado          = :estado,
-                observaciones   = :observaciones
-                WHERE id_tutoria = :id";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute([
-                ':id'              => $id,
-                ':id_estudiante'   => $datos['id_estudiante'],
-                ':id_tutor'        => $datos['id_tutor'],
-                ':id_materia'      => $datos['id_materia'],
-                ':fecha'           => $datos['fecha'],
-                ':hora_inicio'     => $datos['hora_inicio'],
-                ':hora_fin'        => $datos['hora_fin'],
-                ':modalidad'       => $datos['modalidad'],
-                ':lugar_o_enlace'  => $datos['lugar_o_enlace'],
-                ':estado'          => $datos['estado'],
-                ':observaciones'   => $datos['observaciones']
-            ]);
-            return true;
+            $estado = !empty($datos['estado']) ? $datos['estado'] : 'pendiente';
+            $sql = "UPDATE {$this->tabla} 
+                    SET id_estudiante = :idest,
+                        id_tutor = :idtut,
+                        id_materia = :idmat,
+                        fecha = :fecha,
+                        hora_inicio = :hinicio,
+                        hora_fin = :hfin,
+                        modalidad = :modalidad,
+                        lugar_o_enlace = :lugar,
+                        observaciones = :obs,
+                        estado = :estado
+                    WHERE id_tutoria = :id";
+            $stmt = $this->conexion->prepare($sql);
+            $stmt->bindParam(':idest', $datos['id_estudiante']);
+            $stmt->bindParam(':idtut', $datos['id_tutor']);
+            $stmt->bindParam(':idmat', $datos['id_materia']);
+            $stmt->bindParam(':fecha', $datos['fecha']);
+            $stmt->bindParam(':hinicio', $datos['hora_inicio']);
+            $stmt->bindParam(':hfin', $datos['hora_fin']);
+            $stmt->bindParam(':modalidad', $datos['modalidad']);
+            $stmt->bindParam(':lugar', $datos['lugar_o_enlace']);
+            $stmt->bindParam(':obs', $datos['observaciones']);
+            $stmt->bindParam(':estado', $estado);
+            $stmt->bindParam(':id', $id);
+            return $stmt->execute();
         } catch (PDOException $e) {
-            return ['error' => 'Error al actualizar la tutoría'];
+            return false;
         }
     }
 
     public function eliminar($id) {
-        try {
-            $consulta = "DELETE FROM {$this->tabla} WHERE id_tutoria = :id";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':id', $id, PDO::PARAM_INT);
-            $sentencia->execute();
-            return true;
-        } catch (PDOException $e) {
-            return ['error' => 'No se pudo eliminar'];
-        }
-    }
-
-    public function listarEstudiantes() {
-        $consulta = "SELECT e.id_estudiante, u.nombre, u.apellido, e.codigo_estudiante
-                     FROM estudiantes e
-                     INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
-                     ORDER BY u.apellido, u.nombre";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function listarTutores() {
-        $consulta = "SELECT t.id_tutor, u.nombre, u.apellido
-                     FROM tutores t
-                     INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
-                     ORDER BY u.apellido, u.nombre";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function listarMaterias() {
-        $consulta = "SELECT id_materia, nombre_materia FROM materias ORDER BY nombre_materia";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "DELETE FROM {$this->tabla} WHERE id_tutoria = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
     }
 }

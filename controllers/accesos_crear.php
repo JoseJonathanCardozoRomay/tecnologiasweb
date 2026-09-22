@@ -1,19 +1,22 @@
- <?php
+<?php
+require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/RegistroAccesosModel.php';
 
 $modelo = new RegistroAccesosModel();
-$usuarios = $modelo->listarUsuarios();
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $resultado = $modelo->crear($_POST);
-    
-    if (is_array($resultado) && isset($resultado['error'])) {
-        header("Location: index.php?accion=accesos_crear&mensaje=error&detalle=" . urlencode($resultado['error']));
+    $datos = [
+        'id_usuario' => !empty($_POST['id_usuario']) ? (int)$_POST['id_usuario'] : null,
+        'ip_origen' => trim($_POST['ip_origen'] ?? ''),
+        'resultado' => $_POST['resultado'] ?? 'fallido'
+    ];
+
+    if ($modelo->crear($datos)) {
+        header('Location: index.php?accion=accesos_listar');
         exit;
     }
-
-    header("Location: index.php?accion=accesos_listar&mensaje=creado");
-    exit;
+    $error = 'Error al registrar el acceso';
 }
 
 require_once __DIR__ . '/../views/accesos/crear.php';

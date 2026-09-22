@@ -1,50 +1,42 @@
- <?php
-/**
- * Editar Disponibilidad — Solución completa
- * Sin tocar modelo ni vistas
- */
+<?php
+require_once __DIR__ . '/../models/DisponibilidadModel.php';
+require_once __DIR__ . '/../models/TutorModel.php';
 
-require_once __DIR__ . '/../config/conexion.php';
+$modelo = new DisponibilidadModel();
+$tutorModel = new TutorModel();
 
-$error = '';
-$id = $_GET['id'] ?? 0;
+$id = (int)($_GET['id'] ?? 0);
 
-// Obtener datos de la disponibilidad
-$consulta = "SELECT d.*, t.id_usuario
-             FROM disponibilidad_tutor d
-             LEFT JOIN tutores t ON d.id_tutor = t.id_tutor
-             WHERE d.id_disponibilidad = ?";
-$stmt = $conexion->prepare($consulta);
-$stmt->execute([$id]);
-$disponibilidad = $stmt->fetch(PDO::FETCH_ASSOC);
+if ($id <= 0) {
+    header('Location: index.php?accion=disponibilidades_listar');
+    exit;
+}
 
-// Obtener lista de tutores para el selector
-$consulta_tutores = "SELECT t.id_tutor, CONCAT(u.nombre, ' ', u.apellido) AS nombre_tutor
-                     FROM tutores t
-                     LEFT JOIN usuarios u ON t.id_usuario = u.id_usuario
-                     ORDER BY u.nombre, u.apellido";
-$stmt_tutores = $conexion->prepare($consulta_tutores);
-$stmt_tutores->execute();
-$tutores = $stmt_tutores->fetchAll(PDO::FETCH_ASSOC);
+$disp = $modelo->obtenerPorId($id);
 
-// Procesar formulario
+if (!$disp) {
+    header('Location: index.php?accion=disponibilidades_listar');
+    exit;
+}
+
+$tutores = $tutorModel->listarTodos();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_tutor = $_POST['id_tutor'] ?? 0;
-    $dia_semana = $_POST['dia_semana'] ?? '';
-    $hora_inicio = $_POST['hora_inicio'] ?? '';
-    $hora_fin = $_POST['hora_fin'] ?? '';
+    $datos = [
+        'id_tutor' => (int)($_POST['id_tutor'] ?? 0),
+        'dia_semana' => trim($_POST['dia_semana'] ?? ''),
+        'hora_inicio' => trim($_POST['hora_inicio'] ?? ''),
+        'hora_fin' => trim($_POST['hora_fin'] ?? '')
+    ];
 
-    if ($id_tutor && $dia_semana && $hora_inicio && $hora_fin) {
-        $actualizar = "UPDATE disponibilidad_tutor 
-                      SET id_tutor = ?, dia_semana = ?, hora_inicio = ?, hora_fin = ?
-                      WHERE id_disponibilidad = ?";
-        $stmt_act = $conexion->prepare($actualizar);
-        $stmt_act->execute([$id_tutor, $dia_semana, $hora_inicio, $hora_fin, $id]);
-        
-        header("Location: index.php?accion=disponibilidad_listar&mensaje=actualizado");
-        exit;
+    if ($datos['id_tutor'] > 0 && !empty($datos['dia_semana']) && !empty($datos['hora_inicio']) && !empty($datos['hora_fin'])) {
+        if ($modelo->actualizar($id, $datos)) {
+            header('Location: index.php?accion=disponibilidades_listar');
+            exit;
+        }
+        $error = 'Error al actualizar';
     } else {
-        $error = "Todos los campos son obligatorios";
+        $error = 'Completa todos los campos';
     }
 }
 

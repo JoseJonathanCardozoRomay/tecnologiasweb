@@ -17,10 +17,11 @@ $rutas_privadas = [
     'rol_editar'            => ['controllers/rol_editar.php', ['administrador']],
     'rol_eliminar'          => ['controllers/rol_eliminar.php', ['administrador']],
     
-    'usuarios_listar' => ['controllers/usuarios_listar.php', ['administrador']],
-    'usuario_crear' => ['controllers/usuario_crear.php', ['administrador']],
-    'usuario_editar' => ['controllers/usuario_editar.php', ['administrador']],
-    'usuario_eliminar' => ['controllers/usuario_eliminar.php', ['administrador']],
+     // === USUARIOS ===
+    'usuarios_listar'       => ['controllers/usuarios_listar.php', ['administrador']],
+    'usuario_crear'         => ['controllers/usuario_crear.php', ['administrador']],
+    'usuario_editar'        => ['controllers/usuario_editar.php', ['administrador']],
+    'usuario_eliminar'      => ['controllers/usuario_eliminar.php', ['administrador']],
     
     'carreras_listar' => ['controllers/carreras_listar.php', ['administrador','tutor','estudiante']],
     'carrera_crear' => ['controllers/carrera_crear.php', ['administrador']],

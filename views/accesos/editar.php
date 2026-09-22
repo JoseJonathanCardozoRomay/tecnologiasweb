@@ -1,36 +1,34 @@
 <?php
-$titulo_pagina = 'Editar Registro de Acceso';
+$titulo_pagina = 'Editar Acceso';
 ob_start();
 ?>
 
-<h1>Editar Registro de Acceso</h1>
+<h1>Editar Acceso</h1>
 
 <?php if (!empty($error)): ?>
-<div class="alerta alerta-error"><?= $error ?></div>
+<div style="background:#ffdddd; color:#c00; padding:10px 14px; margin:15px 0; border-radius:4px;">
+    <?= htmlspecialchars($error) ?>
+</div>
 <?php endif; ?>
 
-<form method="POST" action="index.php?accion=accesos_editar&id=<?= $acc['id_acceso'] ?>">
-    <label>Usuario:</label>
-    <select name="id_usuario">
-        <option value="">Sin asignar</option>
-        <?php foreach ($usuarios as $u): ?>
-        <option value="<?= $u['id_usuario'] ?>" <?= $u['id_usuario'] == $acc['id_usuario'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars($u['nombre'] . ' ' . $u['apellido']) ?>
-        </option>
-        <?php endforeach; ?>
-    </select>
-
-    <label>Dirección IP:</label>
-    <input type="text" name="ip_origen" value="<?= htmlspecialchars($acc['ip_origen'] ?? '') ?>">
-
-    <label>Resultado:</label>
-    <select name="resultado" required>
-        <option value="exitoso" <?= $acc['resultado'] === 'exitoso' ? 'selected' : '' ?>>✅ Exitoso</option>
-        <option value="fallido" <?= $acc['resultado'] === 'fallido' ? 'selected' : '' ?>>❌ Fallido</option>
-    </select>
-
-    <button type="submit" class="btn btn-exito">Actualizar</button>
-    <a href="index.php?accion=accesos_listar" class="btn btn-volver">Volver</a>
+<form method="POST" action="" style="max-width:500px; margin:25px auto; background:#fff; padding:25px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="margin-bottom:18px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold; color:#003366;">ID Usuario:</label>
+        <input type="number" name="id_usuario" value="<?= $registro['id_usuario'] ?? '' ?>" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:15px;">
+    </div>
+    <div style="margin-bottom:18px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold; color:#003366;">IP Origen:</label>
+        <input type="text" name="ip_origen" value="<?= htmlspecialchars($registro['ip_origen'] ?? '') ?>" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:15px;">
+    </div>
+    <div style="margin-bottom:18px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold; color:#003366;">Resultado:</label>
+        <select name="resultado" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:15px;">
+            <option value="exitoso" <?= ($registro['resultado'] ?? '') === 'exitoso' ? 'selected' : '' ?>>Exitoso</option>
+            <option value="fallido" <?= ($registro['resultado'] ?? '') === 'fallido' ? 'selected' : '' ?>>Fallido</option>
+        </select>
+    </div>
+    <button type="submit" style="background:#28a745; color:white; padding:10px 22px; border:none; border-radius:4px; font-size:16px; cursor:pointer;">Actualizar</button>
+    <a href="index.php?accion=accesos_listar" style="color:#666; margin-left:12px; text-decoration:none;">Volver</a>
 </form>
 
 <?php

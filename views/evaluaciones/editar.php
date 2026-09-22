@@ -1,38 +1,51 @@
-<?php
+ <?php
 $titulo_pagina = 'Editar Evaluación';
 ob_start();
+$eval = $evaluacion ?? [];
 ?>
 
 <h1>Editar Evaluación</h1>
 
 <?php if (!empty($error)): ?>
-<div class="alerta alerta-error"><?= $error ?></div>
+<div style="background:#ffdddd; color:#cc0000; padding:10px; margin:15px 0; border-radius:4px;">
+    <?= htmlspecialchars($error) ?>
+</div>
 <?php endif; ?>
 
-<form method="POST" action="index.php?accion=evaluacion_editar&id=<?= $eval['id_evaluacion'] ?>">
-    <label>Tutoría:</label>
-    <select name="id_tutoria" required>
-        <?php foreach ($tutorias as $t): ?>
-        <option value="<?= $t['id_tutoria'] ?>" <?= $t['id_tutoria'] == $eval['id_tutoria'] ? 'selected' : '' ?>>
-            Tutoría #<?= $t['id_tutoria'] ?>
-        </option>
-        <?php endforeach; ?>
-    </select>
+<form method="POST" action="" style="max-width:500px; margin:20px auto;">
 
-    <label>Calificación (1 a 5):</label>
-    <select name="calificacion" required>
-        <?php for ($i = 1; $i <= 5; $i++): ?>
-        <option value="<?= $i ?>" <?= $i == $eval['calificacion'] ? 'selected' : '' ?>>
-            <?= $i ?> — <?= str_repeat('⭐', $i) ?>
-        </option>
-        <?php endfor; ?>
-    </select>
+    <div style="margin-bottom:15px;">
+        <label>Tutoría:</label>
+        <select name="id_tutoria" required style="width:100%; padding:8px; margin-top:5px;">
+            <option value="">Seleccione</option>
+            <?php foreach ($tutorias as $t): ?>
+            <option value="<?= $t['id_tutoria'] ?>"
+                <?= ($eval['id_tutoria'] ?? 0) == $t['id_tutoria'] ? 'selected' : '' ?>>
+                ID <?= $t['id_tutoria'] ?> — <?= htmlspecialchars($t['fecha'] ?? '') ?> (<?= htmlspecialchars($t['estado'] ?? '') ?>)
+            </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
 
-    <label>Comentario:</label>
-    <textarea name="comentario" rows="4"><?= htmlspecialchars($eval['comentario'] ?? '') ?></textarea>
+    <div style="margin-bottom:15px;">
+        <label>Calificación (1 a 5):</label>
+        <select name="calificacion" style="width:100%; padding:8px; margin-top:5px;">
+            <?php for ($i = 1; $i <= 5; $i++): ?>
+            <option value="<?= $i ?>"
+                <?= (($eval['calificacion'] ?? 1) == $i) ? 'selected' : '' ?>>
+                <?= $i ?>
+            </option>
+            <?php endfor; ?>
+        </select>
+    </div>
 
-    <button type="submit" class="btn btn-exito">Actualizar</button>
-    <a href="index.php?accion=evaluaciones_listar" class="btn btn-volver">Volver</a>
+    <div style="margin-bottom:15px;">
+        <label>Comentario:</label>
+        <textarea name="comentario" rows="4" style="width:100%; padding:8px; margin-top:5px;"><?= htmlspecialchars($eval['comentario'] ?? '') ?></textarea>
+    </div>
+
+    <button type="submit" style="background:#003366; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-size:16px;">Actualizar</button>
+    <a href="index.php?accion=evaluaciones_listar" style="margin-left:10px; color:#666;">Volver</a>
 </form>
 
 <?php
