@@ -4,9 +4,19 @@
     <?php if(esEstudiante()): ?><a href="evaluaciones_crear.php" class="btn btn-primary"><i class="bi bi-star me-1"></i>Nueva evaluación</a><?php endif; ?>
 </div>
 <div class="alert alert-info border-0 shadow-sm"><i class="bi bi-info-circle me-2"></i>Las evaluaciones registradas no tienen opciones de edición o eliminación para proteger la trazabilidad de la retroalimentación.</div>
-<div class="card card-custom overflow-hidden"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Estudiante</th><th>Tutor</th><th>Materia</th><th>Calificación</th><th>Comentario</th></tr></thead><tbody>
+<div class="card card-custom overflow-hidden"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Estudiante</th><th>Tutor</th><th>Materia / Proyecto</th><th>Calificación</th><th>Comentario</th></tr></thead><tbody>
 <?php foreach($registros as $r): ?>
-<tr><td><?=date('d/m/Y',strtotime($r['fecha']))?></td><td><?=e($r['estudiante'])?></td><td><?=e($r['tutor'])?></td><td><?=e($r['nombre_materia'])?></td><td><span class="text-warning"><?=str_repeat('★',(int)$r['calificacion'])?></span> <strong><?=e($r['calificacion'])?>/5</strong></td><td><?=e($r['comentario']??'—')?></td></tr>
+<tr><td><?=date('d/m/Y',strtotime($r['fecha']))?></td><td><?=e($r['estudiante'])?></td><td><?=e($r['tutor'])?></td><td>
+    <?php if (!empty($r['proyecto_grado'])): ?>
+        <span class="badge text-bg-success mb-1"><i class="bi bi-mortarboard me-1"></i>Proyecto de grado</span>
+        <div class="fw-semibold"><?=e($r['proyecto_grado'])?></div>
+    <?php elseif (!empty($r['nombre_materia'])): ?>
+        <span class="badge text-bg-light border text-dark mb-1"><i class="bi bi-book me-1"></i>Materia</span>
+        <div class="fw-semibold"><?=e($r['nombre_materia'])?></div>
+    <?php else: ?>
+        <span class="text-muted">Sin referencia académica</span>
+    <?php endif; ?>
+</td><td><span class="text-warning"><?=str_repeat('★',(int)$r['calificacion'])?></span> <strong><?=e($r['calificacion'])?>/5</strong></td><td><?=e($r['comentario']??'—')?></td></tr>
 <?php endforeach; if(!$registros): ?><tr><td colspan="6" class="text-center py-5 text-muted">No hay evaluaciones registradas.</td></tr><?php endif; ?>
 </tbody></table></div></div>
 <?php include __DIR__.'/../layouts/footer.php'; ?>

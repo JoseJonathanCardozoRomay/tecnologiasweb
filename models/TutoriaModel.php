@@ -9,14 +9,17 @@ class TutoriaModel
     {
         $sql = "SELECT t.*, CONCAT(ue.nombre,' ',ue.apellido) AS estudiante,
                        CONCAT(ut.nombre,' ',ut.apellido) AS tutor,
-                       m.nombre_materia, c.nombre_carrera
+                       m.nombre_materia, c.nombre_carrera,
+                       pg.titulo AS proyecto_grado
                 FROM tutorias t
                 INNER JOIN estudiantes e ON e.id_estudiante=t.id_estudiante
                 INNER JOIN usuarios ue ON ue.id_usuario=e.id_usuario
                 INNER JOIN tutores tr ON tr.id_tutor=t.id_tutor
                 INNER JOIN usuarios ut ON ut.id_usuario=tr.id_usuario
-                INNER JOIN materias m ON m.id_materia=t.id_materia
-                INNER JOIN carreras c ON c.id_carrera=m.id_carrera
+                LEFT JOIN materias m ON m.id_materia=t.id_materia
+                LEFT JOIN carreras c ON c.id_carrera=m.id_carrera
+                LEFT JOIN proyectos_grado pg ON pg.id_proyecto=t.id_proyecto
+                LEFT JOIN evaluaciones_tutoria ev ON ev.id_tutoria=t.id_tutoria
                 ORDER BY t.fecha DESC,t.hora_inicio DESC";
         return $this->pdo->query($sql)->fetchAll();
     }
@@ -33,7 +36,9 @@ class TutoriaModel
                 INNER JOIN usuarios ue ON ue.id_usuario=e.id_usuario
                 INNER JOIN tutores tr ON tr.id_tutor=t.id_tutor
                 INNER JOIN usuarios ut ON ut.id_usuario=tr.id_usuario
-                INNER JOIN materias m ON m.id_materia=t.id_materia
+                LEFT JOIN materias m ON m.id_materia=t.id_materia
+                LEFT JOIN proyectos_grado pg ON pg.id_proyecto=t.id_proyecto
+                LEFT JOIN evaluaciones_tutoria ev ON ev.id_tutoria=t.id_tutoria
                 WHERE t.id_tutoria=:id";
         $stmt=$this->pdo->prepare($sql);
         $stmt->execute([':id'=>$id]);
@@ -46,13 +51,17 @@ class TutoriaModel
             "SELECT t.*,
                     CONCAT(u.nombre,' ',u.apellido) AS estudiante,
                     CONCAT(ut.nombre,' ',ut.apellido) AS tutor,
-                    m.nombre_materia
+                    m.nombre_materia,
+                    pg.titulo AS proyecto_grado,
+                    ev.id_evaluacion
              FROM tutorias t
              INNER JOIN estudiantes e ON e.id_estudiante=t.id_estudiante
              INNER JOIN usuarios u ON u.id_usuario=e.id_usuario
              INNER JOIN tutores tr ON tr.id_tutor=t.id_tutor
              INNER JOIN usuarios ut ON ut.id_usuario=tr.id_usuario
-             INNER JOIN materias m ON m.id_materia=t.id_materia
+             LEFT JOIN materias m ON m.id_materia=t.id_materia
+             LEFT JOIN proyectos_grado pg ON pg.id_proyecto=t.id_proyecto
+             LEFT JOIN evaluaciones_tutoria ev ON ev.id_tutoria=t.id_tutoria
              WHERE t.id_tutor=:id
              ORDER BY t.fecha DESC,t.hora_inicio DESC"
         );
@@ -72,13 +81,17 @@ class TutoriaModel
             "SELECT t.*,
                     CONCAT(ue.nombre,' ',ue.apellido) AS estudiante,
                     CONCAT(ut.nombre,' ',ut.apellido) AS tutor,
-                    m.nombre_materia
+                    m.nombre_materia,
+                    pg.titulo AS proyecto_grado,
+                    ev.id_evaluacion
              FROM tutorias t
              INNER JOIN estudiantes e ON e.id_estudiante=t.id_estudiante
              INNER JOIN usuarios ue ON ue.id_usuario=e.id_usuario
              INNER JOIN tutores tr ON tr.id_tutor=t.id_tutor
              INNER JOIN usuarios ut ON ut.id_usuario=tr.id_usuario
-             INNER JOIN materias m ON m.id_materia=t.id_materia
+             LEFT JOIN materias m ON m.id_materia=t.id_materia
+             LEFT JOIN proyectos_grado pg ON pg.id_proyecto=t.id_proyecto
+             LEFT JOIN evaluaciones_tutoria ev ON ev.id_tutoria=t.id_tutoria
              WHERE t.id_estudiante=:id
              ORDER BY t.fecha DESC,t.hora_inicio DESC"
         );

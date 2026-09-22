@@ -60,7 +60,7 @@
                     <th>Fecha / hora</th>
                     <th>Estudiante</th>
                     <th>Tutor</th>
-                    <th>Materia</th>
+                    <th>Materia / proyecto</th>
                     <th>Modalidad</th>
                     <th>Estado</th>
                     <th class="text-end">Acciones</th>
@@ -77,7 +77,14 @@
 
                     <td><?= e($r['estudiante'] ?? '—') ?></td>
                     <td><?= e($r['tutor'] ?? '—') ?></td>
-                    <td><?= e($r['nombre_materia']) ?></td>
+                    <td>
+                        <?php if (!empty($r['proyecto_grado'])): ?>
+                            <strong>Proyecto de grado</strong><br>
+                            <small><?= e($r['proyecto_grado']) ?></small>
+                        <?php else: ?>
+                            <?= e($r['nombre_materia'] ?? '—') ?>
+                        <?php endif; ?>
+                    </td>
                     <td><?= ucfirst(e($r['modalidad'])) ?></td>
 
                     <td>
@@ -100,6 +107,20 @@
 
                     <td class="text-end">
                         <div class="d-flex justify-content-end gap-1 flex-wrap">
+
+                            <!-- Una tutoría personal/grupal realizada puede ser evaluada una sola vez.
+                                 El controlador también valida pertenencia, estado y duplicidad. -->
+                            <?php if (esEstudiante() && $r['estado'] === 'realizada' && empty($r['id_evaluacion'])): ?>
+                                <a href="evaluaciones_crear.php?id_tutoria=<?= (int)$r['id_tutoria'] ?>"
+                                   class="btn btn-sm btn-outline-warning"
+                                   title="Evaluar tutoría">
+                                    <i class="bi bi-star me-1"></i>Evaluar
+                                </a>
+                            <?php elseif (esEstudiante() && $r['estado'] === 'realizada' && !empty($r['id_evaluacion'])): ?>
+                                <span class="badge text-bg-light border text-dark align-self-center">
+                                    <i class="bi bi-check-circle me-1"></i>Evaluada
+                                </span>
+                            <?php endif; ?>
 
                             <!-- El administrador NO edita tutorías. -->
                             <?php if (esTutor() && $r['estado'] === 'pendiente'): ?>

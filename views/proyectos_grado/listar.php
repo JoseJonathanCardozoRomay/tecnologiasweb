@@ -1,0 +1,16 @@
+<?php require_once __DIR__.'/../layouts/header.php'; mostrarFlash(); ?>
+<div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+    <div><span class="eyebrow">Trabajo de titulación</span><h1 class="page-title mb-1">Proyectos de grado</h1><p class="text-muted mb-0">Gestiona los proyectos que requieren acompañamiento personal de un tutor.</p></div>
+    <?php if (esAdministrador() || esEstudiante()): ?><a href="proyectos_grado_crear.php" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Nuevo proyecto</a><?php endif; ?>
+</div>
+<div class="card card-custom p-3 mb-3">
+<form method="get" class="row g-2 align-items-end">
+    <div class="col-lg-6"><label class="form-label small text-muted">Buscar</label><input class="form-control" name="q" value="<?=e($busqueda ?? '')?>" placeholder="Proyecto, estudiante o carrera"></div>
+    <div class="col-lg-3"><label class="form-label small text-muted">Estado</label><select class="form-select" name="estado"><option value="">Todos</option><?php foreach(['propuesto','en_proceso','finalizado','cancelado'] as $s): ?><option value="<?=e($s)?>" <?=($estado??'')===$s?'selected':''?>><?=e(ucwords(str_replace('_',' ',$s)))?></option><?php endforeach; ?></select></div>
+    <div class="col-lg-3 d-flex gap-2"><button class="btn btn-outline-primary flex-grow-1"><i class="bi bi-search me-1"></i>Filtrar</button><a class="btn btn-light" href="proyectos_grado_listar.php">Limpiar</a></div>
+</form>
+</div>
+<div class="card card-custom overflow-hidden"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Proyecto</th><th>Estudiante</th><th>Carrera</th><th>Estado</th><th>Registro</th><th class="text-end">Acciones</th></tr></thead><tbody>
+<?php foreach($registros as $p): ?><tr><td><strong><?=e($p['titulo'])?></strong><?php if(!empty($p['descripcion'])):?><div class="small text-muted text-truncate" style="max-width:360px"><?=e($p['descripcion'])?></div><?php endif;?></td><td><?=e(trim(($p['nombre']??'').' '.($p['apellido']??'')))?><div class="small text-muted"><?=e($p['registro_universitario']??'')?></div></td><td><?=e($p['nombre_carrera'])?></td><td><span class="badge text-bg-<?=match($p['estado']){'propuesto'=>'secondary','en_proceso'=>'primary','finalizado'=>'success','cancelado'=>'danger',default=>'dark'}?>"><?=e(ucwords(str_replace('_',' ',$p['estado'])))?></span></td><td><?=e(date('d/m/Y',strtotime($p['fecha_registro'])))?></td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="proyectos_grado_editar.php?id=<?=e($p['id_proyecto'])?>"><i class="bi bi-pencil"></i></a><?php if(esAdministrador()): ?><form class="d-inline" method="post" action="proyectos_grado_eliminar.php" onsubmit="return confirm('¿Eliminar este proyecto?');"><?=csrfField()?><input type="hidden" name="id_proyecto" value="<?=e($p['id_proyecto'])?>"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form><?php endif;?></td></tr><?php endforeach; ?>
+<?php if(!$registros): ?><tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-journal-x fs-1 d-block mb-2"></i>No hay proyectos para mostrar.</td></tr><?php endif;?></tbody></table></div></div>
+<?php include __DIR__.'/../layouts/footer.php'; ?>
