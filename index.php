@@ -1,9 +1,23 @@
 <?php
 /**
  * DASHBOARD — Sistema de Gestión de Tutorías
- * Menú lateral izquierdo · Fondo con imagen de universidad
+ * Versión corregida: Conexión primero + Contador de notificaciones
  */
+
+// ✅ PRIMERO: Cargar TODO lo necesario
 require_once __DIR__ . '/config/sesion.php';
+require_once __DIR__ . '/config/conexion.php'; // ¡IMPORTANTE! Conexión antes de usarla
+
+// ✅ AHORA SÍ: Contar notificaciones
+$total_sin_leer = 0;
+if (isset($_SESSION['id_usuario'])) {
+    global $conexion;
+    $stmt = $conexion->prepare("SELECT COUNT(*) FROM notificaciones WHERE id_usuario = :id_usuario AND leida = 0");
+    $stmt->bindParam(':id_usuario', $_SESSION['id_usuario']);
+    $stmt->execute();
+    $total_sin_leer = $stmt->fetchColumn();
+}
+
 $accion = $_GET['accion'] ?? '';
 
 $rutas_publicas = [
@@ -12,80 +26,79 @@ $rutas_publicas = [
 ];
 
 $rutas_privadas = [
-    'listar'                => ['controllers/roles_listar.php', ['administrador']],
-    'rol_crear'             => ['controllers/rol_crear.php', ['administrador']],
-    'rol_editar'            => ['controllers/rol_editar.php', ['administrador']],
-    'rol_eliminar'          => ['controllers/rol_eliminar.php', ['administrador']],
+    'listar'                  => ['controllers/roles_listar.php', ['administrador']],
+    'rol_crear'               => ['controllers/rol_crear.php', ['administrador']],
+    'rol_editar'              => ['controllers/rol_editar.php', ['administrador']],
+    'rol_eliminar'            => ['controllers/rol_eliminar.php', ['administrador']],
     
-     // === USUARIOS ===
-    'usuarios_listar'       => ['controllers/usuarios_listar.php', ['administrador']],
-    'usuario_crear'         => ['controllers/usuario_crear.php', ['administrador']],
-    'usuario_editar'        => ['controllers/usuario_editar.php', ['administrador']],
-    'usuario_eliminar'      => ['controllers/usuario_eliminar.php', ['administrador']],
+    'usuarios_listar'         => ['controllers/usuarios_listar.php', ['administrador']],
+    'usuario_crear'           => ['controllers/usuario_crear.php', ['administrador']],
+    'usuario_editar'          => ['controllers/usuario_editar.php', ['administrador']],
+    'usuario_eliminar'        => ['controllers/usuario_eliminar.php', ['administrador']],
     
-    'carreras_listar' => ['controllers/carreras_listar.php', ['administrador','tutor','estudiante']],
-    'carrera_crear' => ['controllers/carrera_crear.php', ['administrador']],
-    'carrera_editar' => ['controllers/carrera_editar.php', ['administrador']],
-    'carrera_eliminar' => ['controllers/carrera_eliminar.php', ['administrador']],
+    'carreras_listar'         => ['controllers/carreras_listar.php', ['administrador','tutor','estudiante']],
+    'carrera_crear'           => ['controllers/carrera_crear.php', ['administrador']],
+    'carrera_editar'          => ['controllers/carrera_editar.php', ['administrador']],
+    'carrera_eliminar'        => ['controllers/carrera_eliminar.php', ['administrador']],
     
-    'materias_listar' => ['controllers/materias_listar.php', ['administrador','tutor','estudiante']],
-    'materia_crear' => ['controllers/materia_crear.php', ['administrador']],
-    'materia_editar' => ['controllers/materia_editar.php', ['administrador']],
-    'materia_eliminar' => ['controllers/materia_eliminar.php', ['administrador']],
+    'materias_listar'         => ['controllers/materias_listar.php', ['administrador','tutor','estudiante']],
+    'materia_crear'           => ['controllers/materia_crear.php', ['administrador']],
+    'materia_editar'          => ['controllers/materia_editar.php', ['administrador']],
+    'materia_eliminar'        => ['controllers/materia_eliminar.php', ['administrador']],
     
-    'tutores_listar' => ['controllers/tutores_listar.php', ['administrador','estudiante']],
-    'tutor_crear' => ['controllers/tutor_crear.php', ['administrador']],
-    'tutor_editar' => ['controllers/tutor_editar.php', ['administrador','tutor']],
-    'tutor_eliminar' => ['controllers/tutor_eliminar.php', ['administrador']],
+    'tutores_listar'          => ['controllers/tutores_listar.php', ['administrador','estudiante']],
+    'tutor_crear'             => ['controllers/tutor_crear.php', ['administrador']],
+    'tutor_editar'            => ['controllers/tutor_editar.php', ['administrador','tutor']],
+    'tutor_eliminar'          => ['controllers/tutor_eliminar.php', ['administrador']],
     
-    'tutor_materia_listar' => ['controllers/tutor_materia_listar.php', ['administrador','tutor','estudiante']],
-    'tutor_materia_crear' => ['controllers/tutor_materia_crear.php', ['administrador','tutor']],
-    'tutor_materia_eliminar' => ['controllers/tutor_materia_eliminar.php', ['administrador','tutor']],
+    'tutor_materia_listar'    => ['controllers/tutor_materia_listar.php', ['administrador']],
+    'tutor_materia_asignar'   => ['controllers/tutor_materia_asignar.php', ['administrador']],
+    'tutor_materia_quitar'    => ['controllers/tutor_materia_quitar.php', ['administrador']],
     
-    'estudiantes_listar' => ['controllers/estudiantes_listar.php', ['administrador','tutor']],
-    'estudiante_crear' => ['controllers/estudiante_crear.php', ['administrador']],
-    'estudiante_editar' => ['controllers/estudiante_editar.php', ['administrador','estudiante']],
-    'estudiante_eliminar' => ['controllers/estudiante_eliminar.php', ['administrador']],
+    'estudiantes_listar'      => ['controllers/estudiantes_listar.php', ['administrador','tutor']],
+    'estudiante_crear'        => ['controllers/estudiante_crear.php', ['administrador']],
+    'estudiante_editar'       => ['controllers/estudiante_editar.php', ['administrador','estudiante']],
+    'estudiante_eliminar'     => ['controllers/estudiante_eliminar.php', ['administrador']],
     
-    'disponibilidad_listar' => ['controllers/disponibilidad_listar.php', ['administrador','tutor','estudiante']],
-    'disponibilidad_crear' => ['controllers/disponibilidad_crear.php', ['administrador','tutor']],
-    'disponibilidad_editar' => ['controllers/disponibilidad_editar.php', ['administrador','tutor']],
-    'disponibilidad_eliminar' => ['controllers/disponibilidad_eliminar.php', ['administrador','tutor']],
+    'disponibilidad_listar'    => ['controllers/disponibilidad_listar.php', ['administrador','tutor','estudiante']],
+    'disponibilidad_crear'     => ['controllers/disponibilidad_crear.php', ['administrador','tutor']],
+    'disponibilidad_editar'    => ['controllers/disponibilidad_editar.php', ['administrador','tutor']],
+    'disponibilidad_eliminar'  => ['controllers/disponibilidad_eliminar.php', ['administrador','tutor']],
     
-    'tutorias_listar' => ['controllers/tutorias_listar.php', ['administrador','tutor','estudiante']],
-    'tutoria_crear' => ['controllers/tutoria_crear.php', ['administrador','estudiante']],
-    'tutoria_editar' => ['controllers/tutoria_editar.php', ['administrador','tutor','estudiante']],
-    'tutoria_eliminar' => ['controllers/tutoria_eliminar.php', ['administrador']],
+    'tutorias_listar'          => ['controllers/tutorias_listar.php', ['administrador','tutor','estudiante']],
+    'tutoria_crear'            => ['controllers/tutoria_crear.php', ['administrador','estudiante']],
+    'tutoria_editar'           => ['controllers/tutoria_editar.php', ['administrador','tutor','estudiante']],
+    'tutoria_eliminar'         => ['controllers/tutoria_eliminar.php', ['administrador']],
     
-    'evaluaciones_listar' => ['controllers/evaluaciones_listar.php', ['administrador','tutor','estudiante']],
-    'evaluacion_crear' => ['controllers/evaluacion_crear.php', ['administrador','estudiante']],
-    'evaluacion_editar' => ['controllers/evaluacion_editar.php', ['administrador']],
-    'evaluacion_eliminar' => ['controllers/evaluacion_eliminar.php', ['administrador']],
+    'evaluaciones_listar'      => ['controllers/evaluaciones_listar.php', ['administrador','tutor','estudiante']],
+    'evaluacion_crear'         => ['controllers/evaluacion_crear.php', ['administrador','estudiante']],
+    'evaluacion_editar'        => ['controllers/evaluacion_editar.php', ['administrador']],
+    'evaluacion_eliminar'      => ['controllers/evaluacion_eliminar.php', ['administrador']],
     
-    'accesos_listar' => ['controllers/accesos_listar.php', ['administrador']],
-    'accesos_crear' => ['controllers/accesos_crear.php', ['administrador']],
-    'accesos_editar' => ['controllers/accesos_editar.php', ['administrador']],
-    'accesos_eliminar' => ['controllers/accesos_eliminar.php', ['administrador']],
+    'accesos_listar'           => ['controllers/accesos_listar.php', ['administrador']],
+    'accesos_crear'            => ['controllers/accesos_crear.php', ['administrador']],
+    'accesos_editar'           => ['controllers/accesos_editar.php', ['administrador']],
+    'accesos_eliminar'         => ['controllers/accesos_eliminar.php', ['administrador']],
     
-    'notificaciones_listar' => ['controllers/notificaciones_listar.php', ['administrador','tutor','estudiante']],
-    'notificacion_crear' => ['controllers/notificacion_crear.php', ['administrador']],
-    'notificacion_editar' => ['controllers/notificacion_editar.php', ['administrador']],
-    'notificacion_eliminar' => ['controllers/notificacion_eliminar.php', ['administrador']],
+    'notificaciones_listar'    => ['controllers/notificaciones_listar.php', ['administrador','tutor','estudiante']],
+    'notificacion_crear'       => ['controllers/notificacion_crear.php', ['administrador']],
+    'notificacion_editar'      => ['controllers/notificacion_editar.php', ['administrador']],
+    'notificacion_eliminar'    => ['controllers/notificacion_eliminar.php', ['administrador']],
     
-    'periodos_listar' => ['controllers/periodos_listar.php', ['administrador','tutor','estudiante']],
-    'periodo_crear' => ['controllers/periodo_crear.php', ['administrador']],
-    'periodo_editar' => ['controllers/periodo_editar.php', ['administrador']],
-    'periodo_eliminar' => ['controllers/periodo_eliminar.php', ['administrador']],
+    'periodos_listar'          => ['controllers/periodos_listar.php', ['administrador','tutor','estudiante']],
+    'periodo_crear'            => ['controllers/periodo_crear.php', ['administrador']],
+    'periodo_editar'           => ['controllers/periodo_editar.php', ['administrador']],
+    'periodo_eliminar'         => ['controllers/periodo_eliminar.php', ['administrador']],
     
-    'bloques_listar' => ['controllers/bloques_listar.php', ['administrador','tutor','estudiante']],
-    'bloque_crear' => ['controllers/bloque_crear.php', ['administrador']],
-    'bloque_editar' => ['controllers/bloque_editar.php', ['administrador']],
-    'bloque_eliminar' => ['controllers/bloque_eliminar.php', ['administrador']],
+    'bloques_listar'            => ['controllers/bloques_listar.php', ['administrador','tutor','estudiante']],
+    'bloque_crear'              => ['controllers/bloque_crear.php', ['administrador']],
+    'bloque_editar'             => ['controllers/bloque_editar.php', ['administrador']],
+    'bloque_eliminar'           => ['controllers/bloque_eliminar.php', ['administrador']],
     
-    'seguimientos_listar' => ['controllers/seguimientos_listar.php', ['administrador','tutor']],
-    'seguimiento_crear' => ['controllers/seguimiento_crear.php', ['administrador','tutor']],
-    'seguimiento_editar' => ['controllers/seguimiento_editar.php', ['administrador','tutor']],
-    'seguimiento_eliminar' => ['controllers/seguimiento_eliminar.php', ['administrador']]
+    'seguimientos_listar'       => ['controllers/seguimientos_listar.php', ['administrador','tutor']],
+    'seguimiento_crear'         => ['controllers/seguimiento_crear.php', ['administrador','tutor']],
+    'seguimiento_editar'        => ['controllers/seguimiento_editar.php', ['administrador','tutor']],
+    'seguimiento_eliminar'      => ['controllers/seguimiento_eliminar.php', ['administrador']]
 ];
 
 if (isset($rutas_publicas[$accion])) {
@@ -120,7 +133,6 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
     <title>Sistema de Gestión de Tutorías</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Segoe UI', 'Times New Roman', serif;
             background: linear-gradient(rgba(0, 38, 77, 0.82), rgba(0, 38, 77, 0.82)),
@@ -129,8 +141,6 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             display: flex;
             color: #fff;
         }
-
-        /* === MENÚ LATERAL IZQUIERDO === */
         .menu-lateral {
             width: 260px;
             background: rgba(0, 10, 26, 0.85);
@@ -143,37 +153,31 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             height: 100vh;
             overflow-y: auto;
         }
-
         .menu-header {
             padding: 25px 20px;
             background: linear-gradient(180deg, #004080 0%, #00264d 100%);
             border-bottom: 2px solid #ffc107;
         }
-
         .menu-header h2 {
             font-size: 18px;
             text-align: center;
             color: #ffd700;
             margin-bottom: 5px;
         }
-
         .menu-header p {
             font-size: 12px;
             text-align: center;
             color: #99ccff;
         }
-
         .usuario-info {
             padding: 18px 15px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-
         .usuario-nombre {
             font-weight: bold;
             font-size: 14px;
             margin-bottom: 5px;
         }
-
         .rol-etiqueta {
             display: inline-block;
             background: linear-gradient(90deg, #ffc107, #ff9800);
@@ -183,14 +187,14 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             font-size: 11px;
             font-weight: bold;
         }
-
         .menu-navegacion {
             padding: 20px 12px;
             flex: 1;
         }
-
         .menu-navegacion a {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             color: #e6f0ff;
             text-decoration: none;
             padding: 12px 15px;
@@ -200,18 +204,29 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
         }
-
         .menu-navegacion a:hover {
             background: rgba(255, 193, 7, 0.2);
             border-left-color: #ffc107;
             padding-left: 20px;
         }
-
+        .notif-item {
+            background: <?= $total_sin_leer > 0 ? 'rgba(255, 153, 0, 0.15)' : 'transparent'; ?>;
+            border-left: 3px solid <?= $total_sin_leer > 0 ? '#ff9900' : 'transparent'; ?>;
+        }
+        .notif-badge {
+            background: #cc0000;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 12px;
+            min-width: 22px;
+            text-align: center;
+        }
         .cerrar-sesion {
             padding: 20px 15px 30px;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
-
         .cerrar-btn {
             display: block;
             background: linear-gradient(90deg, #c0392b, #e74c3c);
@@ -223,18 +238,14 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             font-weight: bold;
             transition: transform 0.2s ease;
         }
-
         .cerrar-btn:hover {
             transform: scale(1.03);
         }
-
-        /* === CONTENIDO PRINCIPAL === */
         .contenido {
             flex: 1;
             margin-left: 260px;
             padding: 40px;
         }
-
         .bienvenida {
             background: rgba(255, 255, 255, 0.95);
             color: #003366;
@@ -244,23 +255,19 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             border-left: 6px solid #ffc107;
         }
-
         .bienvenida h1 {
             font-size: 30px;
             margin-bottom: 10px;
         }
-
         .bienvenida p {
             font-size: 17px;
             color: #555;
         }
-
         .tarjetas-contenedor {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 20px;
         }
-
         .tarjeta {
             background: rgba(255, 255, 255, 0.95);
             color: #003366;
@@ -274,14 +281,11 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             transition: all 0.3s ease;
             border-top: 4px solid #0066cc;
         }
-
         .tarjeta:hover {
             transform: translateY(-8px);
             box-shadow: 0 15px 35px rgba(0,0,0,0.25);
             border-top-color: #ffc107;
         }
-
-        /* Responsivo */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             .menu-lateral { width: 100%; position: relative; height: auto; }
@@ -290,13 +294,11 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
     </style>
 </head>
 <body>
-    <!-- MENÚ LATERAL IZQUIERDO -->
     <aside class="menu-lateral">
         <div class="menu-header">
             <h2>🎓 Sistema de Tutorías</h2>
             <p>Gestión Académica</p>
         </div>
-
         <div class="usuario-info">
             <div class="usuario-nombre"><?= htmlspecialchars($_SESSION['usuario_nombre'] ?? '') ?></div>
             <span class="rol-etiqueta">
@@ -306,7 +308,6 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 ?>
             </span>
         </div>
-
         <nav class="menu-navegacion">
             <?php if ($rol_actual === 'administrador'): ?>
                 <a href="index.php?accion=listar">📋 Roles</a>
@@ -322,8 +323,13 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=tutorias_listar">📝 Tutorías</a>
                 <a href="index.php?accion=evaluaciones_listar">⭐ Evaluaciones</a>
                 <a href="index.php?accion=seguimientos_listar">📝 Seguimiento</a>
-                <a href="index.php?accion=notificaciones_listar">🔔 Notificaciones</a>
-                <a href="index.php?accion=accesos_listar">🔒 Registro de Accesos</a>
+                <a href="index.php?accion=notificaciones_listar" class="notif-item">
+                    <span>🔔 Notificaciones</span>
+                    <?php if ($total_sin_leer > 0): ?>
+                        <span class="notif-badge"><?= $total_sin_leer ?></span>
+                    <?php endif; ?>
+                </a>
+                <a href="index.php?accion=accesos_listar">📋 Accesos</a>
             <?php endif; ?>
 
             <?php if ($rol_actual === 'tutor'): ?>
@@ -332,7 +338,12 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=seguimientos_listar">📝 Seguimiento</a>
                 <a href="index.php?accion=materias_listar">📚 Materias</a>
                 <a href="index.php?accion=estudiantes_listar">🎓 Estudiantes</a>
-                <a href="index.php?accion=notificaciones_listar">🔔 Notificaciones</a>
+                <a href="index.php?accion=notificaciones_listar" class="notif-item">
+                    <span>🔔 Notificaciones</span>
+                    <?php if ($total_sin_leer > 0): ?>
+                        <span class="notif-badge"><?= $total_sin_leer ?></span>
+                    <?php endif; ?>
+                </a>
             <?php endif; ?>
 
             <?php if ($rol_actual === 'estudiante'): ?>
@@ -340,22 +351,24 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=tutores_listar">👨‍🏫 Tutores</a>
                 <a href="index.php?accion=disponibilidad_listar">📅 Horarios</a>
                 <a href="index.php?accion=evaluaciones_listar">⭐ Evaluaciones</a>
-                <a href="index.php?accion=notificaciones_listar">🔔 Notificaciones</a>
+                <a href="index.php?accion=notificaciones_listar" class="notif-item">
+                    <span>🔔 Notificaciones</span>
+                    <?php if ($total_sin_leer > 0): ?>
+                        <span class="notif-badge"><?= $total_sin_leer ?></span>
+                    <?php endif; ?>
+                </a>
             <?php endif; ?>
         </nav>
-
         <div class="cerrar-sesion">
             <a href="index.php?accion=cerrar_sesion" class="cerrar-btn">🚪 Cerrar Sesión</a>
         </div>
     </aside>
 
-    <!-- CONTENIDO PRINCIPAL -->
     <main class="contenido">
         <div class="bienvenida">
             <h1>¡Bienvenido(a), <?= explode(' ', $_SESSION['usuario_nombre'] ?? 'Usuario')[0] ?>!</h1>
             <p>Seleccione un módulo desde el menú lateral para comenzar.</p>
         </div>
-
         <div class="tarjetas-contenedor">
             <?php if ($rol_actual === 'administrador'): ?>
                 <a href="index.php?accion=listar" class="tarjeta">Roles</a>
@@ -374,7 +387,6 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=notificaciones_listar" class="tarjeta">Notificaciones</a>
                 <a href="index.php?accion=accesos_listar" class="tarjeta">Accesos</a>
             <?php endif; ?>
-
             <?php if ($rol_actual === 'tutor'): ?>
                 <a href="index.php?accion=disponibilidad_listar" class="tarjeta">Disponibilidad</a>
                 <a href="index.php?accion=tutorias_listar" class="tarjeta">Mis Tutorías</a>
@@ -383,7 +395,6 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=estudiantes_listar" class="tarjeta">Estudiantes</a>
                 <a href="index.php?accion=notificaciones_listar" class="tarjeta">Notificaciones</a>
             <?php endif; ?>
-
             <?php if ($rol_actual === 'estudiante'): ?>
                 <a href="index.php?accion=tutorias_listar" class="tarjeta">Mis Tutorías</a>
                 <a href="index.php?accion=tutores_listar" class="tarjeta">Tutores</a>

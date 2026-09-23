@@ -3,7 +3,6 @@ require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 
 $error = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuario = trim($_POST['usuario'] ?? '');
     $contrasena = $_POST['contrasena'] ?? '';
@@ -19,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($datos_usuario && password_verify($contrasena, $datos_usuario['contrasena_hash'])) {
             iniciarSesion($datos_usuario);
-            header('Location: index.php');
+            header('Location: ../index.php');
             exit;
         } else {
             $error = 'Usuario o contraseña incorrectos';

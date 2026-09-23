@@ -1,5 +1,17 @@
 <?php
-require_once __DIR__ . '/../config/sesion.php';
-cerrarSesion();
+/**
+ * Cerrar sesión
+ */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Destruir todas las variables de sesión
+$_SESSION = [];
+
+// Destruir la sesión
+session_destroy();
+
+// Redirigir al login
 header('Location: index.php?accion=login');
 exit;

@@ -6,27 +6,42 @@ ob_start();
 <h1>Editar Tutor</h1>
 
 <?php if (!empty($error)): ?>
-<div class="alerta alerta-error"><?= $error ?></div>
+<div style="background:#ffdddd; color:#c00; padding:10px 14px; margin:15px 0; border-radius:4px;">
+    <?= htmlspecialchars($error) ?>
+</div>
 <?php endif; ?>
 
-<form method="POST" action="index.php?accion=tutor_editar&id=<?= $tutor['id_tutor'] ?>">
-    <label>Usuario:</label>
-    <select name="id_usuario" required>
-        <?php foreach ($usuarios as $u): ?>
-        <option value="<?= $u['id_usuario'] ?>" <?= $u['id_usuario'] == $tutor['id_usuario'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars($u['nombre'] . ' ' . $u['apellido']) ?>
-        </option>
-        <?php endforeach; ?>
-    </select>
+<form method="POST" action="" style="max-width:600px; margin:25px auto; background:#fff; padding:25px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
 
-    <label>Especialidad:</label>
-    <input type="text" name="especialidad" value="<?= htmlspecialchars($tutor['especialidad'] ?? '') ?>">
+    <div style="margin-bottom:18px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold; color:#003366;">Usuario:</label>
+        <select name="id_usuario" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:15px;">
+            <option value="">Seleccione un usuario</option>
+            <?php if (!empty($usuarios)): ?>
+                <?php foreach ($usuarios as $u): ?>
+                <option value="<?= $u['id_usuario'] ?>" 
+                    <?= ($tutor['id_usuario'] ?? 0) == $u['id_usuario'] ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($u['nombre'] . ' ' . $u['apellido']) ?> — <?= htmlspecialchars($u['usuario']) ?>
+                </option>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </select>
+    </div>
 
-    <label>Biografía:</label>
-    <textarea name="biografia" rows="4"><?= htmlspecialchars($tutor['biografia'] ?? '') ?></textarea>
+    <div style="margin-bottom:18px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold; color:#003366;">Especialidad:</label>
+        <input type="text" name="especialidad" value="<?= htmlspecialchars($tutor['especialidad'] ?? '') ?>" 
+               style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:15px;">
+    </div>
 
-    <button type="submit" class="btn btn-exito">Actualizar</button>
-    <a href="index.php?accion=tutores_listar" class="btn btn-volver">Volver</a>
+    <div style="margin-bottom:18px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold; color:#003366;">Biografía:</label>
+        <textarea name="biografia" rows="4" 
+                  style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:15px;"><?= htmlspecialchars($tutor['biografia'] ?? '') ?></textarea>
+    </div>
+
+    <button type="submit" style="background:#28a745; color:white; padding:10px 22px; border:none; border-radius:4px; font-size:16px; cursor:pointer;">Actualizar</button>
+    <a href="index.php?accion=tutores_listar" style="color:#666; margin-left:12px; text-decoration:none;">Volver</a>
 </form>
 
 <?php

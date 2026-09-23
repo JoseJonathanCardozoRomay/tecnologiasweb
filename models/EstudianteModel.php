@@ -19,6 +19,16 @@ class EstudianteModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // ✅ NUEVA FUNCIÓN: Obtener id_estudiante desde id_usuario
+    public function obtenerPorUsuario($id_usuario) {
+        $consulta = "SELECT id_estudiante FROM estudiantes WHERE id_usuario = :id_usuario";
+        $stmt = $this->conexion->prepare($consulta);
+        $stmt->bindParam(':id_usuario', $id_usuario);
+        $stmt->execute();
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $resultado ? $resultado['id_estudiante'] : null;
+    }
+
     public function guardarEstudiante($datos) {
         try {
             $this->conexion->beginTransaction();
@@ -42,7 +52,6 @@ class EstudianteModel {
                 $usuario = $baseUsuario . $n;
                 $n++;
             }
-
             $correo = $usuario . '@correo.com';
             $clave = password_hash('123456', PASSWORD_DEFAULT);
 
@@ -57,7 +66,6 @@ class EstudianteModel {
             $stmt->bindParam(':cor', $correo);
             $stmt->bindParam(':pwd', $clave);
             $stmt->execute();
-
             $id_usuario = $this->conexion->lastInsertId();
 
             // 4. Registro único — SIN error si no existe la columna
@@ -95,7 +103,6 @@ class EstudianteModel {
 
             $this->conexion->commit();
             return true;
-
         } catch (PDOException $e) {
             $this->conexion->rollBack();
             return 'Error: ' . $e->getMessage();
