@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__.'/../includes/verificar_sesion.php';require_once __DIR__.'/../includes/funciones.php';requireRole(['administrador']);require_once __DIR__.'/../config/conexion.php';require_once __DIR__.'/../models/UsuarioModel.php';require_once __DIR__.'/../models/RolModel.php';
-$m=new UsuarioModel($pdo);$r=new RolModel($pdo);$id=validarId($_GET['id']??$_POST['id_usuario']??null);if(!$id)redirect('usuarios_listar.php');$actual=$m->obtenerPorId($id);if(!$actual)redirect('usuarios_listar.php');$errores=[];$datos=$actual;
+$m=new UsuarioModel($pdo);$r=new RolModel($pdo);$id=validarId($_GET['id']??$_POST['id_usuario']??null);if(!$id)redirect('usuarios_listar.php');$actual=$m->obtenerPorId($id);if(!$actual)redirect('usuarios_listar.php');
+// La vista de edición utiliza $usuario_actual para mostrar y precargar los datos del registro.
+// Se conserva también $actual porque la lógica de validación compara los cambios con el estado original.
+$usuario_actual=$actual;
+$errores=[];$datos=$actual;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  exigirCsrf();
  $datos=array_merge($actual,['id_rol'=>$_POST['id_rol']??'','nombre'=>normalizarTexto((string)($_POST['nombre']??'')),'apellido'=>normalizarTexto((string)($_POST['apellido']??'')),'correo'=>strtolower(trim((string)($_POST['correo']??''))),'usuario'=>trim((string)($_POST['usuario']??'')),'telefono'=>trim((string)($_POST['telefono']??'')),'estado'=>$_POST['estado']??'','clave'=>(string)($_POST['clave']??'')]);

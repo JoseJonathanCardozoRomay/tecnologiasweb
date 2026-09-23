@@ -44,6 +44,42 @@ class HorarioGrupalModel
         return $stmt->fetchAll();
     }
 
+    /**
+     * Busca el horario institucional que corresponde a una combinación concreta.
+     * Esto permite que el formulario de una nueva tutoría muestre por separado
+     * la materia, el docente y el bloque horario sin perder la relación real
+     * almacenada en horarios_tutoria_grupal.
+     */
+    public function obtenerPorCombinacion(int $idMateria, int $idTutor, string $diaSemana, string $turno): array|false
+    {
+        if ($idMateria <= 0 || $idTutor <= 0 || $diaSemana === '' || $turno === '') {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            "SELECT h.*, m.nombre_materia, c.nombre_carrera,
+                    t.id_tutor, u.nombre AS tutor_nombre, u.apellido AS tutor_apellido
+             FROM horarios_tutoria_grupal h
+             INNER JOIN materias m ON m.id_materia=h.id_materia
+             INNER JOIN carreras c ON c.id_carrera=m.id_carrera
+             INNER JOIN tutores t ON t.id_tutor=h.id_tutor
+             INNER JOIN usuarios u ON u.id_usuario=t.id_usuario
+             WHERE h.id_materia=:materia
+               AND h.id_tutor=:tutor
+               AND h.dia_semana=:dia
+               AND h.turno=:turno
+               AND h.estado='activo'
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':materia' => $idMateria,
+            ':tutor' => $idTutor,
+            ':dia' => $diaSemana,
+            ':turno' => $turno,
+        ]);
+        return $stmt->fetch();
+    }
+
     /** Obtiene un horario por ID. */
     public function obtenerPorId(int $id): array|false
     {
@@ -134,6 +170,49 @@ class HorarioGrupalModel
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /**
+     * Devuelve únicamente los bloques oficiales que el tutor todavía tiene
+     * libres en un día concreto. Se consideran ocupados solo los horarios
+     * institucionales activos. En edición se puede excluir el propio registro
+     * para que su bloque actual siga apareciendo como opción válida.
+     */
+    public function obtenerTurnosDisponibles(int $idTutor, string $diaSemana, ?int $excepto = null): array
+    {
+        if ($idTutor <= 0 || !in_array($diaSemana, self::DIAS, true)) {
+            return [];
+        }
+
+        $sql = "SELECT turno
+                FROM horarios_tutoria_grupal
+                WHERE id_tutor=:t
+                  AND dia_semana=:dia
+                  AND estado='activo'";
+        $params = [':t' => $idTutor, ':dia' => $diaSemana];
+        if ($excepto !== null) {
+            $sql .= ' AND id_horario<>:id';
+            $params[':id'] = $excepto;
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $ocupados = array_fill_keys(array_column($stmt->fetchAll(), 'turno'), true);
+
+        $disponibles = [];
+        foreach (self::TURNOS as $clave => $bloque) {
+            if (!isset($ocupados[$clave])) {
+                $disponibles[$clave] = $bloque;
+            }
+        }
+        return $disponibles;
+    }
+
+    /** Comprueba que un tutor no tenga ocupado el bloque seleccionado. */
+    public function turnoDisponible(int $idTutor, string $diaSemana, string $turno, ?int $excepto = null): bool
+    {
+        $disponibles = $this->obtenerTurnosDisponibles($idTutor, $diaSemana, $excepto);
+        return isset($disponibles[$turno]);
+    }
+
     /** Detecta si el tutor ya ocupa el mismo bloque. */
     public function existeConflictoTutor(array $d, ?int $excepto = null): bool
     {
@@ -171,8 +250,13 @@ class HorarioGrupalModel
             $errores[] = 'El tutor no está asignado a la materia seleccionada.';
         }
         if ($idTutor > 0 && in_array((string)($d['dia_semana'] ?? ''), self::DIAS, true)
-            && isset(self::TURNOS[$d['turno'] ?? '']) && $this->existeConflictoTutor($d, $excepto)) {
-            $errores[] = 'El tutor ya tiene otro horario grupal en ese bloque.';
+            && isset(self::TURNOS[$d['turno'] ?? '']) && !$this->turnoDisponible(
+                $idTutor,
+                (string)$d['dia_semana'],
+                (string)$d['turno'],
+                $excepto
+            )) {
+            $errores[] = 'El tutor ya tiene ocupado ese bloque en el día seleccionado.';
         }
 
         return array_values(array_unique($errores));

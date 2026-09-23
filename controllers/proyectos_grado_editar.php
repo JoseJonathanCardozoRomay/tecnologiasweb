@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__.'/../includes/verificar_sesion.php';
 require_once __DIR__.'/../includes/funciones.php';
-requireRole(['administrador','estudiante']);
+requireRole(['estudiante']);
 require_once __DIR__.'/../config/conexion.php';
 require_once __DIR__.'/../models/ProyectoGradoModel.php';
 require_once __DIR__.'/../models/EstudianteModel.php';
@@ -19,7 +19,7 @@ if (!$actual) {
     redirect('proyectos_grado_listar.php');
 }
 
-$propio = esEstudiante() ? $em->obtenerPorUsuario((int)$_SESSION['id_usuario']) : null;
+$propio = $em->obtenerPorUsuario((int)$_SESSION['id_usuario']);
 if (esEstudiante() && (!$propio || (int)$actual['id_estudiante'] !== (int)$propio['id_estudiante'])) {
     http_response_code(403);
     $tituloPagina = 'Acceso no autorizado - Sistema de Tutorías';
@@ -31,11 +31,24 @@ $datos = $actual;
 $errores = [];
 $estados = ['propuesto','en_proceso','finalizado','cancelado'];
 
+// Una tutoría personal ya programada congela el proyecto hasta que el tutor
+// marque la sesión como realizada. Esto evita alterar los datos mientras
+// existe una sesión confirmada asociada al proyecto.
+if (esEstudiante() && (string)$actual['estado'] === 'finalizado') {
+    flash('warning', 'Este proyecto ya fue concluido y no admite modificaciones.');
+    redirect('proyectos_grado_listar.php');
+}
+
+if (esEstudiante() && $m->tieneTutoriaActiva($id)) {
+    flash('warning', 'Este proyecto no puede modificarse mientras tenga una tutoría personal programada. Podrás editarlo nuevamente cuando la tutoría sea marcada como realizada.');
+    redirect('proyectos_grado_listar.php');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
     $datos['titulo'] = normalizarTexto((string)($_POST['titulo'] ?? ''));
     $datos['descripcion'] = normalizarTexto((string)($_POST['descripcion'] ?? ''));
-    $datos['estado'] = esAdministrador() ? (string)($_POST['estado'] ?? $actual['estado']) : $actual['estado'];
+    $datos['estado'] = $actual['estado'];
 
     if (!textoValido($datos['titulo'], 5, 200)) $errores[] = 'El título debe tener entre 5 y 200 caracteres.';
     if (!textoValido($datos['descripcion'], 0, 3000)) $errores[] = 'La descripción no puede superar 3000 caracteres.';

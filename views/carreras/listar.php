@@ -5,10 +5,7 @@
         <h1 class="page-title mb-1">Carreras universitarias</h1>
         <p class="text-muted mb-0">Las carreras inactivas se conservan para proteger el historial académico.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="/controllers/materias_listar.php" class="btn btn-outline-primary"><i class="bi bi-journal-bookmark me-1"></i>Materias</a>
-        <a href="carreras_crear.php" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nueva carrera</a>
-    </div>
+    <a href="carreras_crear.php" class="btn btn-sm btn-outline-secondary page-header-compact-action align-self-start"><i class="bi bi-plus-lg me-1"></i>Nueva carrera</a>
 </div>
 
 <div class="card card-custom p-3 mb-4">

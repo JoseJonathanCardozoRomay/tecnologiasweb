@@ -24,30 +24,60 @@ if (esTutor()) {
     }
 }
 
-$nuevoEstado = match ($accion) {
-    'iniciar' => 'en_curso',
-    'realizar' => 'realizada',
-    'cancelar' => 'cancelada',
-    default => null,
-};
 $transiciones = [
     'programada' => ['en_curso','cancelada'],
     'en_curso' => ['realizada','cancelada'],
     'realizada' => [],
     'cancelada' => [],
 ];
+
+if ($accion === 'cancelar') {
+    // La cancelación de una tutoría grupal es exclusiva del administrador.
+    // El tutor puede iniciar/finalizar su sesión, pero no cancelarla.
+    if (!esAdministrador()) {
+        flash('danger','La cancelación de tutorías grupales corresponde exclusivamente al administrador.');
+        redirect('tutorias_grupales_listar.php');
+    }
+
+    $motivo = normalizarTexto((string)($_POST['motivo_cancelacion'] ?? ''));
+    if (!textoValido($motivo, 5, 500)) {
+        flash('danger','La cancelación requiere un motivo de entre 5 y 500 caracteres.');
+        redirect('tutorias_grupales_listar.php');
+    }
+    if (!in_array('cancelada', $transiciones[(string)$sesion['estado']] ?? [], true)) {
+        flash('danger','Esta sesión ya no puede ser cancelada.');
+        redirect('tutorias_grupales_listar.php');
+    }
+    try {
+        $m->cancelar((int)$id, $motivo, (int)$_SESSION['id_usuario']);
+        registrarAccion($pdo, 'CANCELAR', 'Tutorías grupales', 'Sesión grupal #'.$id.' cancelada. Motivo: '.(function_exists('mb_substr') ? mb_substr($motivo,0,210) : substr($motivo,0,210)));
+        flash('success','La tutoría grupal fue cancelada y el motivo quedó registrado.');
+    } catch (PDOException $e) {
+        flash('danger','No se pudo registrar la cancelación.');
+    }
+    redirect('tutorias_grupales_listar.php');
+}
+
+$nuevoEstado = match ($accion) {
+    'iniciar' => 'en_curso',
+    'realizar' => 'realizada',
+    default => null,
+};
+
 if ($nuevoEstado === null || !in_array($nuevoEstado, $transiciones[(string)$sesion['estado']] ?? [], true)) {
     flash('danger','Ese cambio de estado no está permitido.');
     redirect('tutorias_grupales_listar.php');
 }
-if (esAdministrador() && $nuevoEstado !== 'cancelada') {
+if (esAdministrador()) {
     flash('danger','El administrador puede supervisar y cancelar la sesión; el tutor gestiona su ciclo académico.');
     redirect('tutorias_grupales_listar.php');
 }
 
 try {
-    $m->cambiarEstado($id, $nuevoEstado);
+    $m->cambiarEstado((int)$id, $nuevoEstado);
     registrarAccion($pdo, strtoupper($nuevoEstado), 'Tutorías grupales', 'Sesión grupal #'.$id.' cambió a '.$nuevoEstado.'.');
-    flash('success','La tutoría grupal ahora figura como '.$nuevoEstado.'.');
-} catch (PDOException $e) { flash('danger','No se pudo actualizar la tutoría grupal.'); }
+    flash('success','La tutoría grupal ahora figura como '.estadoEtiqueta($nuevoEstado).'.');
+} catch (PDOException $e) {
+    flash('danger','No se pudo actualizar la tutoría grupal.');
+}
 redirect('tutorias_grupales_listar.php');

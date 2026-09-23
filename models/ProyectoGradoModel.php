@@ -109,6 +109,24 @@ class ProyectoGradoModel
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /**
+     * Determina si el proyecto tiene una tutoría personal actualmente
+     * programada o en ejecución. Mientras exista una de estas sesiones,
+     * el estudiante no puede modificar el proyecto ni enviar nuevas
+     * solicitudes de tutoría para evitar cambios sobre una agenda ya confirmada.
+     */
+    public function tieneTutoriaActiva(int $idProyecto): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*)
+             FROM tutorias
+             WHERE id_proyecto=:proyecto
+               AND estado IN ('programada','en_proceso')"
+        );
+        $stmt->execute([':proyecto' => $idProyecto]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
     /** Crea un proyecto de grado. */
     public function crear(array $d): bool
     {
@@ -139,6 +157,75 @@ class ProyectoGradoModel
             ':estado' => $d['estado'],
             ':id' => $id,
         ]);
+    }
+
+    /**
+     * Registra el resultado de la defensa del proyecto.
+     *
+     * Aprobado: cambia el proyecto a `finalizado` (estado interno que la
+     * interfaz presenta como "Concluido".
+     * Reprobado: conserva `en_proceso` para que el estudiante pueda continuar
+     * trabajando y solicitando nuevas tutorías cuando no exista una sesión
+     * activa.
+     *
+     * Para cerrar un proyecto se verifica además que no existan tutorías
+     * personales pendientes, programadas o en ejecución.
+     */
+    public function registrarResultadoDefensa(int $idProyecto, string $resultado): bool
+    {
+        if (!in_array($resultado, ['aprobado', 'reprobado'], true)) {
+            return false;
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT estado FROM proyectos_grado WHERE id_proyecto=:id FOR UPDATE'
+            );
+            $stmt->execute([':id' => $idProyecto]);
+            $proyecto = $stmt->fetch();
+
+            if (!$proyecto || (string)$proyecto['estado'] !== 'en_proceso') {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if ($resultado === 'reprobado') {
+                $this->pdo->commit();
+                return true;
+            }
+
+            $stmt = $this->pdo->prepare(
+                "SELECT COUNT(*) FROM tutorias
+                 WHERE id_proyecto=:id
+                   AND estado IN ('pendiente','programada','en_proceso')"
+            );
+            $stmt->execute([':id' => $idProyecto]);
+            if ((int)$stmt->fetchColumn() > 0) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            $stmt = $this->pdo->prepare(
+                "UPDATE proyectos_grado
+                 SET estado='finalizado'
+                 WHERE id_proyecto=:id AND estado='en_proceso'"
+            );
+            $stmt->execute([':id' => $idProyecto]);
+
+            if ($stmt->rowCount() !== 1) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     /** Elimina un proyecto; las tutorías lo conservan como NULL por la FK. */

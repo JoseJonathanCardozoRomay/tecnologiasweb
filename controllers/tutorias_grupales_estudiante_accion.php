@@ -37,22 +37,25 @@ try {
         $errores = $m->validarInscripcion($idSesion, $idEstudiante);
         if ($errores) {
             flash('danger', implode(' ', $errores));
-        } elseif ($m->inscribirEstudiante($idSesion, $idEstudiante)) {
+        } elseif ($m->solicitarInscripcion($idSesion, $idEstudiante)) {
             registrarAccion(
                 $pdo,
-                'INSCRIBIR',
+                'SOLICITAR_INSCRIPCION',
                 'Tutorías grupales',
-                'El estudiante #'.$idEstudiante.' se inscribió en la sesión #'.$idSesion.'.'
+                'El estudiante #'.$idEstudiante.' solicitó inscripción en la sesión #'.$idSesion.'; quedó pendiente de aprobación.'
             );
-            flash('success', 'Te inscribiste correctamente en la tutoría grupal.');
+            flash('success', 'Solicitud enviada. Tu inscripción quedó pendiente de aprobación por el administrador.');
         } else {
             flash('danger', 'No se pudo registrar la inscripción.');
         }
     } elseif ($accion === 'retirarse') {
         $sesion = $m->obtenerPorId($idSesion);
-        if (!$sesion || !in_array((string)$sesion['estado'], ['programada'], true)) {
-            flash('danger', 'Solo puedes retirarte de una sesión que todavía está programada.');
-        } elseif ($m->retirarEstudiante($idSesion, $idEstudiante)) {
+        $estadoParticipacion = $m->estadoParticipacion($idSesion, $idEstudiante);
+        if (!$sesion || (string)$sesion['estado'] !== 'programada') {
+            flash('danger', 'Solo puedes retirar una solicitud mientras la sesión siga programada.');
+        } elseif ($estadoParticipacion !== 'pendiente') {
+            flash('danger', 'Una inscripción aprobada ya no puede retirarse desde el perfil del estudiante.');
+        } elseif ($m->retirarSolicitud($idSesion, $idEstudiante)) {
             registrarAccion(
                 $pdo,
                 'RETIRAR',

@@ -22,14 +22,14 @@ if (esTutor()) {
     $idEstudiante = $estudiante ? (int)$estudiante['id_estudiante'] : 0;
     // El estudiante puede visualizar la oferta activa. La vista indicará si está inscrito.
     $registros = array_values(array_filter($registros, fn(array $r): bool => (string)$r['estado_horario'] === 'activo'));
-    $inscripciones = [];
+    $participaciones = [];
     if ($idEstudiante > 0) {
         foreach ($registros as $r) {
-            $inscripciones[(int)$r['id_tutoria_grupal']] = $m->estudianteInscrito((int)$r['id_tutoria_grupal'], $idEstudiante);
+            $participaciones[(int)$r['id_tutoria_grupal']] = $m->estadoParticipacion((int)$r['id_tutoria_grupal'], $idEstudiante);
         }
     }
 } else {
-    $inscripciones = [];
+    $participaciones = [];
 }
 
 $tituloPagina = 'Tutorías Grupales - Sistema de Tutorías';

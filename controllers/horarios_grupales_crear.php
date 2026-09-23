@@ -58,5 +58,21 @@ $tutores = $pdo->query("SELECT t.id_tutor,u.nombre,u.apellido
     FROM tutores t INNER JOIN usuarios u ON u.id_usuario=t.id_usuario
     WHERE u.estado='activo' ORDER BY u.apellido,u.nombre")->fetchAll();
 
+// Para el formulario solo se ofrecen bloques que estén libres para el tutor
+// seleccionado en el día elegido. La validación definitiva se repite en el servidor.
+$turnosDisponibles = [];
+if (validarId($datos['id_tutor']) && in_array((string)$datos['dia_semana'], $dias, true)) {
+    $turnosDisponibles = $m->obtenerTurnosDisponibles(
+        (int)$datos['id_tutor'],
+        (string)$datos['dia_semana']
+    );
+}
+
+// Mapa de ocupación usado por JavaScript para refrescar el listado de bloques
+// sin recargar la página cada vez que cambia el tutor o el día.
+$horariosOcupados = $pdo->query("SELECT id_tutor,dia_semana,turno
+    FROM horarios_tutoria_grupal
+    WHERE estado='activo'")->fetchAll();
+
 $tituloPagina = 'Nuevo Horario Grupal - Sistema de Tutorías';
 require __DIR__.'/../views/horarios_grupales/form.php';

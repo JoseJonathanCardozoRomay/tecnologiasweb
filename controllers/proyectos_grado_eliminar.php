@@ -12,8 +12,14 @@ exigirCsrf();
 $id = validarId($_POST['id_proyecto'] ?? null);
 $m = new ProyectoGradoModel($pdo);
 
-if (!$id || !$m->obtenerPorId($id)) {
+$proyecto = $id ? $m->obtenerPorId($id) : false;
+if (!$id || !$proyecto) {
     flash('danger', 'El proyecto no existe.');
+    redirect('proyectos_grado_listar.php');
+}
+
+if ((string)$proyecto['estado'] === 'finalizado') {
+    flash('warning', 'Un proyecto concluido no puede eliminarse.');
     redirect('proyectos_grado_listar.php');
 }
 

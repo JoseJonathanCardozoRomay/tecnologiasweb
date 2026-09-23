@@ -8,7 +8,7 @@ class EvaluacionModel
     public function obtenerTodas(?int $idEstudiante=null):array{
         $sql="SELECT ev.*,t.id_tutoria,t.fecha,t.hora_inicio,CONCAT(ue.nombre,' ',ue.apellido) AS estudiante,CONCAT(ut.nombre,' ',ut.apellido) AS tutor,m.nombre_materia, pg.titulo AS proyecto_grado FROM evaluaciones_tutoria ev INNER JOIN tutorias t ON t.id_tutoria=ev.id_tutoria INNER JOIN estudiantes es ON es.id_estudiante=t.id_estudiante INNER JOIN usuarios ue ON ue.id_usuario=es.id_usuario INNER JOIN tutores tr ON tr.id_tutor=t.id_tutor INNER JOIN usuarios ut ON ut.id_usuario=tr.id_usuario LEFT JOIN materias m ON m.id_materia=t.id_materia
                 LEFT JOIN proyectos_grado pg ON pg.id_proyecto=t.id_proyecto";$p=[];
-        if($idEstudiante!==null){$sql.=' WHERE t.id_estudiante=:e';$p[':e']=$idEstudiante;}$sql.=' ORDER BY ev.fecha_evaluacion DESC';$s=$this->pdo->prepare($sql);$s->execute($p);return $s->fetchAll();
+        if($idEstudiante!==null){$sql.=' WHERE t.id_estudiante=:e';$p[':e']=$idEstudiante;}$sql.=' ORDER BY tutor ASC, ev.fecha_evaluacion DESC';$s=$this->pdo->prepare($sql);$s->execute($p);return $s->fetchAll();
     }
     public function obtenerPorId(int $id):array|false{$s=$this->pdo->prepare('SELECT * FROM evaluaciones_tutoria WHERE id_evaluacion=:id');$s->execute([':id'=>$id]);return $s->fetch();}
     public function tutoriasDisponibles(?int $idEstudiante=null):array{

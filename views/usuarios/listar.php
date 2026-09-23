@@ -42,7 +42,7 @@ $etiquetasRol = [
         <?php foreach($lista as $u): ?>
           <?php $badgeRol=$etiquetasRol[$rol][2]; ?>
           <tr class="fila-usuario">
-            <td class="ps-4"><div class="d-flex align-items-center gap-3"><div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary fw-bold" style="width:40px;height:40px;font-size:.9rem;"><?=e(strtoupper(substr($u['nombre'],0,1).substr($u['apellido'],0,1)))?></div><div><div class="fw-bold text-dark"><?=e($u['nombre'].' '.$u['apellido'])?></div><small class="text-muted"><i class="bi bi-person me-1"></i><?=e($u['usuario'])?></small></div></div></td>
+            <td class="ps-4"><div class="d-flex align-items-center gap-3"><div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary fw-bold" style="width:40px;height:40px;font-size:.9rem;"><?=e(iniciales((string)$u['nombre'], (string)$u['apellido']))?></div><div><div class="fw-bold text-dark"><?=e($u['nombre'].' '.$u['apellido'])?></div><small class="text-muted"><i class="bi bi-person me-1"></i><?=e($u['usuario'])?></small></div></div></td>
             <td><span class="text-secondary"><?=e($u['correo'])?></span></td>
             <td><span class="badge rounded-pill px-3 py-1 text-capitalize <?=e($badgeRol)?>"><?=e($u['nombre_rol'])?></span></td>
             <td><?php if($u['estado']==='activo'): ?><span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle me-1"></i>Activo</span><?php else: ?><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-2 py-1"><i class="bi bi-dash-circle me-1"></i>Inactivo</span><?php endif; ?></td>

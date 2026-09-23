@@ -9,15 +9,16 @@ class TutoriaModel
     {
         $sql = "SELECT t.*, CONCAT(ue.nombre,' ',ue.apellido) AS estudiante,
                        CONCAT(ut.nombre,' ',ut.apellido) AS tutor,
-                       m.nombre_materia, c.nombre_carrera,
-                       pg.titulo AS proyecto_grado
+                       m.nombre_materia, ce.nombre_carrera,
+                       pg.titulo AS proyecto_grado,
+                       ev.id_evaluacion
                 FROM tutorias t
                 INNER JOIN estudiantes e ON e.id_estudiante=t.id_estudiante
                 INNER JOIN usuarios ue ON ue.id_usuario=e.id_usuario
                 INNER JOIN tutores tr ON tr.id_tutor=t.id_tutor
                 INNER JOIN usuarios ut ON ut.id_usuario=tr.id_usuario
+                INNER JOIN carreras ce ON ce.id_carrera=e.id_carrera
                 LEFT JOIN materias m ON m.id_materia=t.id_materia
-                LEFT JOIN carreras c ON c.id_carrera=m.id_carrera
                 LEFT JOIN proyectos_grado pg ON pg.id_proyecto=t.id_proyecto
                 LEFT JOIN evaluaciones_tutoria ev ON ev.id_tutoria=t.id_tutoria
                 ORDER BY t.fecha DESC,t.hora_inicio DESC";
@@ -101,9 +102,12 @@ class TutoriaModel
 
     public function crear(array $d): bool
     {
-        $stmt=$this->pdo->prepare("INSERT INTO tutorias(id_estudiante,id_tutor,id_materia,fecha,hora_inicio,hora_fin,modalidad,lugar_o_enlace,estado,observaciones) VALUES(:e,:t,:m,:f,:hi,:hf,:mo,:l,:es,:o)");
+        $stmt=$this->pdo->prepare("INSERT INTO tutorias(id_estudiante,id_tutor,id_materia,id_proyecto,id_bloque,periodo,fecha,hora_inicio,hora_fin,modalidad,lugar_o_enlace,estado,observaciones) VALUES(:e,:t,:m,:p,:b,:periodo,:f,:hi,:hf,:mo,:l,:es,:o)");
         return $stmt->execute([
-            ':e'=>$d['id_estudiante'], ':t'=>$d['id_tutor'], ':m'=>$d['id_materia'],
+            ':e'=>$d['id_estudiante'], ':t'=>$d['id_tutor'], ':m'=>$d['id_materia'] ?? null,
+            ':p'=>!empty($d['id_proyecto']) ? $d['id_proyecto'] : null,
+            ':b'=>!empty($d['id_bloque']) ? $d['id_bloque'] : null,
+            ':periodo'=>$d['periodo'] ?? null,
             ':f'=>$d['fecha'], ':hi'=>$d['hora_inicio'], ':hf'=>$d['hora_fin'],
             ':mo'=>$d['modalidad'], ':l'=>$d['lugar_o_enlace'] ?: null,
             ':es'=>$d['estado'] ?? 'pendiente', ':o'=>$d['observaciones'] ?: null
@@ -112,9 +116,12 @@ class TutoriaModel
 
     public function actualizar(int $id,array $d): bool
     {
-        $stmt=$this->pdo->prepare("UPDATE tutorias SET id_estudiante=:e,id_tutor=:t,id_materia=:m,fecha=:f,hora_inicio=:hi,hora_fin=:hf,modalidad=:mo,lugar_o_enlace=:l,estado=:es,observaciones=:o WHERE id_tutoria=:id");
+        $stmt=$this->pdo->prepare("UPDATE tutorias SET id_estudiante=:e,id_tutor=:t,id_materia=:m,id_proyecto=:p,id_bloque=:b,periodo=:periodo,fecha=:f,hora_inicio=:hi,hora_fin=:hf,modalidad=:mo,lugar_o_enlace=:l,estado=:es,observaciones=:o WHERE id_tutoria=:id");
         return $stmt->execute([
-            ':e'=>$d['id_estudiante'], ':t'=>$d['id_tutor'], ':m'=>$d['id_materia'],
+            ':e'=>$d['id_estudiante'], ':t'=>$d['id_tutor'], ':m'=>$d['id_materia'] ?? null,
+            ':p'=>!empty($d['id_proyecto']) ? $d['id_proyecto'] : null,
+            ':b'=>!empty($d['id_bloque']) ? $d['id_bloque'] : null,
+            ':periodo'=>$d['periodo'] ?? null,
             ':f'=>$d['fecha'], ':hi'=>$d['hora_inicio'], ':hf'=>$d['hora_fin'],
             ':mo'=>$d['modalidad'], ':l'=>$d['lugar_o_enlace'] ?: null,
             ':es'=>$d['estado'], ':o'=>$d['observaciones'] ?: null, ':id'=>$id
@@ -128,7 +135,7 @@ class TutoriaModel
 
     public function hayConflictoTutor(array $d, ?int $excepto=null): bool
     {
-        $sql="SELECT COUNT(*) FROM tutorias WHERE id_tutor=:t AND fecha=:f AND estado IN ('pendiente','confirmada','realizada') AND hora_inicio<:hf AND hora_fin>:hi";
+        $sql="SELECT COUNT(*) FROM tutorias WHERE id_tutor=:t AND fecha=:f AND estado IN ('pendiente','programada','realizada') AND hora_inicio<:hf AND hora_fin>:hi";
         $p=[':t'=>$d['id_tutor'],':f'=>$d['fecha'],':hi'=>$d['hora_inicio'],':hf'=>$d['hora_fin']];
         if($excepto!==null){$sql.=' AND id_tutoria<>:id';$p[':id']=$excepto;}
         $stmt=$this->pdo->prepare($sql);$stmt->execute($p);return (int)$stmt->fetchColumn()>0;
@@ -136,7 +143,7 @@ class TutoriaModel
 
     public function hayConflictoEstudiante(array $d, ?int $excepto=null): bool
     {
-        $sql="SELECT COUNT(*) FROM tutorias WHERE id_estudiante=:e AND fecha=:f AND estado IN ('pendiente','confirmada','realizada') AND hora_inicio<:hf AND hora_fin>:hi";
+        $sql="SELECT COUNT(*) FROM tutorias WHERE id_estudiante=:e AND fecha=:f AND estado IN ('pendiente','programada','realizada') AND hora_inicio<:hf AND hora_fin>:hi";
         $p=[':e'=>$d['id_estudiante'],':f'=>$d['fecha'],':hi'=>$d['hora_inicio'],':hf'=>$d['hora_fin']];
         if($excepto!==null){$sql.=' AND id_tutoria<>:id';$p[':id']=$excepto;}
         $stmt=$this->pdo->prepare($sql);$stmt->execute($p);return (int)$stmt->fetchColumn()>0;
@@ -241,6 +248,263 @@ class TutoriaModel
         ]);
     }
 
+    /**
+     * Registra la aceptación de una solicitud personal por parte del tutor.
+     *
+     * Una tutoría personal es una solicitud individual del estudiante para
+     * un proyecto concreto. El estudiante puede enviarla a varios tutores
+     * para recibir una respuesta, pero solo uno puede aceptar finalmente
+     * ese proyecto. Por ello, la aceptación se realiza dentro de una
+     * transacción y, después de aceptar la solicitud elegida, se eliminan
+     * las demás solicitudes pendientes del mismo estudiante y proyecto.
+     *
+     * La tutoría aceptada permanece con estado general "pendiente" hasta
+     * que administración confirme la programación definitiva.
+     */
+    public function aceptarPorTutor(int $id, int $idTutor): bool
+    {
+        // Primero obtenemos la solicitud para conocer estudiante y proyecto.
+        // Todavía no bloqueamos el registro: el bloqueo coordinado se hace
+        // sobre todo el conjunto de solicitudes del proyecto para evitar
+        // condiciones de carrera entre varios tutores.
+        $stmt = $this->pdo->prepare(
+            "SELECT id_tutoria, id_estudiante, id_proyecto
+             FROM tutorias
+             WHERE id_tutoria=:id
+               AND id_tutor=:tutor
+               AND estado='pendiente'
+               AND estado_tutor='pendiente'
+               AND confirmada_admin=0"
+        );
+        $stmt->execute([':id'=>$id, ':tutor'=>$idTutor]);
+        $solicitud = $stmt->fetch();
+
+        if (!$solicitud || empty($solicitud['id_proyecto'])) {
+            return false;
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $idEstudiante = (int)$solicitud['id_estudiante'];
+            $idProyecto = (int)$solicitud['id_proyecto'];
+
+            // Bloqueamos todas las solicitudes pendientes del mismo proyecto
+            // en un único paso y antes de modificar cualquiera. De esta forma,
+            // si dos tutores intentan aceptar al mismo tiempo, uno termina
+            // primero y elimina las demás solicitudes; el segundo ya no
+            // encontrará su solicitud disponible para aceptar.
+            $stmt = $this->pdo->prepare(
+                "SELECT id_tutoria, id_tutor
+                 FROM tutorias
+                 WHERE id_estudiante=:estudiante
+                   AND id_proyecto=:proyecto
+                   AND estado='pendiente'
+                   AND estado_tutor='pendiente'
+                   AND confirmada_admin=0
+                 ORDER BY id_tutoria
+                 FOR UPDATE"
+            );
+            $stmt->execute([
+                ':estudiante'=>$idEstudiante,
+                ':proyecto'=>$idProyecto,
+            ]);
+            $pendientes = $stmt->fetchAll();
+
+            $objetivoEncontrado = false;
+            foreach ($pendientes as $pendiente) {
+                if ((int)$pendiente['id_tutoria'] === $id) {
+                    // La consulta inicial ya verificó la pertenencia al tutor;
+                    // lo comprobamos otra vez con la fila bloqueada para que
+                    // la actualización final no dependa de datos obsoletos.
+                    $objetivoEncontrado = (int)$pendiente['id_tutor'] === $idTutor;
+                    break;
+                }
+            }
+
+            if (!$objetivoEncontrado) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            $stmt = $this->pdo->prepare(
+                "UPDATE tutorias
+                 SET estado_tutor='aceptada', fecha_aceptacion_tutor=NOW()
+                 WHERE id_tutoria=:id
+                   AND id_tutor=:tutor
+                   AND estado='pendiente'
+                   AND estado_tutor='pendiente'
+                   AND confirmada_admin=0"
+            );
+            $stmt->execute([':id'=>$id, ':tutor'=>$idTutor]);
+
+            if ($stmt->rowCount() !== 1) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            // La solicitud aceptada es la única que continúa el flujo.
+            // Las solicitudes enviadas a otros tutores para ese mismo proyecto
+            // se eliminan para impedir una segunda aceptación del mismo caso.
+            $stmt = $this->pdo->prepare(
+                "DELETE FROM tutorias
+                 WHERE id_estudiante=:estudiante
+                   AND id_proyecto=:proyecto
+                   AND id_tutoria<>:aceptada
+                   AND estado='pendiente'
+                   AND estado_tutor='pendiente'
+                   AND confirmada_admin=0"
+            );
+            $stmt->execute([
+                ':estudiante'=>$idEstudiante,
+                ':proyecto'=>$idProyecto,
+                ':aceptada'=>$id,
+            ]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Rechaza una solicitud personal antes de que administración la confirme.
+     */
+    public function rechazarPorTutor(int $id, int $idTutor): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "UPDATE tutorias
+             SET estado='rechazada', estado_tutor='rechazada', fecha_aceptacion_tutor=NOW()
+             WHERE id_tutoria=:id
+               AND id_tutor=:tutor
+               AND estado='pendiente'
+               AND estado_tutor='pendiente'
+               AND confirmada_admin=0"
+        );
+        return $stmt->execute([':id'=>$id, ':tutor'=>$idTutor]) && $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Confirma la programación final. Solo administración puede realizarla
+     * y únicamente después de que el tutor haya aceptado la solicitud.
+     */
+    /**
+     * Confirma una tutoría personal aceptada por el tutor y asigna la ubicación
+     * definitiva. La ubicación la define administración, no el estudiante.
+     */
+    public function confirmarPorAdmin(
+        int $id,
+        int $idAdministrador,
+        string $modalidad,
+        string $lugarOEnlace
+    ): bool {
+        /*
+         * La aceptación del tutor y la confirmación de administración completan
+         * la aprobación inicial del tema/propuesta. Por eso esta operación
+         * también cambia el proyecto de `propuesto` a `en_proceso`.
+         *
+         * Se utiliza una transacción para que la tutoría y el proyecto queden
+         * sincronizados: no debe existir una tutoría programada sin que su
+         * proyecto haya quedado oficialmente en curso.
+         */
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT id_proyecto
+                 FROM tutorias
+                 WHERE id_tutoria=:id
+                   AND id_proyecto IS NOT NULL
+                   AND estado='pendiente'
+                   AND estado_tutor='aceptada'
+                   AND confirmada_admin=0
+                 FOR UPDATE"
+            );
+            $stmt->execute([':id' => $id]);
+            $tutoria = $stmt->fetch();
+
+            if (!$tutoria || empty($tutoria['id_proyecto'])) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            $stmt = $this->pdo->prepare(
+                "UPDATE tutorias
+                 SET estado='programada', confirmada_admin=1,
+                     modalidad=:modalidad, lugar_o_enlace=:lugar,
+                     confirmada_por_usuario=:admin, fecha_confirmacion_admin=NOW()
+                 WHERE id_tutoria=:id
+                   AND estado='pendiente'
+                   AND estado_tutor='aceptada'
+                   AND confirmada_admin=0"
+            );
+            $stmt->execute([
+                ':id' => $id,
+                ':admin' => $idAdministrador,
+                ':modalidad' => $modalidad,
+                ':lugar' => $lugarOEnlace,
+            ]);
+
+            if ($stmt->rowCount() !== 1) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            /*
+             * Al quedar programada la tutoría, el proyecto ya cuenta con la
+             * aprobación del tutor y de administración y pasa a En curso.
+             * No sobrescribimos proyectos cancelados o concluidos.
+             */
+            $stmt = $this->pdo->prepare(
+                "UPDATE proyectos_grado
+                 SET estado='en_proceso'
+                 WHERE id_proyecto=:proyecto
+                   AND estado='propuesto'"
+            );
+            $stmt->execute([':proyecto' => (int)$tutoria['id_proyecto']]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Cambia el estado únicamente en transiciones de ciclo de vida ya
+     * autorizadas. Las aprobaciones de tutor y administración utilizan
+     * métodos especializados para evitar saltarse etapas.
+     */
+    /**
+     * Marca una tutoría personal como realizada cuando ya fue programada.
+     *
+     * Esta transición pertenece exclusivamente al tutor asignado y se realiza
+     * con una condición en SQL para impedir que una solicitud pendiente,
+     * rechazada o cancelada pueda saltar directamente a realizada.
+     */
+    public function marcarRealizadaPorTutor(int $idTutoria, int $idTutor): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "UPDATE tutorias
+             SET estado='realizada'
+             WHERE id_tutoria=:id
+               AND id_tutor=:tutor
+               AND id_proyecto IS NOT NULL
+               AND estado='programada'"
+        );
+
+        return $stmt->execute([
+            ':id' => $idTutoria,
+            ':tutor' => $idTutor,
+        ]) && $stmt->rowCount() > 0;
+    }
+
     public function cambiarEstado(int $id,string $nuevoEstado): bool
     {
         $stmt=$this->pdo->prepare('UPDATE tutorias SET estado=:estado WHERE id_tutoria=:id');
@@ -250,13 +514,30 @@ class TutoriaModel
     public function transicionPermitida(string $actual,string $nuevo): bool
     {
         $permitidas=[
-            'pendiente'=>['confirmada','rechazada','cancelada'],
-            'confirmada'=>['realizada','cancelada'],
+            'pendiente'=>['rechazada','cancelada'],
+            'programada'=>['realizada','cancelada'],
             'realizada'=>[],
             'rechazada'=>[],
             'cancelada'=>[],
+            'en_proceso'=>['realizada','cancelada'],
+            'detenido'=>['programada','cancelada'],
         ];
         return in_array($nuevo,$permitidas[$actual]??[],true);
+    }
+
+
+    /**
+     * Valida una tutoría personal de fin de carrera.
+     * Reutiliza las mismas reglas de disponibilidad y conflicto del proyecto
+     * avanzado y agrega la relación obligatoria con proyectos_grado.
+     */
+    public function validarTutoriaPersonal(array $d, ?int $excepto = null): array
+    {
+        $errores = validarTutoriaPersonal($this->pdo, $d, $excepto);
+
+        // Para una tutoría de fin de carrera exigimos proyecto y un horario válido.
+        if (empty($d['id_proyecto'])) $errores[] = 'La tutoría personal debe estar asociada a un proyecto de grado.';
+        return array_values(array_unique($errores));
     }
 
     public function obtenerSlotsDisponibles(int $idTutor,string $fecha,int $duracionMinutos=60,?int $excepto=null,?int $idEstudiante=null): array
@@ -269,7 +550,7 @@ class TutoriaModel
         $s->execute([':t'=>$idTutor,':d'=>$dia]);
         $disponibilidades=$s->fetchAll();
 
-        $s=$this->pdo->prepare("SELECT hora_inicio,hora_fin FROM tutorias WHERE id_tutor=:t AND fecha=:f AND estado IN ('pendiente','confirmada','realizada')" . ($excepto ? ' AND id_tutoria<>:id' : '') . ' ORDER BY hora_inicio');
+        $s=$this->pdo->prepare("SELECT hora_inicio,hora_fin FROM tutorias WHERE id_tutor=:t AND fecha=:f AND estado IN ('pendiente','programada','en_proceso')" . ($excepto ? ' AND id_tutoria<>:id' : '') . ' ORDER BY hora_inicio');
         $params=[':t'=>$idTutor,':f'=>$fecha];
         if($excepto)$params[':id']=$excepto;
         $s->execute($params);
@@ -277,7 +558,7 @@ class TutoriaModel
 
         $bloqueosEstudiante=[];
         if($idEstudiante!==null){
-            $s=$this->pdo->prepare("SELECT hora_inicio,hora_fin FROM tutorias WHERE id_estudiante=:e AND fecha=:f AND estado IN ('pendiente','confirmada','realizada')" . ($excepto ? ' AND id_tutoria<>:id' : '') . ' ORDER BY hora_inicio');
+            $s=$this->pdo->prepare("SELECT hora_inicio,hora_fin FROM tutorias WHERE id_estudiante=:e AND fecha=:f AND estado IN ('pendiente','programada','en_proceso')" . ($excepto ? ' AND id_tutoria<>:id' : '') . ' ORDER BY hora_inicio');
             $paramsEst=[':e'=>$idEstudiante,':f'=>$fecha];
             if($excepto)$paramsEst[':id']=$excepto;
             $s->execute($paramsEst);

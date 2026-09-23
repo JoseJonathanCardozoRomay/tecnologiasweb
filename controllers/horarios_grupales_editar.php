@@ -53,5 +53,18 @@ $materias = $pdo->query("SELECT m.id_materia,m.nombre_materia,c.nombre_carrera
     WHERE m.estado='activo' AND c.estado='activo' ORDER BY m.id_materia")->fetchAll();
 $tutores = $pdo->query("SELECT t.id_tutor,u.nombre,u.apellido FROM tutores t INNER JOIN usuarios u ON u.id_usuario=t.id_usuario WHERE u.estado='activo' ORDER BY u.apellido,u.nombre")->fetchAll();
 
+// En edición se excluye el propio horario para no bloquear su bloque actual.
+$turnosDisponibles = [];
+if (validarId($datos['id_tutor']) && in_array((string)$datos['dia_semana'], $dias, true)) {
+    $turnosDisponibles = $m->obtenerTurnosDisponibles(
+        (int)$datos['id_tutor'],
+        (string)$datos['dia_semana'],
+        $id
+    );
+}
+$horariosOcupados = $pdo->query("SELECT id_horario,id_tutor,dia_semana,turno
+    FROM horarios_tutoria_grupal
+    WHERE estado='activo'")->fetchAll();
+
 $tituloPagina = 'Editar Horario Grupal - Sistema de Tutorías';
 require __DIR__.'/../views/horarios_grupales/form.php';

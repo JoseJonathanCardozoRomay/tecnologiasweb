@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__.'/../includes/verificar_sesion.php';
 require_once __DIR__.'/../includes/funciones.php';
-requireRole(['administrador','estudiante']);
+requireRole(['estudiante']);
 require_once __DIR__.'/../config/conexion.php';
 require_once __DIR__.'/../models/ProyectoGradoModel.php';
 require_once __DIR__.'/../models/EstudianteModel.php';
@@ -11,7 +11,7 @@ require_once __DIR__.'/../models/EstudianteModel.php';
 $m = new ProyectoGradoModel($pdo);
 $em = new EstudianteModel($pdo);
 $errores = [];
-$propio = esEstudiante() ? $em->obtenerPorUsuario((int)$_SESSION['id_usuario']) : null;
+$propio = $em->obtenerPorUsuario((int)$_SESSION['id_usuario']);
 
 $datos = [
     'id_estudiante' => $_POST['id_estudiante'] ?? ($propio['id_estudiante'] ?? ''),
@@ -59,20 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$estudiantes = [];
+$estudiantes = $propio ? [$propio] : [];
 $carreras = [];
-if (esAdministrador()) {
-    $estudiantes = $pdo->query("SELECT e.id_estudiante,e.id_carrera,e.registro_universitario,u.nombre,u.apellido
-        FROM estudiantes e INNER JOIN usuarios u ON u.id_usuario=e.id_usuario
-        INNER JOIN carreras c ON c.id_carrera=e.id_carrera
-        WHERE u.estado='activo' AND c.estado='activo'
-        ORDER BY u.apellido,u.nombre")->fetchAll();
-    $carreras = $pdo->query("SELECT id_carrera,nombre_carrera FROM carreras WHERE estado='activo' ORDER BY id_carrera")->fetchAll();
-} elseif ($propio) {
-    $estudiantes = [$em->obtenerPorId((int)$propio['id_estudiante'])];
-    $carreras = $pdo->prepare('SELECT id_carrera,nombre_carrera FROM carreras WHERE id_carrera=:id AND estado=\'activo\'');
-    $carreras->execute([':id' => $propio['id_carrera']]);
-    $carreras = $carreras->fetchAll();
+if ($propio) {
+    $stmtCarrera = $pdo->prepare("SELECT id_carrera,nombre_carrera FROM carreras WHERE id_carrera=:id AND estado='activo'");
+    $stmtCarrera->execute([':id' => $propio['id_carrera']]);
+    $carreras = $stmtCarrera->fetchAll();
 }
 
 $tituloPagina = 'Nuevo Proyecto de Grado - Sistema de Tutorías';

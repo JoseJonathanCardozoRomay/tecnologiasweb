@@ -8,4 +8,4 @@ requireRole(['administrador']);
 // Las tutorías forman parte del historial académico y no se eliminan físicamente.
 // La operación correcta es cancelar la tutoría mediante tutorias_accion.php.
 flash('danger', 'Las tutorías no se eliminan para preservar el historial. Utiliza la opción Cancelar.');
-redirect('tutorias_listar.php');
+redirect('tutorias_personales_listar.php');

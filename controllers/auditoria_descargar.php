@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__.'/../includes/verificar_sesion.php';
 require_once __DIR__.'/../includes/funciones.php';
+require_once __DIR__.'/../includes/excel_exportador.php';
 requireRole(['administrador']);
 require_once __DIR__.'/../config/conexion.php';
 
@@ -47,38 +48,46 @@ $sql .= ' ORDER BY ra.fecha_hora DESC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 
-$nombreArchivo = 'auditoria_' . ($desde !== '' ? $desde : 'todos') . '_' . ($hasta !== '' ? $hasta : 'todos') . '.txt';
-$nombreArchivo = preg_replace('/[^A-Za-z0-9_.-]/', '_', $nombreArchivo) ?: 'auditoria.txt';
-
-header('Content-Type: text/plain; charset=UTF-8');
-header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
-header('X-Content-Type-Options: nosniff');
-
-// BOM para que Windows/Bloc de notas reconozca correctamente UTF-8.
-echo "\xEF\xBB\xBF";
-echo "SISTEMA DE TUTORÍAS UPDS - REPORTE DE AUDITORÍA\n";
-echo str_repeat('=', 110) . "\n";
-echo 'Filtro desde: ' . ($desde !== '' ? $desde : 'TODAS') . "\n";
-echo 'Filtro hasta: ' . ($hasta !== '' ? $hasta : 'TODAS') . "\n";
-echo 'Generado: ' . date('Y-m-d H:i:s') . "\n";
-echo str_repeat('=', 110) . "\n\n";
-echo "FECHA/HORA | USUARIO | ACCIÓN | MÓDULO | RESULTADO | DESCRIPCIÓN | IP\n";
-echo str_repeat('-', 110) . "\n";
-
+$filas = [];
 while ($r = $stmt->fetch()) {
-    $linea = [
-        $r['fecha_hora'],
-        $r['usuario'],
-        $r['accion'],
-        $r['modulo'],
-        $r['resultado'],
-        $r['descripcion'],
-        $r['ip_origen'],
+    // Normalizamos cada fila antes de enviarla al libro para conservar el formato legible.
+    $filas[] = [
+        date('d/m/Y H:i', strtotime((string)$r['fecha_hora'])),
+        (string)$r['usuario'],
+        (string)$r['accion'],
+        (string)$r['modulo'],
+        (string)$r['resultado'],
+        (string)$r['descripcion'],
+        (string)$r['ip_origen'],
     ];
-    $linea = array_map(static fn($v) => str_replace(["\r", "\n", '|'], [' ', ' ', '/'], (string)$v), $linea);
-    echo implode(' | ', $linea) . "\n";
 }
 
-echo "\n" . str_repeat('=', 110) . "\n";
-echo "FIN DEL REPORTE\n";
+try {
+    $xlsx = crearExcelXlsx(
+        ['Fecha', 'Usuario', 'Acción', 'Módulo', 'Resultado', 'Descripción', 'IP'],
+        $filas,
+        [
+            'titulo' => 'SISTEMA DE TUTORÍAS UPDS - REPORTE DE AUDITORÍA',
+            'desde' => $desde !== '' ? $desde : 'TODAS',
+            'hasta' => $hasta !== '' ? $hasta : 'TODAS',
+            'generado' => date('Y-m-d H:i:s'),
+        ]
+    );
+} catch (Throwable $e) {
+    error_log('Error al generar Excel de auditoría: ' . $e->getMessage());
+    http_response_code(500);
+    exit('No fue posible generar el archivo Excel.');
+}
+
+$nombreArchivo = 'auditoria_' . ($desde !== '' ? $desde : 'todos') . '_' . ($hasta !== '' ? $hasta : 'todos') . '.xlsx';
+$nombreArchivo = preg_replace('/[^A-Za-z0-9_.-]/', '_', $nombreArchivo) ?: 'auditoria.xlsx';
+
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
+header('Content-Length: ' . filesize($xlsx));
+header('X-Content-Type-Options: nosniff');
+header('Cache-Control: private, no-store, max-age=0');
+
+readfile($xlsx);
+@unlink($xlsx);
 exit;
