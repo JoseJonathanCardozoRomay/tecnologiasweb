@@ -1,25 +1,52 @@
+<?php
+
+require_once __DIR__ . '/../includes/sesion.php';
+
+$usuarioSesion = obtenerUsuarioSesion();
+
+?>
+
 <main class="flex-grow-1">
-    <!-- Presentación principal del sistema -->
+    <!-- Presentación institucional del sistema -->
     <section class="intro-section">
         <div class="container">
             <div class="row align-items-center g-5">
                 <div class="col-lg-7">
                     <p class="section-label">
-                        Sistema de tutorías académicas
+                        Universidad Privada Domingo Savio
                     </p>
 
                     <h1>
-                        Organiza el apoyo académico de forma simple.
+                        Acompañamiento académico para avanzar con confianza.
                     </h1>
 
                     <p class="intro-text">
-                        Un espacio para que estudiantes y tutores coordinen
-                        materias, horarios y solicitudes de manera clara.
+                        El Sistema Académico de Tutorías conecta a estudiantes
+                        y tutores de la UPDS para organizar solicitudes,
+                        horarios y seguimiento en un solo espacio.
                     </p>
 
-                    <a class="primary-link" href="#funcionamiento">
-                        Conocer cómo funciona
-                    </a>
+                    <div class="intro-actions">
+                        <?php if ($usuarioSesion): ?>
+                            <a
+                                class="primary-link"
+                                href="#funcionamiento"
+                            >
+                                Conocer el proceso
+                            </a>
+                        <?php else: ?>
+                            <a
+                                class="primary-link"
+                                href="controllers/login.php"
+                            >
+                                Ingresar al sistema
+                            </a>
+                        <?php endif; ?>
+
+                        <span class="institution-note">
+                            Acceso para la comunidad universitaria UPDS
+                        </span>
+                    </div>
                 </div>
 
                 <div class="col-lg-5">
@@ -28,18 +55,18 @@
                         id="funcionamiento"
                     >
                         <p class="summary-title">
-                            Proceso de una tutoría
+                            Ruta de acompañamiento
                         </p>
 
                         <div class="process-row">
                             <span>01</span>
 
                             <div>
-                                <strong>Seleccionar</strong>
+                                <strong>Encontrar apoyo</strong>
 
                                 <p>
-                                    El estudiante elige la materia y revisa
-                                    los tutores disponibles.
+                                    El estudiante selecciona la materia y
+                                    consulta los tutores disponibles.
                                 </p>
                             </div>
                         </div>
@@ -48,11 +75,11 @@
                             <span>02</span>
 
                             <div>
-                                <strong>Coordinar</strong>
+                                <strong>Coordinar la atención</strong>
 
                                 <p>
-                                    Se define la fecha, el horario y la
-                                    modalidad de atención.
+                                    Se establece una fecha, un horario y la
+                                    modalidad adecuada para la tutoría.
                                 </p>
                             </div>
                         </div>
@@ -61,11 +88,11 @@
                             <span>03</span>
 
                             <div>
-                                <strong>Dar seguimiento</strong>
+                                <strong>Completar el seguimiento</strong>
 
                                 <p>
-                                    La solicitud cambia de estado hasta
-                                    completar la tutoría.
+                                    Tutor y estudiante consultan el avance
+                                    hasta finalizar la atención académica.
                                 </p>
                             </div>
                         </div>
@@ -75,17 +102,17 @@
         </div>
     </section>
 
-    <!-- Información resumida de los usuarios -->
-    <section class="roles-section">
+    <!-- Participación de la comunidad universitaria -->
+    <section class="roles-section" id="comunidad">
         <div class="container">
             <div class="row mb-5">
-                <div class="col-lg-7">
+                <div class="col-lg-8">
                     <p class="section-label">
-                        Acceso según el usuario
+                        Comunidad universitaria
                     </p>
 
                     <h2>
-                        Herramientas específicas para cada rol.
+                        Un espacio conectado para aprender, orientar y organizar.
                     </h2>
                 </div>
             </div>
@@ -95,11 +122,11 @@
                     <article class="role-item">
                         <span class="role-number">01</span>
 
-                        <h3>Administrador</h3>
+                        <h3>Gestión académica</h3>
 
                         <p>
-                            Gestiona usuarios, carreras, materias y el
-                            funcionamiento general del sistema.
+                            El administrador organiza usuarios, carreras,
+                            materias y perfiles dentro del sistema.
                         </p>
                     </article>
                 </div>
@@ -108,11 +135,11 @@
                     <article class="role-item">
                         <span class="role-number">02</span>
 
-                        <h3>Tutor</h3>
+                        <h3>Acompañamiento del tutor</h3>
 
                         <p>
-                            Organiza su disponibilidad y realiza el
-                            seguimiento de sus tutorías.
+                            El tutor administra su disponibilidad y realiza
+                            el seguimiento de cada atención académica.
                         </p>
                     </article>
                 </div>
@@ -121,11 +148,11 @@
                     <article class="role-item">
                         <span class="role-number">03</span>
 
-                        <h3>Estudiante</h3>
+                        <h3>Apoyo al estudiante</h3>
 
                         <p>
-                            Busca apoyo, solicita tutorías y consulta el
-                            estado de cada solicitud.
+                            El estudiante encuentra orientación para reforzar
+                            las materias que necesita desarrollar.
                         </p>
                     </article>
                 </div>
