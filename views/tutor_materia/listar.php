@@ -1,57 +1,140 @@
 <?php
-$titulo_pagina = 'Materias que domina cada Tutor';
-ob_start();
+if (!isset($asignaciones)) $asignaciones = [];
+if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
-
-<h1>Materias que domina cada Tutor</h1>
-
-<p style="margin:20px 0;">
-    <a href="index.php?accion=tutor_materia_asignar" style="background:#0066cc; color:white; padding:10px 18px; text-decoration:none; border-radius:4px; display:inline-block;">+ Asignar Materia</a>
-</p>
-
-<?php if (empty($relaciones)): ?>
-<p style="text-align:center; padding:25px; color:#666;">No hay materias asignadas a tutores.</p>
-<?php else: ?>
-<table style="width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
-    <thead>
-        <tr style="background:#003366; color:white;">
-            <th style="padding:12px; text-align:left;">Tutor</th>
-            <th style="padding:12px; text-align:left;">Materia</th>
-            <th style="padding:12px; text-align:center;">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($relaciones as $r): ?>
-        <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:10px;">
-                <?php if (!empty($r['nombre']) && !empty($r['apellido'])): ?>
-                    <?= htmlspecialchars($r['nombre'] . ' ' . $r['apellido']) ?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materias Asignadas a Tutores</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
+        body {
+            background: linear-gradient(rgba(0, 38, 77, 0.88), rgba(0, 38, 77, 0.88)),
+                        url('https://www.upds.edu.bo/wp-content/uploads/2023/07/4.jpg') center/cover no-repeat fixed;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .contenedor {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .volver {
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #003366;
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ffc107;
+        }
+        .btn-nuevo {
+            display: inline-block;
+            background: #0066cc;
+            color: white;
+            padding: 12px 22px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th {
+            background: #004080;
+            color: white;
+            padding: 14px 10px;
+            text-align: left;
+        }
+        td {
+            padding: 14px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) { background: #f0f5ff; }
+        tr:hover { background: #e6f0ff; }
+        .eliminar {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .eliminar:hover { background: #c82333; }
+        .vacio {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <a href="index.php" class="volver">← Volver al inicio</a>
+        
+        <h1>📖 Materias Asignadas a Tutores</h1>
+        <?php if ($rol_actual === 'administrador'): ?>
+            <!-- ✅ CORREGIDO: el nombre de la ruta coincide con index.php -->
+            <a href="index.php?accion=tutor_materia_asignar" class="btn-nuevo">+ Asignar Materia</a>
+        <?php endif; ?>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tutor</th>
+                    <th>Materia</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($asignaciones)): ?>
+                    <tr>
+                        <td colspan="4" class="vacio">
+                            No hay materias asignadas a tutores.
+                            <?php if ($rol_actual === 'administrador'): ?>
+                                <br><strong>Usa el botón "Asignar Materia" para vincular.</strong>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
                 <?php else: ?>
-                    <em style="color:#999;">Sin nombre</em>
+                    <?php foreach ($asignaciones as $a): ?>
+                    <tr>
+                        <td><?= ($a['id_tutor'] ?? 0) . '-' . ($a['id_materia'] ?? 0) ?></td>
+                        <td><strong><?= htmlspecialchars(($a['nombre'] ?? '') . ' ' . ($a['apellido'] ?? '')) ?></strong></td>
+                        <td><?= htmlspecialchars($a['nombre_materia'] ?? '') ?></td>
+                        <td>
+                            <?php if ($rol_actual === 'administrador'): ?>
+                                <a href="index.php?accion=tutor_materia_quitar&id_tutor=<?= $a['id_tutor'] ?>&id_materia=<?= $a['id_materia'] ?>" 
+                                   class="eliminar"
+                                   onclick="return confirm('¿Quitar esta materia al tutor?')">Quitar</a>
+                            <?php else: ?>
+                                <em>Solo lectura</em>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-            </td>
-            <td style="padding:10px;">
-                <?php if (!empty($r['nombre_materia'])): ?>
-                    <?= htmlspecialchars($r['nombre_materia']) ?>
-                <?php else: ?>
-                    <em style="color:#999;">Sin materia</em>
-                <?php endif; ?>
-            </td>
-            <td style="padding:10px; text-align:center;">
-                <a href="index.php?accion=tutor_materia_quitar&id_tutor=<?= $r['id_tutor'] ?>&id_materia=<?= $r['id_materia'] ?>" 
-                   style="background:#cc0000; color:white; padding:6px 12px; text-decoration:none; border-radius:4px;"
-                   onclick="return confirm('¿Quitar esta asignación?');">Quitar</a>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
-<?php endif; ?>
-
-<p style="margin-top:25px;">
-    <a href="index.php" style="color:#666;">← Volver al inicio</a>
-</p>
-
-<?php
-$contenido = ob_get_clean();
-require_once __DIR__ . '/../../config/plantilla.php';
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

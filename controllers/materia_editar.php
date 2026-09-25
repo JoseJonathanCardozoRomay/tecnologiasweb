@@ -1,43 +1,51 @@
 <?php
 /**
- * Controlador para la modificación de materias
+ * Editar Materia — SOLO ADMINISTRADOR
  */
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 
-$modelo = new MateriaModel();
-$id_materia = $_GET['id'] ?? 0;
-$materia = $modelo->obtenerPorId($id_materia);
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
 
-if (!$materia) {
-    header('Location: index.php?accion=materias_listar');
+// === BLOQUEO DE PERMISO ===
+if ($rol_actual !== 'administrador') {
+    echo "<script>alert('No tienes permiso para editar materias'); window.location='index.php';</script>";
     exit;
 }
 
-$carreras = $modelo->listarCarreras();
+$modelo = new MateriaModel();
+$id = (int)($_GET['id'] ?? 0);
+$materia = $modelo->obtenerPorId($id);
+
+if (!$materia) {
+    echo "<script>alert('Materia no encontrada'); window.location='index.php?accion=materias_listar';</script>";
+    exit;
+}
+
+// Cargar carreras
+require_once __DIR__ . '/../models/CarreraModel.php';
+$modeloCarrera = new CarreraModel();
+$carreras = $modeloCarrera->listarTodas();
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nombre_materia = trim($_POST['nombre_materia'] ?? '');
-    $id_carrera = !empty($_POST['id_carrera']) ? $_POST['id_carrera'] : null;
-    
-    if (empty($nombre_materia)) {
-        header("Location: index.php?accion=materias_editar&id=$id_materia&mensaje=campo_vacio");
-        exit;
-    }
-
     $datos = [
-        'nombre_materia' => $nombre_materia,
-        'id_carrera' => $id_carrera
+        'nombre_materia' => trim($_POST['nombre_materia'] ?? ''),
+        'id_carrera' => (int)($_POST['id_carrera'] ?? 0)
     ];
 
-    $resultado = $modelo->actualizar($id_materia, $datos);
-    
-    if (is_array($resultado) && isset($resultado['error'])) {
-        header("Location: index.php?accion=materias_editar&id=$id_materia&mensaje=error&detalle=" . urlencode($resultado['error']));
-        exit;
+    if (empty($datos['nombre_materia'])) {
+        $error = 'Escribe el nombre de la materia';
+    } elseif ($datos['id_carrera'] <= 0) {
+        $error = 'Selecciona la carrera';
+    } else {
+        if ($modelo->editar($id, $datos)) {
+            header('Location: index.php?accion=materias_listar');
+            exit;
+        } else {
+            $error = 'Error al actualizar';
+        }
     }
-
-    header('Location: index.php?accion=materias_listar&mensaje=registro_actualizado');
-    exit;
 }
 
 require_once __DIR__ . '/../views/materias/editar.php';

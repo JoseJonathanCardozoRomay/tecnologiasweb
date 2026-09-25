@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuevo Tutor</title>
+    <title>Asignar Materia a Tutor</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
         body {
@@ -54,7 +54,7 @@
             color: #003366;
             margin-bottom: 8px;
         }
-        select, input, textarea {
+        select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ccc;
@@ -71,7 +71,6 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s;
         }
         button:hover {
             background: #0052a3;
@@ -80,48 +79,41 @@
 </head>
 <body>
     <div class="contenedor">
-        <a href="index.php?accion=tutores_listar" class="volver">← Volver</a>
+        <a href="index.php?accion=tutor_materia_listar" class="volver">← Volver</a>
         
-        <h1>👨‍🏫 Nuevo Tutor</h1>
+        <h1>📚 Asignar Materia a Tutor</h1>
 
         <?php if (!empty($error)): ?>
             <div class="alerta-error"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <?php if (empty($usuarios)): ?>
-            <div class="alerta-error">
-                No hay usuarios disponibles para asignar como tutor.<br>
-                Primero cree un usuario.
+        <form method="POST">
+            <div class="form-group">
+                <label for="id_tutor">Seleccionar Tutor *</label>
+                <select name="id_tutor" id="id_tutor" required>
+                    <option value="">-- Seleccione --</option>
+                    <?php foreach ($tutores as $t): ?>
+                        <option value="<?= $t['id_tutor'] ?>">
+                            <?= htmlspecialchars(($t['nombre'] ?? '') . ' ' . ($t['apellido'] ?? '')) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-            <br>
-            <a href="index.php?accion=usuario_crear" class="volver" style="text-align:center;display:block">+ Crear Usuario</a>
-        <?php else: ?>
-            <form method="POST">
-                <div class="form-group">
-                    <label for="id_usuario">Seleccionar Usuario *</label>
-                    <select name="id_usuario" id="id_usuario" required>
-                        <option value="">-- Seleccione --</option>
-                        <?php foreach ($usuarios as $u): ?>
-                            <option value="<?= $u['id_usuario'] ?>">
-                                <?= htmlspecialchars($u['nombre'] . ' ' . $u['apellido']) ?> — <?= htmlspecialchars($u['usuario']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
 
-                <div class="form-group">
-                    <label for="especialidad">Especialidad</label>
-                    <input type="text" name="especialidad" id="especialidad" placeholder="Ej: Matemáticas, Física, Programación">
-                </div>
+            <div class="form-group">
+                <label for="id_materia">Seleccionar Materia *</label>
+                <select name="id_materia" id="id_materia" required>
+                    <option value="">-- Seleccione --</option>
+                    <?php foreach ($materias as $m): ?>
+                        <option value="<?= $m['id_materia'] ?>">
+                            <?= htmlspecialchars($m['nombre_materia']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
-                <div class="form-group">
-                    <label for="biografia">Biografía / Presentación</label>
-                    <textarea name="biografia" id="biografia" rows="4" placeholder="Breve descripción de experiencia..."></textarea>
-                </div>
-
-                <button type="submit">✅ Guardar Tutor</button>
-            </form>
-        <?php endif; ?>
+            <button type="submit">✅ Asignar Materia</button>
+        </form>
     </div>
 </body>
 </html>

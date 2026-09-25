@@ -1,4 +1,7 @@
 <?php
+/**
+ * Modelo Tutor
+ */
 require_once __DIR__ . '/../config/conexion.php';
 
 class TutorModel {
@@ -10,81 +13,53 @@ class TutorModel {
         $this->conexion = $conexion;
     }
 
-    /**
-     * Obtiene todos los tutores con datos del usuario
-     */
     public function listarTodos() {
         $sql = "SELECT t.*, u.nombre, u.apellido, u.usuario, u.correo
                 FROM {$this->tabla} t
-                LEFT JOIN usuarios u ON t.id_usuario = u.id_usuario
-                ORDER BY t.id_tutor DESC";
-        $stmt = $this->conexion->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                ORDER BY u.nombre, u.apellido";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Obtiene un tutor por su ID
-     */
-    public function obtenerPorId($id) {
-        $sql = "SELECT t.*, u.nombre, u.apellido, u.usuario
-                FROM {$this->tabla} t
-                LEFT JOIN usuarios u ON t.id_usuario = u.id_usuario
-                WHERE t.id_tutor = :id";
+    public function crear($id_usuario, $especialidad, $biografia) {
+        $sql = "INSERT INTO {$this->tabla} (id_usuario, especialidad, biografia) 
+                VALUES (:id_usuario, :especialidad, :biografia)";
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':id_usuario', $id_usuario);
+        $stmt->bindParam(':especialidad', $especialidad);
+        $stmt->bindParam(':biografia', $biografia);
+        return $stmt->execute();
+    }
+
+    // Agrega aquí los demás métodos: obtenerPorId, actualizar, eliminar
+    public function obtenerPorId($id_tutor) {
+        $sql = "SELECT t.*, u.nombre, u.apellido, u.usuario, u.correo
+                FROM {$this->tabla} t
+                INNER JOIN usuarios u ON t.id_usuario = u.id_usuario
+                WHERE t.id_tutor = :id_tutor";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id_tutor', $id_tutor);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Crea un nuevo tutor
-     */
-    public function crear($datos) {
-        try {
-            $sql = "INSERT INTO {$this->tabla} (id_usuario, especialidad, biografia)
-                    VALUES (:id_usuario, :especialidad, :biografia)";
-            $stmt = $this->conexion->prepare($sql);
-            $stmt->bindParam(':id_usuario', $datos['id_usuario'], PDO::PARAM_INT);
-            $stmt->bindParam(':especialidad', $datos['especialidad']);
-            $stmt->bindParam(':biografia', $datos['biografia']);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            return false;
-        }
+    public function actualizar($id_tutor, $especialidad, $biografia) {
+        $sql = "UPDATE {$this->tabla} 
+                SET especialidad = :especialidad, biografia = :biografia 
+                WHERE id_tutor = :id_tutor";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':especialidad', $especialidad);
+        $stmt->bindParam(':biografia', $biografia);
+        $stmt->bindParam(':id_tutor', $id_tutor);
+        return $stmt->execute();
     }
 
-    /**
-     * Actualiza un tutor
-     */
-    public function actualizar($id, $datos) {
-        try {
-            $sql = "UPDATE {$this->tabla}
-                    SET id_usuario = :id_usuario,
-                        especialidad = :especialidad,
-                        biografia = :biografia
-                    WHERE id_tutor = :id";
-            $stmt = $this->conexion->prepare($sql);
-            $stmt->bindParam(':id_usuario', $datos['id_usuario'], PDO::PARAM_INT);
-            $stmt->bindParam(':especialidad', $datos['especialidad']);
-            $stmt->bindParam(':biografia', $datos['biografia']);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Elimina un tutor
-     */
-    public function eliminar($id) {
-        try {
-            $sql = "DELETE FROM {$this->tabla} WHERE id_tutor = :id";
-            $stmt = $this->conexion->prepare($sql);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            return false;
-        }
+    public function eliminar($id_tutor) {
+        $sql = "DELETE FROM {$this->tabla} WHERE id_tutor = :id_tutor";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id_tutor', $id_tutor);
+        return $stmt->execute();
     }
 }

@@ -1,35 +1,29 @@
 <?php
 /**
- * Controlador — Listado de Tutorías
- * Con nombres completos: Estudiante, Tutor y Materia
+ * Listar Tutorías — Con permisos por rol compatibles con tu sesión
  */
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../models/TutoriaModel.php';
 
-$consulta = "
-    SELECT 
-        t.id_tutoria,
-        t.fecha,
-        t.hora_inicio,
-        t.hora_fin,
-        t.estado,
-        t.modalidad,
-        t.lugar_o_enlace,
-        e.nombre AS nombre_estudiante,
-        e.apellido AS apellido_estudiante,
-        tut.nombre AS nombre_tutor,
-        tut.apellido AS apellido_tutor,
-        m.nombre_materia
-    FROM tutorias t
-    LEFT JOIN estudiantes est ON t.id_estudiante = est.id_estudiante
-    LEFT JOIN usuarios e ON est.id_usuario = e.id_usuario
-    LEFT JOIN tutores tu ON t.id_tutor = tu.id_tutor
-    LEFT JOIN usuarios tut ON tu.id_usuario = tut.id_usuario
-    LEFT JOIN materias m ON t.id_materia = m.id_materia
-    ORDER BY t.fecha DESC, t.hora_inicio DESC
-";
+$modelo = new TutoriaModel();
 
-$stmt = $conexion->prepare($consulta);
-$stmt->execute();
-$tutorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ✅ Leer rol con los nombres que usa tu sesión
+$rol_actual = $_SESSION['rol_nombre'] ?? $_SESSION['usuario']['nombre_rol'] ?? '';
+$id_usuario_actual = (int)($_SESSION['id_usuario'] ?? $_SESSION['usuario']['id_usuario'] ?? 0);
+
+// ✅ Filtrar según el rol
+if ($rol_actual === 'administrador') {
+    // Admin ve TODAS las tutorías
+    $tutorias = $modelo->listarTodas();
+} elseif ($rol_actual === 'estudiante') {
+    // Estudiante ve solo las suyas
+    $tutorias = $modelo->listarPorEstudiante($id_usuario_actual);
+} elseif ($rol_actual === 'tutor') {
+    // Tutor ve solo las que le asignaron
+    $tutorias = $modelo->listarPorTutor($id_usuario_actual);
+} else {
+    $tutorias = [];
+}
 
 require_once __DIR__ . '/../views/tutorias/listar.php';

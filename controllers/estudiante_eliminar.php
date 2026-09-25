@@ -1,14 +1,18 @@
 <?php
-require_once __DIR__ . '/../models/EstudianteModel.php';
-
-$modelo = new EstudianteModel();
-$id = $_GET['id'] ?? 0;
-$resultado = $modelo->eliminar($id);
-
-if (is_array($resultado) && isset($resultado['error'])) {
-    header("Location: ../index.php?accion=estudiantes_listar&mensaje=error&detalle=" . urlencode($resultado['error']));
+/**
+ * Eliminar Estudiante — SOLO ADMINISTRADOR
+ */
+require_once __DIR__ . '/../config/sesion.php';
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
+if ($rol_actual !== 'administrador') {
+    echo "<script>alert('Sin permiso');history.back();</script>";
     exit;
 }
 
-header("Location: ../index.php?accion=estudiantes_listar&mensaje=eliminado");
+require_once __DIR__ . '/../models/EstudianteModel.php';
+$modelo = new EstudianteModel();
+$id = (int)($_GET['id'] ?? 0);
+if ($id > 0) $modelo->eliminar($id);
+
+header('Location: index.php?accion=estudiantes_listar');
 exit;

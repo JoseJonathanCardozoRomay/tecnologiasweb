@@ -1,27 +1,23 @@
 <?php
 /**
- * Controlador — Listado de Notificaciones
- * Con botón para marcar como leídas
+ * Listar Notificaciones
+ * Admin = TODAS / Tutor = las suyas / Estudiante = las suyas
  */
-require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../config/sesion.php';
+require_once __DIR__ . '/../models/NotificacionModel.php';
 
-// Si presiona "Marcar como leídas"
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar_leidas']) && isset($_SESSION['id_usuario'])) {
-    $stmt = $conexion->prepare("UPDATE notificaciones SET leida = 1 WHERE id_usuario = :id_usuario");
-    $stmt->bindParam(':id_usuario', $_SESSION['id_usuario']);
-    $stmt->execute();
-    header("Location: index.php?accion=notificaciones_listar");
-    exit;
-}
+$modelo = new NotificacionModel();
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
+$id_usuario_actual = $_SESSION['id_usuario'] ?? 0;
 
-// Obtener notificaciones del usuario
-if (isset($_SESSION['id_usuario'])) {
-    $stmt = $conexion->prepare("SELECT * FROM notificaciones WHERE id_usuario = :id_usuario ORDER BY fecha_creacion DESC");
-    $stmt->bindParam(':id_usuario', $_SESSION['id_usuario']);
-    $stmt->execute();
-    $notificaciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Marcar como leídas al entrar
+$modelo->marcarTodasLeidas($id_usuario_actual);
+
+// Cargar según rol
+if ($rol_actual === 'administrador') {
+    $notificaciones = $modelo->listarTodas();
 } else {
-    $notificaciones = [];
+    $notificaciones = $modelo->listarPorUsuario($id_usuario_actual);
 }
 
 require_once __DIR__ . '/../views/notificaciones/listar.php';

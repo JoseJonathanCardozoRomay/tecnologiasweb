@@ -1,30 +1,50 @@
 <?php
-require_once __DIR__ . '/../models/NotificacionModel.php';
-require_once __DIR__ . '/../models/UsuarioModel.php';
+/**
+ * Crear Notificación — Solo Administrador
+ */
+require_once __DIR__ . '/../config/sesion.php';
+require_once __DIR__ . '/../config/conexion.php';
 
-$modelo = new NotificacionModel();
-$modeloUsuarios = new UsuarioModel();
+if (!tieneRol(['administrador'])) {
+    echo "<script>alert('Solo el administrador puede crear notificaciones');history.back();</script>";
+    exit;
+}
+
 $error = '';
+$exito = '';
 
-// Obtener lista de usuarios para el desplegable
-$usuarios = $modeloUsuarios->listarTodos();
+// Obtener lista de usuarios para seleccionar
+global $conexion;
+$stmt = $conexion->query("
+    SELECT u.id_usuario, u.nombre, u.apellido, r.nombre_rol 
+    FROM usuarios u
+    LEFT JOIN roles r ON u.id_rol = r.id_rol
+    WHERE u.estado = 'activo'
+    ORDER BY u.nombre, u.apellido
+");
+$usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $datos = [
-        'id_usuario' => (int)($_POST['id_usuario'] ?? 0),
-        'tipo' => trim($_POST['tipo'] ?? ''),
-        'mensaje' => trim($_POST['mensaje'] ?? ''),
-        'url' => trim($_POST['url'] ?? '')
-    ];
+    $id_usuario = (int)($_POST['id_usuario'] ?? 0);
+    $tipo = trim($_POST['tipo'] ?? '');
+    $mensaje = trim($_POST['mensaje'] ?? '');
 
-    if ($datos['id_usuario'] <= 0 || empty($datos['tipo']) || empty($datos['mensaje'])) {
-        $error = 'Completa todos los campos obligatorios';
+    if ($id_usuario <= 0 || empty($tipo) || empty($mensaje)) {
+        $error = 'Completa todos los campos';
     } else {
-        if ($modelo->crear($datos)) {
-            header('Location: index.php?accion=notificaciones_listar');
-            exit;
+        $stmt = $conexion->prepare("
+            INSERT INTO notificaciones (id_usuario, tipo, mensaje, leida)
+            VALUES (:id_usuario, :tipo, :mensaje, 0)
+        ");
+        $stmt->bindParam(':id_usuario', $id_usuario);
+        $stmt->bindParam(':tipo', $tipo);
+        $stmt->bindParam(':mensaje', $mensaje);
+        
+        if ($stmt->execute()) {
+            $exito = '✅ Notificación enviada correctamente';
+        } else {
+            $error = '❌ Error al enviar la notificación';
         }
-        $error = 'Error al crear la notificación';
     }
 }
 

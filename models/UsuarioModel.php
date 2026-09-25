@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../config/conexion.php';
-
 class UsuarioModel {
     private $conexion;
     private $tabla = 'usuarios';
@@ -10,9 +9,6 @@ class UsuarioModel {
         $this->conexion = $conexion;
     }
 
-    /**
-     * Obtiene todos los usuarios con nombre del rol
-     */
     public function listarTodos() {
         $consulta = "SELECT u.*, r.nombre_rol 
                      FROM {$this->tabla} u 
@@ -23,9 +19,6 @@ class UsuarioModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Obtiene un usuario por su ID
-     */
     public function obtenerPorId($id) {
         $consulta = "SELECT * FROM {$this->tabla} WHERE id_usuario = :id";
         $stmt = $this->conexion->prepare($consulta);
@@ -34,9 +27,6 @@ class UsuarioModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Obtiene lista de roles para desplegable
-     */
     public function listarRoles() {
         $consulta = "SELECT * FROM roles ORDER BY id_rol";
         $stmt = $this->conexion->prepare($consulta);
@@ -44,9 +34,6 @@ class UsuarioModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Crea un nuevo usuario
-     */
     public function crear($datos) {
         $consulta = "INSERT INTO {$this->tabla} 
                      (id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado)
@@ -67,9 +54,6 @@ class UsuarioModel {
         return $stmt->execute();
     }
 
-    /**
-     * Actualiza un usuario
-     */
     public function actualizar($id, $datos) {
         $consulta = "UPDATE {$this->tabla} SET 
                      id_rol = :id_rol,
@@ -94,13 +78,25 @@ class UsuarioModel {
         return $stmt->execute();
     }
 
-    /**
-     * Elimina un usuario
-     */
     public function eliminar($id) {
         $consulta = "DELETE FROM {$this->tabla} WHERE id_usuario = :id";
         $stmt = $this->conexion->prepare($consulta);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
+
+    // ✅ MÉTODO NUEVO — NO TOCAR LO DE ARRIBA
+    public function listarSinRolAsignado() {
+        $sql = "SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, r.nombre_rol
+                FROM {$this->tabla} u
+                LEFT JOIN roles r ON u.id_rol = r.id_rol
+                WHERE r.nombre_rol IS NULL 
+                   OR r.nombre_rol NOT IN ('estudiante', 'tutor', 'administrador')
+                ORDER BY u.nombre, u.apellido";
+        
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    // ✅ FIN MÉTODO NUEVO
 }

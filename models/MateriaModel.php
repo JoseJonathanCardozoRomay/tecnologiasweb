@@ -1,7 +1,6 @@
 <?php
 /**
- * Modelo para la gestión de la entidad Materia
- * Sistema de Gestión de Tutorías
+ * Modelo para la gestión de Materias
  */
 require_once __DIR__ . '/../config/conexion.php';
 
@@ -15,96 +14,73 @@ class MateriaModel {
     }
 
     /**
-     * Obtiene el listado completo de materias con su carrera
+     * Obtener todas las materias con nombre de carrera
+     */
+    public function listarTodasConCarrera() {
+        $sql = "SELECT m.*, c.nombre_carrera
+                FROM {$this->tabla} m
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+                ORDER BY m.nombre_materia";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Listar todas las materias
      */
     public function listarTodas() {
-        $consulta = "SELECT m.*, c.nombre_carrera
-                     FROM {$this->tabla} m
-                     LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
-                     ORDER BY m.nombre_materia ASC";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT * FROM {$this->tabla} ORDER BY nombre_materia";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Recupera los datos de una materia por su identificador
+     * Obtener una materia por ID
      */
-    public function obtenerPorId($id_materia) {
-        $consulta = "SELECT m.*, c.nombre_carrera
-                     FROM {$this->tabla} m
-                     LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
-                     WHERE m.id_materia = :id_materia";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->bindParam(':id_materia', $id_materia, PDO::PARAM_INT);
-        $sentencia->execute();
-        return $sentencia->fetch(PDO::FETCH_ASSOC);
+    public function obtenerPorId($id) {
+        $sql = "SELECT * FROM {$this->tabla} WHERE id_materia = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Registra una nueva materia
+     * Crear nueva materia
      */
     public function crear($datos) {
-        try {
-            $consulta = "INSERT INTO {$this->tabla} 
-                (nombre_materia, id_carrera) 
+        $sql = "INSERT INTO {$this->tabla} (nombre_materia, id_carrera) 
                 VALUES (:nombre_materia, :id_carrera)";
-            
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->execute($datos);
-            return true;
-        } catch (PDOException $error) {
-            if ($error->getCode() === '23000') {
-                return ['error' => 'La materia "' . $datos['nombre_materia'] . '" ya se encuentra registrada'];
-            }
-            return ['error' => 'Error al registrar la materia'];
-        }
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':nombre_materia', $datos['nombre_materia']);
+        $stmt->bindParam(':id_carrera', $datos['id_carrera'], PDO::PARAM_INT);
+        return $stmt->execute();
     }
 
     /**
-     * Modifica los datos de una materia existente
+     * Editar materia
      */
-    public function actualizar($id_materia, $datos) {
-        try {
-            $consulta = "UPDATE {$this->tabla} SET 
-                            nombre_materia = :nombre_materia,
-                            id_carrera = :id_carrera
-                         WHERE id_materia = :id_materia";
-            
-            $sentencia = $this->conexion->prepare($consulta);
-            $datos['id_materia'] = $id_materia;
-            $sentencia->execute($datos);
-            return true;
-        } catch (PDOException $error) {
-            if ($error->getCode() === '23000') {
-                return ['error' => 'El nombre de materia ingresado ya se encuentra en uso'];
-            }
-            return ['error' => 'Error al actualizar la información'];
-        }
+    public function editar($id, $datos) {
+        $sql = "UPDATE {$this->tabla} SET 
+                    nombre_materia = :nombre_materia,
+                    id_carrera = :id_carrera
+                WHERE id_materia = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':nombre_materia', $datos['nombre_materia']);
+        $stmt->bindParam(':id_carrera', $datos['id_carrera'], PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
     }
 
     /**
-     * Elimina una materia del sistema
+     * Eliminar materia
      */
-    public function eliminar($id_materia) {
-        try {
-            $consulta = "DELETE FROM {$this->tabla} WHERE id_materia = :id_materia";
-            $sentencia = $this->conexion->prepare($consulta);
-            $sentencia->bindParam(':id_materia', $id_materia, PDO::PARAM_INT);
-            $sentencia->execute();
-            return true;
-        } catch (PDOException $error) {
-            return ['error' => 'No es posible eliminar: existen registros asociados a esta materia'];
-        }
-    }
-
-    /**
-     * Obtiene el catálogo de carreras para selección
-     */
-    public function listarCarreras() {
-        $consulta = "SELECT * FROM carreras ORDER BY nombre_carrera ASC";
-        $sentencia = $this->conexion->prepare($consulta);
-        $sentencia->execute();
-        return $sentencia->fetchAll(PDO::FETCH_ASSOC);
+    public function eliminar($id) {
+        $sql = "DELETE FROM {$this->tabla} WHERE id_materia = :id";
+        $stmt = $this->conexion->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
     }
 }

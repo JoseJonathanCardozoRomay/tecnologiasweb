@@ -3,110 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evaluaciones</title>
+    <title>Evaluaciones de Tutorías</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Times New Roman', Georgia, serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
         body {
-            background: linear-gradient(rgba(0,38,77,0.92),rgba(0,38,77,0.92)),
+            background: linear-gradient(rgba(0, 38, 77, 0.88), rgba(0, 38, 77, 0.88)),
                         url('https://www.upds.edu.bo/wp-content/uploads/2023/07/4.jpg') center/cover no-repeat fixed;
             min-height: 100vh;
-            padding: 30px;
+            padding: 40px 20px;
         }
         .contenedor {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 0 auto;
-            background: rgba(255,255,255,0.95);
+            background: #fff;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         }
-        h1 {
-            color: #003366;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .btn-volver {
+        .volver {
             display: inline-block;
             background: #6c757d;
             color: white;
-            padding: 10px 20px;
-            text-decoration: none;
+            padding: 8px 16px;
             border-radius: 6px;
+            text-decoration: none;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .btn-volver:hover { background: #5a6268; }
+        h1 {
+            color: #003366;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffc107;
+            font-size: 22px;
+        }
+        .mensaje {
+            background: #d1e7dd;
+            color: #0f5132;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .info-rol {
+            background: #e7f3ff;
+            color: #004085;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 10px;
         }
         th, td {
-            padding: 14px 12px;
+            padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eee;
         }
         th {
             background: #003366;
             color: white;
         }
-        tr:hover { background: #f0f5ff; }
-        em { color: #999; }
-        .estrellas { color: #f5b800; }
+        .nota {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .nota-5 { color: #28a745; }
+        .nota-4 { color: #28a745; }
+        .nota-3 { color: #ffc107; }
+        .nota-2 { color: #fd7e14; }
+        .nota-1 { color: #dc3545; }
+        .btn-eliminar {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .vacio {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="contenedor">
-        <h1>⭐ Evaluaciones</h1>
+        <a href="index.php" class="volver">← Volver</a>
+        
+        <h1>📋 Evaluaciones de Tutorías</h1>
 
-        <a href="index.php" class="btn-volver">← Volver al Menú</a>
+        <div class="info-rol">
+            👤 Tú ves: 
+            <strong>
+                <?php 
+                $r = $_SESSION['usuario']['nombre_rol'] ?? '';
+                echo match($r) {
+                    'administrador' => 'TODAS las evaluaciones del sistema',
+                    'tutor' => 'Las evaluaciones que te dejaron a ti',
+                    'estudiante' => 'Tus propias evaluaciones enviadas',
+                    default => ''
+                };
+                ?>
+            </strong>
+        </div>
 
-        <table>
-            <thead>
+        <?php if (isset($_GET['mensaje']) && $_GET['mensaje'] === 'gracias'): ?>
+            <div class="mensaje">✅ ¡Gracias por tu evaluación!</div>
+        <?php endif; ?>
+
+        <?php if (empty($evaluaciones)): ?>
+            <p class="vacio">No hay evaluaciones registradas.</p>
+        <?php else: ?>
+            <table>
                 <tr>
-                    <th>ID</th>
-                    <th>Tutoría</th>
+                    <th>Fecha</th>
+                    <th>Materia / Tutoría</th>
                     <th>Calificación</th>
                     <th>Comentario</th>
-                    <th>Fecha</th>
+                    <?php if (($usuario_actual['nombre_rol'] ?? '') === 'administrador'): ?>
+                        <th>Acción</th>
+                    <?php endif; ?>
                 </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($evaluaciones)): ?>
-                <tr>
-                    <td colspan="5" style="text-align:center; padding:20px; color:#666;">No hay evaluaciones registradas</td>
-                </tr>
-                <?php else: ?>
-                <?php foreach ($evaluaciones as $fila): ?>
-                <tr>
-                    <td><?= $fila['id_evaluacion'] ?></td>
-                    <td>
-                        <?php if (!empty($fila['id_tutoria'])): ?>
-                            Tutoría #<?= $fila['id_tutoria'] ?>
-                        <?php else: ?>
-                            <em>Sin datos</em>
+                <?php foreach ($evaluaciones as $e): ?>
+                    <tr>
+                        <td><?= date('d/m/Y', strtotime($e['fecha_evaluacion'])) ?></td>
+                        <td>
+                            <strong><?= htmlspecialchars($e['nombre_materia'] ?? '') ?></strong><br>
+                            <small>
+                                <?php 
+                                $r = $_SESSION['usuario']['nombre_rol'] ?? '';
+                                if ($r === 'estudiante') {
+                                    echo 'Tutor: ' . htmlspecialchars(($e['tut_nombre'] ?? '') . ' ' . ($e['tut_apellido'] ?? ''));
+                                } else {
+                                    echo 'Estudiante: ' . htmlspecialchars(($e['est_nombre'] ?? '') . ' ' . ($e['est_apellido'] ?? ''));
+                                }
+                                ?>
+                            </small>
+                        </td>
+                        <td class="nota nota-<?= $e['calificacion'] ?>">
+                            <?= $e['calificacion'] ?> ⭐
+                        </td>
+                        <td style="max-width: 250px;"><?= htmlspecialchars($e['comentario'] ?? '-') ?></td>
+                        <?php if (($usuario_actual['nombre_rol'] ?? '') === 'administrador'): ?>
+                            <td>
+                                <a href="index.php?accion=evaluacion_eliminar&id=<?= $e['id_evaluacion'] ?>" 
+                                   class="btn-eliminar"
+                                   onclick="return confirm('¿Eliminar esta evaluación?')">Eliminar</a>
+                            </td>
                         <?php endif; ?>
-                    </td>
-                    <td class="estrellas">
-                        <?php 
-                        $calif = $fila['calificacion'] ?? 0;
-                        $estrellas = str_repeat('⭐', $calif);
-                        echo $estrellas . " ($calif/5)";
-                        ?>
-                    </td>
-                    <td>
-                        <?php 
-                        $comentario = $fila['comentario'] ?? '';
-                        echo mb_strlen($comentario) > 20 ? mb_substr($comentario, 0, 20) . '...' : $comentario;
-                        ?>
-                    </td>
-                    <td>
-                        <?= date('d/m/Y H:i', strtotime($fila['fecha_evaluacion'] ?? '')) ?>
-                    </td>
-                </tr>
+                    </tr>
                 <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+            </table>
+        <?php endif; ?>
     </div>
 </body>
 </html>

@@ -1,52 +1,155 @@
 <?php
-$titulo_pagina = 'Registro de Accesos';
-ob_start();
+if (!isset($carreras)) $carreras = [];
+if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Carreras</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
+        body {
+            background: linear-gradient(rgba(0, 38, 77, 0.88), rgba(0, 38, 77, 0.88)),
+                        url('https://www.upds.edu.bo/wp-content/uploads/2023/07/4.jpg') center/cover no-repeat fixed;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .contenedor {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .volver {
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #003366;
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ffc107;
+        }
+        .btn-nuevo {
+            display: inline-block;
+            background: #0066cc;
+            color: white;
+            padding: 12px 22px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th {
+            background: #004080;
+            color: white;
+            padding: 14px 10px;
+            text-align: left;
+        }
+        td {
+            padding: 14px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) { background: #f0f5ff; }
+        tr:hover { background: #e6f0ff; }
+        .editar {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .editar:hover { background: #218838; }
+        .eliminar {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .eliminar:hover { background: #c82333; }
+        .solo-lectura {
+            color: #666;
+            font-style: italic;
+        }
+        .vacio {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <a href="index.php" class="volver">← Volver al inicio</a>
+        
+        <h1>🎓 Listado de Carreras</h1>
 
-<h1>Registro de Accesos</h1>
+        <?php if ($rol_actual === 'administrador'): ?>
+            <a href="index.php?accion=carrera_crear" class="btn-nuevo">+ Nueva Carrera</a>
+        <?php endif; ?>
 
-<?php if (empty($accesos)): ?>
-<p style="text-align:center; padding:20px; color:#666;">No hay registros de accesos.</p>
-<?php else: ?>
-<table style="width:100%; border-collapse:collapse; background:white; border-radius:6px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-top:20px;">
-    <thead>
-        <tr style="background:#003366; color:white;">
-            <th style="padding:12px; text-align:left;">ID</th>
-            <th style="padding:12px; text-align:left;">Usuario</th>
-            <th style="padding:12px; text-align:left;">Fecha y Hora</th>
-            <th style="padding:12px; text-align:left;">IP Origen</th>
-            <th style="padding:12px; text-align:left;">Resultado</th>
-            <th style="padding:12px; text-align:center;">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($accesos as $a): ?>
-        <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:10px;"><?= $a['id_acceso'] ?></td>
-            <td style="padding:10px;">
-                <?= !empty($a['nombre']) ? htmlspecialchars($a['nombre'].' '.$a['apellido']) : '<em>Sin identificar</em>' ?>
-            </td>
-            <td style="padding:10px;"><?= htmlspecialchars($a['fecha_hora']) ?></td>
-            <td style="padding:10px;"><?= htmlspecialchars($a['ip_origen'] ?? '—') ?></td>
-            <td style="padding:10px;">
-                <?= $a['resultado'] === 'exitoso' 
-                    ? '<span style="color:green; font-weight:bold;">Exitoso</span>' 
-                    : '<span style="color:red; font-weight:bold;">Fallido</span>' ?>
-            </td>
-            <td style="padding:10px; text-align:center;">
-                <a href="index.php?accion=accesos_editar&id=<?= $a['id_acceso'] ?>" style="color:#003366; margin:0 5px;">Editar</a>
-                <a href="index.php?accion=accesos_eliminar&id=<?= $a['id_acceso'] ?>" style="color:#cc0000; margin:0 5px;" onclick="return confirm('¿Eliminar este registro?');">Eliminar</a>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
-<?php endif; ?>
-
-<p style="margin-top:25px;">
-    <a href="index.php" style="color:#666;">← Volver al inicio</a>
-</p>
-
-<?php
-$contenido = ob_get_clean();
-require_once __DIR__ . '/../../config/plantilla.php';
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre de la Carrera</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($carreras)): ?>
+                    <tr>
+                        <td colspan="3" class="vacio">
+                            No hay carreras registradas.
+                            <?php if ($rol_actual === 'administrador'): ?>
+                                <br><strong>Usa el botón "Nueva Carrera" para agregar una.</strong>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($carreras as $c): ?>
+                    <tr>
+                        <td><?= $c['id_carrera'] ?></td>
+                        <td><strong><?= htmlspecialchars($c['nombre_carrera']) ?></strong></td>
+                        <td>
+                            <?php if ($rol_actual === 'administrador'): ?>
+                                <a href="index.php?accion=carrera_editar&id=<?= $c['id_carrera'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=carrera_eliminar&id=<?= $c['id_carrera'] ?>" 
+                                   class="eliminar"
+                                   onclick="return confirm('¿Seguro que quieres eliminar esta carrera? ⚠️ Los estudiantes vinculados dejarán de verla')">Eliminar</a>
+                            <?php else: ?>
+                                <span class="solo-lectura">Solo consulta</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

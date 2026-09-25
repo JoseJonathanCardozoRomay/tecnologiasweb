@@ -1,27 +1,25 @@
- <?php
+<?php
 /**
- * Listar Evaluaciones de Tutorías — Solución completa
- * Sin tocar modelo ni vistas
+ * Listar Evaluaciones — Permisos por rol
+ * Estudiante: solo las suyas | Tutor: las que le dejaron | Admin: TODAS
  */
-
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../models/EvaluacionModel.php';
 
-// Variable para mensajes
-$mensaje = $_GET['mensaje'] ?? '';
+$modelo = new EvaluacionModel();
+$usuario_actual = $_SESSION['usuario'] ?? [];
+$rol_actual = $usuario_actual['nombre_rol'] ?? '';
+$id_usuario_actual = (int)($usuario_actual['id_usuario'] ?? 0);
 
-// Consulta con todos los campos que necesita la vista
-$consulta = "SELECT ev.*,
-                    CONCAT(ue.nombre, ' ', ue.apellido) AS estudiante,
-                    m.nombre_materia AS materia,
-                    ev.calificacion,
-                    ev.fecha_evaluacion AS fecha
-             FROM evaluaciones_tutoria ev
-             LEFT JOIN tutorias t ON ev.id_tutoria = t.id_tutoria
-             LEFT JOIN estudiantes e ON t.id_estudiante = e.id_estudiante
-             LEFT JOIN usuarios ue ON e.id_usuario = ue.id_usuario
-             LEFT JOIN materias m ON t.id_materia = m.id_materia
-             ORDER BY ev.fecha_evaluacion DESC";
-$evaluaciones = $conexion->prepare($consulta);
-$evaluaciones->execute();
+// ✅ Filtrar según rol
+$evaluaciones = [];
+if ($rol_actual === 'administrador') {
+    $evaluaciones = $modelo->listarTodas();
+} elseif ($rol_actual === 'tutor') {
+    $evaluaciones = $modelo->listarPorTutor($id_usuario_actual);
+} elseif ($rol_actual === 'estudiante') {
+    $evaluaciones = $modelo->listarPorEstudiante($id_usuario_actual);
+}
 
 require_once __DIR__ . '/../views/evaluaciones/listar.php';

@@ -1,16 +1,11 @@
- <?php
+<?php
 /**
- * Listar Materias — Solución
- * Sin tocar modelo ni vistas
+ * Listar Materias — TODOS pueden ver
  */
+require_once __DIR__ . '/../config/sesion.php';
+require_once __DIR__ . '/../models/MateriaModel.php';
 
-require_once __DIR__ . '/../config/conexion.php';
-
-$consulta = "SELECT m.*, c.nombre_carrera 
-             FROM materias m 
-             LEFT JOIN carreras c ON m.id_carrera = c.id_carrera 
-             ORDER BY m.id_materia";
-$materias = $conexion->prepare($consulta);
-$materias->execute();
+$modelo = new MateriaModel();
+$materias = $modelo->listarTodasConCarrera();
 
 require_once __DIR__ . '/../views/materias/listar.php';

@@ -1,18 +1,24 @@
 <?php
 /**
- * Controlador para la eliminación de materias
+ * Eliminar Materia — SOLO ADMINISTRADOR
  */
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 
-$modelo = new MateriaModel();
-$id_materia = $_GET['id'] ?? 0;
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
 
-$resultado = $modelo->eliminar($id_materia);
-
-if (is_array($resultado) && isset($resultado['error'])) {
-    header('Location: index.php?accion=materias_listar&mensaje=error&detalle=' . urlencode($resultado['error']));
+// === BLOQUEO DE PERMISO ===
+if ($rol_actual !== 'administrador') {
+    echo "<script>alert('No tienes permiso para eliminar materias'); window.location='index.php';</script>";
     exit;
 }
 
-header('Location: index.php?accion=materias_listar&mensaje=registro_eliminado');
+$modelo = new MateriaModel();
+$id = (int)($_GET['id'] ?? 0);
+
+if ($id > 0) {
+    $modelo->eliminar($id);
+}
+
+header('Location: index.php?accion=materias_listar');
 exit;
