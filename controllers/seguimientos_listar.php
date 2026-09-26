@@ -3,6 +3,9 @@
  * Listado de Seguimiento de Sesiones — Permisos por rol
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor','estudiante']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/SeguimientoSesionModel.php';
 
 $modelo = new SeguimientoSesionModel();

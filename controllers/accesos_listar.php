@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/RegistroAccesosModel.php';
 

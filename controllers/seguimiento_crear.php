@@ -3,6 +3,9 @@
  * Crear Seguimiento de Sesión — Solo Tutor y Administrador
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/SeguimientoSesionModel.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
 

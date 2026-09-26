@@ -3,6 +3,8 @@
  * Listar Usuarios — Solución exacta
  * Sin tocar modelo ni vistas
  */
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
 
 require_once __DIR__ . '/../config/conexion.php';
 

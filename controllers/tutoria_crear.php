@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','estudiante']);
+
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';

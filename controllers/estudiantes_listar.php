@@ -4,6 +4,9 @@
  * Admin: ve TODOS | Tutor: ve lista | Estudiante: solo se ve a sí mismo
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/EstudianteModel.php';
 

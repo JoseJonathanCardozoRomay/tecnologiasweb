@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../models/UsuarioModel.php';
 
 $modelo = new UsuarioModel();

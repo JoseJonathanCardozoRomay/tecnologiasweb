@@ -1,53 +1,91 @@
 <?php
-session_start();
+ob_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-/**
- * Verificar si el usuario ha iniciado sesión
- * @return bool
- */
+// === TUS FUNCIONES EXISTENTES — NO BORRAR ===
 function estaAutenticado() {
     return isset($_SESSION['id_usuario']);
 }
 
-/**
- * Verificar si el usuario tiene uno de los roles permitidos
- * @param array $roles_permitidos Ejemplo: ['administrador', 'estudiante']
- * @return bool
- */
 function tieneRol($roles_permitidos) {
     return isset($_SESSION['rol_nombre']) && in_array($_SESSION['rol_nombre'], $roles_permitidos);
 }
 
-/**
- * Cargar datos del usuario en la sesión al iniciar sesión
- * @param array $datos Datos del usuario desde la base de datos
- */
 function iniciarSesion($datos) {
     $_SESSION['id_usuario'] = $datos['id_usuario'];
-    $_SESSION['usuario_nombre'] = $datos['nombre'] . ' ' . $datos['apellido'];
-    
-    // ✅ Mapear id_rol a nombre para que todo funcione igual
-    $mapa_roles = [
-        1 => 'administrador',
-        2 => 'tutor',
-        3 => 'estudiante'
-    ];
-    $_SESSION['rol_nombre'] = $mapa_roles[$datos['id_rol']] ?? 'estudiante';
-    
-    // ✅ Compatibilidad con el resto del sistema (ambos nombres para que no falle nada)
-    $_SESSION['usuario'] = [
-        'id_usuario'      => $datos['id_usuario'],
-        'nombre'          => $datos['nombre'],
-        'apellido'        => $datos['apellido'],
-        'nombre_rol'      => $mapa_roles[$datos['id_rol']] ?? 'estudiante',
-        'id_rol'          => $datos['id_rol']
-    ];
+    $_SESSION['nombre_completo'] = $datos['nombre'] . ' ' . $datos['apellido'];
+    $_SESSION['rol_nombre'] = ['administrador','tutor','estudiante'][$datos['id_rol']-1] ?? 'estudiante';
 }
 
-/**
- * Cerrar sesión y limpiar datos
- */
-function cerrarSesion() {
-    session_unset();
-    session_destroy();
+// ==============================================
+// ✅ NUEVAS FUNCIONES DE SEGURIDAD — AGREGAR AQUÍ
+// ==============================================
+
+// 1. Bloquear por rol
+function requerirRol($roles_permitidos) {
+    if (!estaAutenticado()) {
+        header('Location: index.php?accion=login');
+        exit;
+    }
+    if (!tieneRol($roles_permitidos)) {
+        $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => 'No tienes permiso para esta sección'];
+        header('Location: index.php');
+        exit;
+    }
+}
+
+// 2. Verificar que el recurso pertenece al usuario
+function requerirPermiso($propietario_id, $mensaje = 'No tienes acceso a este recurso') {
+    if (!estaAutenticado()) {
+        header('Location: index.php?accion=login');
+        exit;
+    }
+    if ($_SESSION['rol_nombre'] !== 'administrador' && $_SESSION['id_usuario'] != $propietario_id) {
+        $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => $mensaje];
+        header('Location: index.php');
+        exit;
+    }
+}
+
+// 3. Token CSRF — generar
+function csrf_generar() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// 4. Validar token CSRF
+function csrf_validar() {
+    $token = $_POST['csrf_token'] ?? '';
+    if (empty($token) || $token !== ($_SESSION['csrf_token'] ?? '')) {
+        $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => 'Solicitud inválida. Inténtalo de nuevo.'];
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+        exit;
+    }
+    return true;
+}
+
+// 5. Registrar cambios en bitácora
+function bitacora_registrar($accion, $tabla = null, $registro_id = null, $detalle = null) {
+    global $conexion;
+    if (!isset($conexion) || !isset($_SESSION['id_usuario'])) return;
+    
+    $stmt = $conexion->prepare("
+        INSERT INTO bitacora_mg 
+        (id_usuario, usuario_nombre, rol, accion, tabla_afectada, registro_id, detalle, ip_origen)
+        VALUES (:id_usuario, :nombre, :rol, :accion, :tabla, :reg_id, :detalle, :ip)
+    ");
+    $stmt->execute([
+        ':id_usuario' => $_SESSION['id_usuario'],
+        ':nombre' => $_SESSION['nombre_completo'] ?? 'sistema',
+        ':rol' => $_SESSION['rol_nombre'],
+        ':accion' => $accion,
+        ':tabla' => $tabla,
+        ':reg_id' => $registro_id,
+        ':detalle' => $detalle ? json_encode($detalle) : null,
+        ':ip' => $_SERVER['REMOTE_ADDR'] ?? 'desconocido'
+    ]);
 }

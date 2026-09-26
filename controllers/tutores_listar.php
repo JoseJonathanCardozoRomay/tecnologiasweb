@@ -3,6 +3,8 @@
  * Listar Tutores — Solución
  * Sin tocar modelo ni vistas
  */
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor','estudiante']);
 
 require_once __DIR__ . '/../config/conexion.php';
 

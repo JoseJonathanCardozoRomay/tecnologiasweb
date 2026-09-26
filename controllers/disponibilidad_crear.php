@@ -4,6 +4,9 @@
  * Tutor puede elegir varios días a la vez
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/DisponibilidadModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 

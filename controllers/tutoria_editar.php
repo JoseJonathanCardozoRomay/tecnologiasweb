@@ -3,6 +3,9 @@
  * Editar Tutoría — con notificación automática al estudiante
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../models/EstudianteModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';

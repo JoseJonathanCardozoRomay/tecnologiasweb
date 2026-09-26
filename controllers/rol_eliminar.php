@@ -2,6 +2,9 @@
 /**
  * Eliminar Rol
  */
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../models/RolModel.php';
 $modelo = new RolModel();
 $id = (int)($_GET['id'] ?? 0);

@@ -2,6 +2,9 @@
 /**
  * Controlador para la modificación de carreras
  */
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../models/CarreraModel.php';
 
 $modelo = new CarreraModel();

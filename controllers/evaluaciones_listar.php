@@ -4,6 +4,9 @@
  * Estudiante: solo las suyas | Tutor: las que le dejaron | Admin: TODAS
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor','estudiante']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/EvaluacionModel.php';
 

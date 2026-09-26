@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor'])
+
 require_once __DIR__ . '/../models/DisponibilidadTutorModel.php';
 
 $modelo = new DisponibilidadTutorModel();

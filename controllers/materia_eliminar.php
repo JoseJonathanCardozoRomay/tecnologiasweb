@@ -3,6 +3,10 @@
  * Eliminar Materia — SOLO ADMINISTRADOR
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
+
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 
 $rol_actual = $_SESSION['rol_nombre'] ?? '';

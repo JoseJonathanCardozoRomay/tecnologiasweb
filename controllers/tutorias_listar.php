@@ -3,6 +3,9 @@
  * Listar Tutorías — Con permisos por rol compatibles con tu sesión
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor','estudiante']);
+
+require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
 
