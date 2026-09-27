@@ -131,7 +131,7 @@ include __DIR__ . '/../partials/page_header.php';
                 </td>
                 <td class="pe-4">
                   <?php if (!empty($r['evidencia_url'])): ?>
-                    <a href="/controllers/reuniones_evidencia.php?id=<?= (int) $r['id_reunion'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-2" title="Ver evidencia"><i class="bi bi-paperclip"></i>Ver</a>
+                    <a href="/controllers/reuniones_evidencia.php?id=<?= (int) $r['id_reunion'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-2 download-btn" title="Ver evidencia"><i class="bi bi-paperclip"></i>Ver</a>
                   <?php else: ?>
                     <span class="text-muted small">—</span>
                   <?php endif; ?>
@@ -215,7 +215,7 @@ include __DIR__ . '/../partials/page_header.php';
                 </td>
                 <td class="pe-4">
                   <?php if (archivo_disponible($c['ruta_archivo'], 'uploads/comprobantes')): ?>
-                    <a href="/controllers/mg_comprobantes_descargar.php?id=<?= (int) $c['id_comprobante'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-2" title="Ver comprobante"><i class="bi bi-paperclip"></i>Ver</a>
+                    <a href="/controllers/mg_comprobantes_descargar.php?id=<?= (int) $c['id_comprobante'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-2 download-btn" title="Ver comprobante"><i class="bi bi-paperclip"></i>Ver</a>
                   <?php else: ?>
                     <span class="btn btn-sm btn-outline-secondary rounded-2 disabled" role="button" tabindex="-1" aria-disabled="true" title="Este comprobante no tiene archivo adjunto."><i class="bi bi-paperclip"></i>Ver</span>
                   <?php endif; ?>
@@ -233,3 +233,13 @@ include __DIR__ . '/../partials/page_header.php';
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
+<script>
+(function () {
+  document.addEventListener('click', function (evento) {
+    const btn = evento.target.closest('.download-btn');
+    if (!btn) return;
+    btn.classList.add('loading');
+    setTimeout(function () { btn.classList.remove('loading'); }, 1200);
+  });
+})();
+</script>

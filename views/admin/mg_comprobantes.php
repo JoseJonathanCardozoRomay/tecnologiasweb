@@ -77,7 +77,7 @@ include __DIR__ . '/../partials/page_header.php';
             <td><?= date('d/m/Y', strtotime($c['fecha_pago'])) ?></td>
             <td>
               <?php if (archivo_disponible($c['ruta_archivo'], 'uploads/comprobantes')): ?>
-                <a href="/controllers/mg_comprobantes_descargar.php?id=<?= (int) $c['id_comprobante'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-2"><i class="bi bi-paperclip me-1"></i>Ver</a>
+                <a href="/controllers/mg_comprobantes_descargar.php?id=<?= (int) $c['id_comprobante'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-2 download-btn"><i class="bi bi-paperclip me-1"></i>Ver</a>
               <?php else: ?>
                 <span class="btn btn-sm btn-outline-secondary rounded-2 disabled" role="button" tabindex="-1" aria-disabled="true" title="El comprobante no tiene un archivo disponible."><i class="bi bi-paperclip me-1"></i>Ver</span>
               <?php endif; ?>
@@ -178,6 +178,16 @@ include __DIR__ . '/../partials/page_header.php';
 <?php endforeach; ?>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
+<script>
+(function () {
+  document.addEventListener('click', function (evento) {
+    const btn = evento.target.closest('.download-btn');
+    if (!btn) return;
+    btn.classList.add('loading');
+    setTimeout(function () { btn.classList.remove('loading'); }, 1200);
+  });
+})();
+</script>
 
 <script>
   (function () {

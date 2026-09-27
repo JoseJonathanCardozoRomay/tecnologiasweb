@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../includes/seguridad.php';
+
 class HistorialModel
 {
     private const CATEGORIAS = [
@@ -31,7 +33,7 @@ class HistorialModel
             return $stmt->execute([
                 ':id_usuario'  => $id_usuario,
                 ':tipo_evento' => $tipo_evento,
-                ':descripcion' => $descripcion,
+                ':descripcion' => enmascarar_texto_auditable($descripcion),
                 ':ip_origen'   => $ip_origen ?? ($_SERVER['REMOTE_ADDR'] ?? null),
             ]);
         } catch (PDOException $e) {

@@ -1,0 +1,6 @@
+registro_universitario;paterno;materno;nombre;correo;carrera;semestre;materias
+90000901;Perez;Suarez;Juan Carlos;correo-sin-arroba.com;Ingenieria de Sistemas;8;60
+90000902;Perez;Suarez;Ana;   ;Ingenieria de Sistemas;8;60
+90000903;Perez;Suarez;Luis;luis@;Carrera Inexistente;8;60
+90000904;Perez;Suarez;Marta;marta@@doble.com;Ingenieria de Sistemas;8;60
+90000905;Perez;Suarez;Pedro;pedro@upds.edu.bo;Ingenieria de Sistemas;8;60

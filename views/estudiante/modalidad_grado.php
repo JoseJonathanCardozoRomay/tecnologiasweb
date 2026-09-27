@@ -156,7 +156,7 @@ include __DIR__ . '/../partials/page_header.php';
                 <?php if ($tieneArchivo): ?>
                   <a href="/controllers/mg_comprobantes_descargar.php?id=<?= (int) $c['id_comprobante'] ?>"
                      target="_blank" rel="noopener"
-                     class="btn btn-sm btn-outline-primary rounded-2 d-inline-flex align-items-center gap-1"
+                     class="btn btn-sm btn-outline-primary rounded-2 d-inline-flex align-items-center gap-1 download-btn"
                      title="Ver comprobante (<?= htmlspecialchars($etiquetaExt) ?>)"
                      aria-label="Ver comprobante">
                     <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span class="small fw-semibold">Ver</span>
@@ -182,3 +182,13 @@ include __DIR__ . '/../partials/page_header.php';
 </div>
 
 <?php include __DIR__ . '/../layouts/footer.php'; ?>
+<script>
+(function () {
+  document.addEventListener('click', function (evento) {
+    const btn = evento.target.closest('.download-btn');
+    if (!btn) return;
+    btn.classList.add('loading');
+    setTimeout(function () { btn.classList.remove('loading'); }, 1200);
+  });
+})();
+</script>

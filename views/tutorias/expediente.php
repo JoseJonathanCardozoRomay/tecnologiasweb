@@ -126,12 +126,12 @@ include __DIR__ . '/../partials/page_header.php';
               </div>
               <?php if ($disponible): ?>
                 <button type="button"
-                        class="btn btn-sm btn-outline-primary rounded-3 js-ver-documento"
+                        class="btn btn-sm btn-outline-primary rounded-3 js-ver-documento download-btn"
                         data-url="/controllers/expediente_documento_descargar.php?id=<?= (int) $d['id_documento'] ?>&ver=inline"
                         data-nombre="<?= htmlspecialchars($d['nombre_original'], ENT_QUOTES, 'UTF-8') ?>"
                         title="Previsualizar"><i class="bi bi-eye"></i></button>
                 <a href="/controllers/expediente_documento_descargar.php?id=<?= (int) $d['id_documento'] ?>&ver=descargar"
-                   class="btn btn-sm btn-primary rounded-3 js-descargar-documento"
+                   class="btn btn-sm btn-primary rounded-3 js-descargar-documento download-btn"
                    data-nombre="<?= htmlspecialchars($d['nombre_original'], ENT_QUOTES, 'UTF-8') ?>"
                    title="Descargar"><i class="bi bi-download"></i></a>
               <?php else: ?>
@@ -373,6 +373,9 @@ include __DIR__ . '/../partials/page_header.php';
   function cargarExpediente(idTutoria) {
     const url = '/controllers/expediente_documentos.php?accion=documentos&id=' + encodeURIComponent(idTutoria);
 
+    const panel = document.getElementById('panel-expediente');
+    if (panel) panel.classList.add('loading');
+
     fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
       .then(function (respuesta) {
         return respuesta.json().then(function (json) {
@@ -383,6 +386,7 @@ include __DIR__ . '/../partials/page_header.php';
         });
       })
       .then(function (json) {
+        if (panel) panel.classList.remove('loading');
         renderPanel(json);
         marcarFilaActiva(idTutoria);
         history.replaceState({ id: idTutoria }, '', '/controllers/expediente_documentos.php?id=' + idTutoria);
@@ -390,6 +394,7 @@ include __DIR__ . '/../partials/page_header.php';
         if (constobserver) { conectarFormulario(constobserver); }
       })
       .catch(function (err) {
+        if (panel) panel.classList.remove('loading');
         mostrarToast(err.message, 'danger');
       });
   }
@@ -455,7 +460,7 @@ include __DIR__ . '/../partials/page_header.php';
     mostrarToast(mensaje, 'danger');
   }
 
-  function abrirModal(url, nombre) {
+  function abrirModal(url, nombre, botonOrigen) {
     urlActual = url;
     urlDescargaActual = url.replace('ver=inline', 'ver=descargar');
     nombreDoc.textContent = nombre || 'Documento';
@@ -466,9 +471,13 @@ include __DIR__ . '/../partials/page_header.php';
     btnImprimir.disabled = !esPdf;
     btnImprimir.title = esPdf ? '' : 'Solo los documentos PDF se pueden imprimir';
     ocultarErrorDocumento();
+    if (botonOrigen) botonOrigen.classList.add('loading');
     frame.src = url;
     if (!modal) { modal = new bootstrap.Modal(modalEl); }
     modal.show();
+    if (botonOrigen) {
+      setTimeout(function () { botonOrigen.classList.remove('loading'); }, 1200);
+    }
   }
 
   if (modalEl) {
@@ -536,20 +545,23 @@ include __DIR__ . '/../partials/page_header.php';
     const ver = evento.target.closest('.js-ver-documento');
     if (ver) {
       evento.preventDefault();
-      abrirModal(ver.dataset.url, ver.dataset.nombre);
+      abrirModal(ver.dataset.url, ver.dataset.nombre, ver);
       return;
     }
 
     const descargar = evento.target.closest('.js-descargar-documento');
     if (descargar) {
       evento.preventDefault();
+      descargar.classList.add('loading');
+      const nombre = descargar.dataset.nombre || 'documento';
+      mostrarToast('Preparando descarga de "' + nombre + '"...', 'info');
       const enlace = document.createElement('a');
       enlace.href = descargar.getAttribute('href');
       enlace.rel = 'noopener';
       document.body.appendChild(enlace);
       enlace.click();
       enlace.remove();
-      mostrarToast('Descargando "' + (descargar.dataset.nombre || 'documento') + '"...', 'info');
+      setTimeout(function () { descargar.classList.remove('loading'); }, 1200);
       return;
     }
 

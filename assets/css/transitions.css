@@ -1,0 +1,161 @@
+/* Utilidades de transición y estados de carga — Sprint Hardening */
+
+/* ============================================================
+   1. MODALES — Transiciones suaves (Context / Drill / Continuity)
+   ============================================================ */
+.modal.fade .modal-dialog {
+  transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translateY(-0.5rem) scale(0.98);
+  opacity: 0;
+}
+.modal.show .modal-dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.modal-backdrop.fade {
+  transition: opacity 0.18s ease;
+}
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .modal.fade .modal-dialog,
+  .modal-backdrop.fade {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   2. TABLAS — Transiciones de filas y celdas (Continuity)
+   ============================================================ */
+.table-hover tbody tr {
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+.table-hover tbody tr:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.04);
+  box-shadow: inset 4px 0 0 var(--bs-primary);
+}
+
+/* Fade-in de filas al renderizado dinámico */
+.table-row-fade-in {
+  animation: rowFadeIn 0.28s ease forwards;
+}
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   3. PANEL DE EXPEDIENTE / FILTROS — Drill transitions
+   ============================================================ */
+#panel-expediente,
+.panel-filtros,
+.card-custom {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+#panel-expediente.loading,
+.panel-filtros.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Skeleton para carga pesada en tablas */
+.table-skeleton td {
+  padding: 0.75rem 1rem;
+}
+.skeleton-cell {
+  background: linear-gradient(90deg, #eef2f6 25%, #dfe5ec 50%, #eef2f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+  height: 1rem;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   4. BOTONES DE ACCIÓN PESADA — Spinner + disabled state
+   ============================================================ */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 1rem; height: 1rem;
+  margin: -0.5rem 0 0 -0.5rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  color: inherit;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   5. TOAST / NOTIFICACIONES — Entrada suave
+   ============================================================ */
+.toast-container .toast {
+  animation: toastSlideIn 0.25s ease forwards;
+}
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.toast-container .toast.hide {
+  animation: toastSlideOut 0.2s ease forwards;
+}
+@keyframes toastSlideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(24px); }
+}
+
+/* ============================================================
+   6. FORMULARIOS — Transiciones de validación
+   ============================================================ */
+.form-control.is-invalid,
+.form-select.is-invalid {
+  animation: shakeX 0.35s ease;
+}
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* ============================================================
+   7. DESCARGAS — Estados visuales en botones/enlaces
+   ============================================================ */
+.download-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.download-btn.loading::before {
+  content: "";
+  display: inline-block;
+  width: 0.875rem; height: 0.875rem;
+  margin-right: 0.375rem;
+  vertical-align: -0.125em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ============================================================
+   8. CARD / CONTENEDORES — Hover suave
+   ============================================================ */
+.card-custom {
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.card-custom:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08);
+}

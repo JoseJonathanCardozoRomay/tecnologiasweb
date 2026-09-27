@@ -1,9 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/Response.php';
+require_once __DIR__ . '/sesion.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+enviar_cabeceras_seguridad();
 
 $esAPI = stripos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
 

@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/seguridad.php';
+
 const SESION_TIEMPO_INACTIVIDAD = 1800;
 
 function iniciarSesionSegura()
@@ -18,6 +20,7 @@ function iniciarSesionSegura()
         'path' => '/',
     ]);
     session_start();
+    enviar_cabeceras_seguridad();
 }
 
 function controlarInactividad()

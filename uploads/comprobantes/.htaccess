@@ -1,0 +1,21 @@
+# Bloquear ejecucion de scripts en la carpeta de comprobantes
+# Los comprobantes solo se sirven a traves de /controllers/mg_comprobantes_descargar.php,
+# que valida existencia y contenido antes de emitirlos. Se impide que un archivo
+# subido con doble extension (.pdf.php) o un script suelto se ejecute por HTTP.
+<FilesMatch "\.(php|phtml|php3|php4|php5|phar|pl|py|cgi|sh|htaccess)$">
+    Require all denied
+</FilesMatch>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(php|phtml|php3|php4|php5|phar|pl|py|cgi|sh|htaccess)$">
+        Order deny,allow
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# php_flag solo es valido con mod_php; sin el, Apache responderia 500.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# No listar el directorio
+Options -Indexes

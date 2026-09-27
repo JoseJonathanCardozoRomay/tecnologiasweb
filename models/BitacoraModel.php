@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../includes/seguridad.php';
+
 class BitacoraModel
 {
     private $pdo;
@@ -15,11 +17,22 @@ class BitacoraModel
                 "INSERT INTO bitacora_auditoria_usuarios (id_operador, id_afectado, accion, detalles, ip_origen)
                  VALUES (:id_operador, :id_afectado, :accion, :detalles, :ip_origen)"
             );
+            $detallesJson = null;
+            if ($detalles !== null) {
+                $detallesJson = json_encode(
+                    enmascarar_datos_auditable($detalles),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
+                if ($detallesJson === false) {
+                    $detallesJson = null;
+                }
+            }
+
             return $stmt->execute([
                 ':id_operador' => $id_operador,
                 ':id_afectado' => $id_afectado,
                 ':accion'      => $accion,
-                ':detalles'    => $detalles !== null ? json_encode($detalles, JSON_UNESCAPED_UNICODE) : null,
+                ':detalles'    => $detallesJson,
                 ':ip_origen'   => $_SERVER['REMOTE_ADDR'] ?? null,
             ]);
         } catch (PDOException $e) {

@@ -74,7 +74,7 @@
             </td>
             <td>
               <?php if (!empty($r['evidencia_url'])): ?>
-                <a href="/controllers/reuniones_evidencia.php?id=<?= (int) $r['id_reunion'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary" title="Ver evidencia"><i class="bi bi-paperclip me-1"></i>Ver</a>
+                <a href="/controllers/reuniones_evidencia.php?id=<?= (int) $r['id_reunion'] ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary download-btn" title="Ver evidencia"><i class="bi bi-paperclip me-1"></i>Ver</a>
               <?php else: ?>
                 <span class="text-muted small">—</span>
               <?php endif; ?>
@@ -82,9 +82,19 @@
             <td>
               <?php if ($seg): ?>
                 <div class="btn-group btn-group-sm" role="group" aria-label="Descargar informe de la reunión">
-                  <a href="/controllers/reuniones_informe.php?id_reunion=<?= (int) $r['id_reunion'] ?>&formato=pdf" class="btn btn-outline-primary" title="Generar informe en PDF"><i class="bi bi-file-earmark-pdf"></i><span class="visually-hidden">PDF</span></a>
-                  <a href="/controllers/reuniones_informe.php?id_reunion=<?= (int) $r['id_reunion'] ?>&formato=doc" class="btn btn-outline-primary" title="Generar informe en Word"><i class="bi bi-file-earmark-word"></i><span class="visually-hidden">DOC</span></a>
-                </div>
+                  <a href="/controllers/reuniones_informe.php?id_reunion=<?= (int) $r['id_reunion'] ?>&formato=pdf" class="btn btn-outline-primary download-btn" title="Generar informe en PDF"><i class="bi bi-file-earmark-pdf"></i><span class="visually-hidden">PDF</span></a>
+                  <a href="/controllers/reuniones_informe.php?id_reunion=<?= (int) $r['id_reunion'] ?>&formato=doc" class="btn btn-outline-primary download-btn" title="Generar informe en Word"><i class="bi bi-file-earmark-word"></i><span class="visually-hidden">DOC</span></a>
+</div>
+<script>
+(function () {
+  document.addEventListener('click', function (evento) {
+    const btn = evento.target.closest('.download-btn');
+    if (!btn) return;
+    btn.classList.add('loading');
+    setTimeout(function () { btn.classList.remove('loading'); }, 1200);
+  });
+})();
+</script>
               <?php else: ?>
                 <span class="text-muted small" title="El informe se habilita al registrar el seguimiento.">—</span>
               <?php endif; ?>

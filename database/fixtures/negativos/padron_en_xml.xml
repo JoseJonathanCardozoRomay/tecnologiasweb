@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<padron>
+  <estudiante>
+    <registro_universitario>90000801</registro_universitario>
+    <nombre>Juan Carlos</nombre>
+    <paterno>Perez</paterno>
+    <correo>jcperez@upds.edu.bo</correo>
+    <carrera>Ingenieria de Sistemas</carrera>
+  </estudiante>
+</padron>
