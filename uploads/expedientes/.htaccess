@@ -1,5 +1,5 @@
-# Bloquear ejecucion de scripts en la carpeta de documentos del expediente
-<FilesMatch "\.(php|phtml|php3|php4|php5|phar)$">
+# Bloquear ejecucion de scripts en la carpeta de expedientes
+<FilesMatch \.(php|phtml|php3|php4|php5|phar)$>
     Require all denied
 </FilesMatch>
 

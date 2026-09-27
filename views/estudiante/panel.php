@@ -193,6 +193,7 @@ include __DIR__ . '/../partials/page_header.php';
             <td><span class="badge rounded-pill border px-3 py-1 <?= $badgeEstado ?>"><?= ucfirst($t['estado']) ?><?= (!empty($t['estado_conclusion_nombre']) && $t['estado'] === 'finalizada') ? ' — ' . htmlspecialchars($t['estado_conclusion_nombre']) : '' ?></span></td>
             <td class="text-end pe-4">
               <div class="btn-group" role="group">
+                <a href="/views/estudiante/historial.php?detalle=<?= (int) $t['id_tutoria'] ?>" class="btn btn-outline-primary btn-sm rounded-2" title="Ver detalle e informes"><i class="bi bi-eye me-1"></i>Ver detalle</a>
                 <?php if ($t['estado'] === 'pendiente' && !$mgCompletada): ?>
                   <a href="/controllers/tutorias_cambiar_estado.php?id=<?= $t['id_tutoria'] ?>&estado=cancelada" onclick="confirmarCancelacion(this.href); return false;" class="btn btn-outline-accent btn-sm" title="Cancelar solicitud"><i class="bi bi-slash-circle"></i></a>
                 <?php else: ?>

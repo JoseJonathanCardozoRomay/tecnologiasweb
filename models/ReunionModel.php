@@ -52,7 +52,7 @@ class ReunionModel
         }
     }
 
-    public function registrarSeguimiento($id_reunion, $id_usuario, $asistencia, $cumplimiento, $observaciones = null, $compromisos = null)
+    public function registrarSeguimiento($id_reunion, $id_usuario, $asistencia, $cumplimiento, $observaciones = null, $compromisos = null, $evidencia_url = null)
     {
         if (!in_array($asistencia, self::ASISTENCIAS, true)) {
             throw new InvalidArgumentException("La asistencia debe ser 'si', 'no' o 'tardanza'.");
@@ -84,13 +84,15 @@ class ReunionModel
                 ':compromisos'     => $compromisos,
             ]);
 
-            $sincroniza = $this->pdo->prepare(
-                "UPDATE reuniones SET asistio_estudiante = :asistencia WHERE id_reunion = :id_reunion"
-            );
-            $sincroniza->execute([
-                ':asistencia' => $asistencia,
-                ':id_reunion' => (int) $id_reunion,
-            ]);
+            $updateParams = [':asistencia' => $asistencia, ':id_reunion' => (int) $id_reunion];
+            $sql = "UPDATE reuniones SET asistio_estudiante = :asistencia";
+            if ($evidencia_url !== null) {
+                $sql .= ", evidencia_url = :evidencia_url";
+                $updateParams[':evidencia_url'] = $evidencia_url;
+            }
+            $sql .= " WHERE id_reunion = :id_reunion";
+            $sincroniza = $this->pdo->prepare($sql);
+            $sincroniza->execute($updateParams);
 
             $this->pdo->commit();
 

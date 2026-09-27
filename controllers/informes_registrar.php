@@ -35,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_validar();
 
     $id_tutoria        = (int) ($_POST['id_tutoria'] ?? 0);
-    $numero_informe    = (int) ($_POST['numero_informe'] ?? 0);
     $porcentaje        = (int) ($_POST['porcentaje_avance'] ?? 0);
     $descripcion       = trim($_POST['descripcion_avance'] ?? '');
     $fecha_limite      = trim($_POST['fecha_limite'] ?? '');
@@ -48,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errores)) {
+        $numero_informe = $informeModel->siguienteNumeroInforme($id_tutoria);
         try {
             $informeModel->registrar($id_tutoria, $numero_informe, $porcentaje, $descripcion, $fecha_limite ?: null);
             $historial = new HistorialModel($pdo);
@@ -66,11 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $informes = [];
 $porcentajeAcumulado = 0;
 $totalRegistrados = 0;
+$siguienteNumeroInforme = 1;
 if ($id_tutoria > 0) {
     $informes = $informeModel->obtenerPorTutoria($id_tutoria);
     $resumen = $informeModel->porcentajeAcumulado($id_tutoria);
     $porcentajeAcumulado = (int) ($resumen['porcentaje'] ?? 0);
     $totalRegistrados = (int) ($resumen['total_informes'] ?? 0);
+    $siguienteNumeroInforme = $informeModel->siguienteNumeroInforme($id_tutoria);
 }
 
 require_once __DIR__ . '/../views/tutor/informes.php';

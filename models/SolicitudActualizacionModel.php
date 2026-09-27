@@ -4,11 +4,78 @@ class SolicitudActualizacionModel
     private const TIPOS = ['materias', 'horarios', 'carreras'];
     private const ESTADOS = ['pendiente', 'aprobada', 'rechazada'];
 
+    private const DOMINIOS_PERMITIDOS = [
+        'drive.google.com', 'docs.google.com', 'sheets.google.com',
+        'onedrive.live.com', '1drv.ms', 'sharepoint.com',
+        'github.com', 'gitlab.com', 'bitbucket.org',
+        'classroom.google.com', 'moodle.upds.edu.bo', 'upds.edu.bo'
+    ];
+
+    private const PALABRAS_PROFANES = [
+        'puto', 'puta', 'mierda', 'coño', 'culo', 'pendejo', 'pendeja',
+        'hijo de puta', 'hijodeputa', 'gilipollas', 'gilipolla',
+        'cabrón', 'cabron', 'subnormal', 'imbécil', 'imbecil',
+        'idiota', 'estúpido', 'estupido', 'tonto', 'tonta',
+        'maldito', 'maldita', 'joder', 'cojones', 'cojon',
+        'porno', 'porn', 'xxx', 'sex', 'xvideos', 'pornhub',
+        'redtube', 'xhamster', 'youporn', 'spankbang',
+        'fuck', 'shit', 'bitch', 'asshole', 'bastard',
+        'damn', 'hell', 'crap', 'piss', 'cunt', 'twat',
+        'dick', 'cock', 'pussy', 'tits', 'boobs', 'anal',
+        'oral', 'cum', 'cumshot', 'creampie', 'gangbang',
+        'blowjob', 'handjob', 'footjob', 'threesome', 'orgy',
+        'bdsm', 'fetish', 'kinky', 'slut', 'whore', 'escort',
+        'prostitute', 'prostitution', 'webcam', 'camgirl',
+        'onlyfans', 'chaturbate', 'livejasmin', 'bongacams'
+    ];
+
     private $pdo;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+    }
+
+    private function contieneUrlNoPermitida(string $texto): bool
+    {
+        if (preg_match('/https?:\/\//i', $texto)) {
+            $urlRegex = '/https?:\/\/([^\s]+)/i';
+            preg_match_all($urlRegex, $texto, $matches);
+            foreach ($matches[1] ?? [] as $dominio) {
+                $dominio = strtolower(trim($dominio));
+                $dominio = parse_url('http://' . $dominio, PHP_URL_HOST) ?? $dominio;
+                $permitido = false;
+                foreach (self::DOMINIOS_PERMITIDOS as $dominioPermitido) {
+                    if (str_ends_with($dominio, $dominioPermitido) || $dominio === $dominioPermitido) {
+                        $permitido = true;
+                        break;
+                    }
+                }
+                if (!$permitido) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private function contienePalabrasProfanas(string $texto): bool
+    {
+        $textoLower = strtolower($texto);
+        foreach (self::PALABRAS_PROFANES as $palabra) {
+            if (str_contains($textoLower, strtolower($palabra))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function sanitizarDetalle(string $detalle): string
+    {
+        $detalle = trim($detalle);
+        $detalle = strip_tags($detalle);
+        $detalle = htmlspecialchars($detalle, ENT_QUOTES, 'UTF-8');
+        return $detalle;
     }
 
     public function registrar($id_tutor, $id_usuario, $tipo, $detalle)
@@ -17,9 +84,19 @@ class SolicitudActualizacionModel
             throw new InvalidArgumentException('El tipo de solicitud no es válido.');
         }
 
-        $detalle = trim((string) $detalle);
+        $detalleOriginal = $detalle;
+        $detalle = $this->sanitizarDetalle($detalle);
+
         if ($detalle === '') {
             throw new InvalidArgumentException('Describe el cambio que necesitas para que el administrador pueda atenderlo.');
+        }
+
+        if ($this->contieneUrlNoPermitida($detalleOriginal)) {
+            throw new InvalidArgumentException('El requerimiento contiene enlaces no permitidos. Solo se permiten enlaces a dominios académicos autorizados (Google Drive, OneDrive, GitHub, Moodle UPDS, etc.).');
+        }
+
+        if ($this->contienePalabrasProfanas($detalleOriginal)) {
+            throw new InvalidArgumentException('El requerimiento contiene lenguaje inapropiado. Por favor, usa un lenguaje profesional y respetuoso.');
         }
 
         $pendiente = $this->pdo->prepare(

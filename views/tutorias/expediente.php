@@ -390,8 +390,8 @@ include __DIR__ . '/../partials/page_header.php';
         renderPanel(json);
         marcarFilaActiva(idTutoria);
         history.replaceState({ id: idTutoria }, '', '/controllers/expediente_documentos.php?id=' + idTutoria);
-        constobserver = document.getElementById('form-expediente');
-        if (constobserver) { conectarFormulario(constobserver); }
+        const observer = document.getElementById('form-expediente');
+        if (observer) { conectarFormulario(observer); }
       })
       .catch(function (err) {
         if (panel) panel.classList.remove('loading');

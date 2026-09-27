@@ -32,7 +32,7 @@ include __DIR__ . '/../layouts/header.php';
 $titulo = 'Bienvenido, Prof. ' . $tutor['nombre'] . ' ' . $tutor['apellido'];
 $descripcion = 'Gestiona tus tutorías, materias y disponibilidad horaria desde este panel.';
 $icono = 'bi-grid-1x2';
-$accion = '<a href="../controllers/tutores_disponibilidad.php" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-3 px-3 py-2"><i class="bi bi-clock-history"></i>Actualizar horarios y materias</a>';
+$accion = '<a href="/controllers/tutores_disponibilidad.php" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-3 px-3 py-2"><i class="bi bi-clock-history"></i>Actualizar horarios y materias</a>';
 include __DIR__ . '/../partials/page_header.php';
 ?>
 

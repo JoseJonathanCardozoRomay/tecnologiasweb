@@ -14,6 +14,7 @@ class AccesosModel
                        u.nombre, u.apellido, u.usuario
                 FROM registro_accesos ra
                 LEFT JOIN usuarios u ON ra.id_usuario = u.id_usuario
+                WHERE ra.fecha_hora >= '2026-09-25 00:00:00'
                 ORDER BY ra.fecha_hora DESC";
 
         return $this->pdo->query($sql)->fetchAll();

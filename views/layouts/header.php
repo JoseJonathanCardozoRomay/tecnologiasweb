@@ -110,6 +110,7 @@ header('Content-Type: text/html; charset=utf-8');
           <a class="sidebar-link <?= menuActivo('mg_alertas') ? 'active' : '' ?>" href="/controllers/mg_alertas.php"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><span class="sidebar-label">Alertas</span></a>
           <div class="sidebar-section mt-4">Auditoría</div>
           <a class="sidebar-link <?= menuActivo('historial_listar') ? 'active' : '' ?>" href="/controllers/historial_listar.php"><i class="bi bi-shield-lock" aria-hidden="true"></i><span class="sidebar-label">Historial y Auditoría</span></a>
+          <a class="sidebar-link <?= menuActivo('admin_supervision') ? 'active' : '' ?>" href="/controllers/admin_supervision.php"><i class="bi bi-eye" aria-hidden="true"></i><span class="sidebar-label">Supervisión de Informes y Evidencias</span></a>
         <?php elseif ($rolSesion === 'auxiliar'): ?>
           <div class="sidebar-section">Gestión académica</div>
           <a class="sidebar-link <?= menuActivo('usuarios') ? 'active' : '' ?>" href="/controllers/usuarios_listar.php"><i class="bi bi-people" aria-hidden="true"></i><span class="sidebar-label">Usuarios</span></a>
@@ -131,6 +132,7 @@ header('Content-Type: text/html; charset=utf-8');
           <a class="sidebar-link <?= menuActivo('mg_expedientes') ? 'active' : '' ?>" href="/controllers/mg_expedientes_listar.php"><i class="bi bi-folder2-open" aria-hidden="true"></i><span class="sidebar-label">Expedientes MG</span></a>
           <div class="sidebar-section mt-4">Auditoría</div>
           <a class="sidebar-link <?= menuActivo('bitacora_listar') ? 'active' : '' ?>" href="/controllers/bitacora_listar.php"><i class="bi bi-shield-lock" aria-hidden="true"></i><span class="sidebar-label">Bitácora de usuarios</span></a>
+          <a class="sidebar-link <?= menuActivo('admin_supervision') ? 'active' : '' ?>" href="/controllers/admin_supervision.php"><i class="bi bi-eye" aria-hidden="true"></i><span class="sidebar-label">Supervisión de Informes y Evidencias</span></a>
         <?php elseif ($rolSesion === 'tutor'): ?>
           <div class="sidebar-section">Mi espacio</div>
           <a class="sidebar-link <?= menuActivo('tutor/panel') ? 'active' : '' ?>" href="/views/tutor/panel.php"><i class="bi bi-grid-1x2" aria-hidden="true"></i><span class="sidebar-label">Mi panel</span></a>
@@ -183,6 +185,7 @@ header('Content-Type: text/html; charset=utf-8');
           <a class="sidebar-link <?= menuActivo('mg_alertas') ? 'active' : '' ?>" href="/controllers/mg_alertas.php"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Alertas</a>
           <div class="sidebar-section mt-4">Auditoría</div>
           <a class="sidebar-link <?= menuActivo('historial_listar') ? 'active' : '' ?>" href="/controllers/historial_listar.php"><i class="bi bi-shield-lock" aria-hidden="true"></i>Historial y Auditoría</a>
+          <a class="sidebar-link <?= menuActivo('admin_supervision') ? 'active' : '' ?>" href="/controllers/admin_supervision.php"><i class="bi bi-eye" aria-hidden="true"></i>Supervisión de Informes y Evidencias</a>
         <?php elseif ($rolSesion === 'auxiliar'): ?>
           <div class="sidebar-section">Gestión académica</div>
           <a class="sidebar-link <?= menuActivo('usuarios') ? 'active' : '' ?>" href="/controllers/usuarios_listar.php"><i class="bi bi-people" aria-hidden="true"></i>Usuarios</a>
@@ -204,6 +207,7 @@ header('Content-Type: text/html; charset=utf-8');
           <a class="sidebar-link <?= menuActivo('mg_expedientes') ? 'active' : '' ?>" href="/controllers/mg_expedientes_listar.php"><i class="bi bi-folder2-open" aria-hidden="true"></i>Expedientes MG</a>
           <div class="sidebar-section mt-4">Auditoría</div>
           <a class="sidebar-link <?= menuActivo('bitacora_listar') ? 'active' : '' ?>" href="/controllers/bitacora_listar.php"><i class="bi bi-shield-lock" aria-hidden="true"></i>Bitácora de usuarios</a>
+          <a class="sidebar-link <?= menuActivo('admin_supervision') ? 'active' : '' ?>" href="/controllers/admin_supervision.php"><i class="bi bi-eye" aria-hidden="true"></i>Supervisión de Informes y Evidencias</a>
         <?php elseif ($rolSesion === 'tutor'): ?>
           <div class="sidebar-section">Mi espacio</div>
           <a class="sidebar-link <?= menuActivo('tutor/panel') ? 'active' : '' ?>" href="/views/tutor/panel.php"><i class="bi bi-grid-1x2" aria-hidden="true"></i>Mi panel</a>

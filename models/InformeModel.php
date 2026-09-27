@@ -99,4 +99,16 @@ class InformeModel
 
         return (int) $stmt->fetchColumn();
     }
+
+    public function siguienteNumeroInforme($id_tutoria)
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COALESCE(MAX(numero_informe), 0) + 1 AS siguiente
+             FROM informes_avance
+             WHERE id_tutoria = :id_tutoria"
+        );
+        $stmt->execute([':id_tutoria' => $id_tutoria]);
+
+        return (int) $stmt->fetchColumn();
+    }
 }

@@ -20,13 +20,34 @@ $tutorias = [];
 $reuniones = [];
 $informes = [];
 $comprobantes = [];
+$detalleTutoria = null;
 
 if ($estudiante) {
     $idEstudiante = (int) $estudiante['id_estudiante'];
     $tutorias = (new TutoriaModel($pdo))->obtenerPorEstudiante($idEstudiante);
-    $reuniones = (new ReunionModel($pdo))->obtenerPorEstudiante($idEstudiante);
-    $informes = (new InformeModel($pdo))->obtenerPorEstudiante($idEstudiante);
-    $comprobantes = (new ComprobanteModel($pdo))->obtenerPorEstudiante($idEstudiante);
+    
+    $detalleId = (int) ($_GET['detalle'] ?? 0);
+    if ($detalleId > 0) {
+        $detalleTutoria = null;
+        foreach ($tutorias as $t) {
+            if ((int) $t['id_tutoria'] === $detalleId) {
+                $detalleTutoria = $t;
+                break;
+            }
+        }
+    }
+    
+    if ($detalleTutoria) {
+        $reuniones = (new ReunionModel($pdo))->obtenerPorEstudiante($idEstudiante);
+        $reuniones = array_filter($reuniones, fn($r) => (int) $r['id_tutoria'] === $detalleTutoria['id_tutoria']);
+        $informes = (new InformeModel($pdo))->obtenerPorEstudiante($idEstudiante);
+        $informes = array_filter($informes, fn($i) => (int) $i['id_tutoria'] === $detalleTutoria['id_tutoria']);
+        $comprobantes = (new ComprobanteModel($pdo))->obtenerPorEstudiante($idEstudiante);
+    } else {
+        $reuniones = (new ReunionModel($pdo))->obtenerPorEstudiante($idEstudiante);
+        $informes = (new InformeModel($pdo))->obtenerPorEstudiante($idEstudiante);
+        $comprobantes = (new ComprobanteModel($pdo))->obtenerPorEstudiante($idEstudiante);
+    }
 }
 
 $asistencias = ['si' => ['success', 'Asistió'], 'no' => ['danger', 'No asistió'], 'tardanza' => ['warning', 'Llegó tarde']];
@@ -36,6 +57,9 @@ $asistencias = ['si' => ['success', 'Asistió'], 'no' => ['danger', 'No asistió
 $titulo = 'Mi Historial';
 $descripcion = 'Todas tus tutorías, reuniones e informes de avance registrados en el sistema.';
 $icono = 'bi-clock-history';
+if ($detalleTutoria) {
+    $descripcion = 'Detalle de la tutoría #' . $detalleTutoria['id_tutoria'] . ' - ' . htmlspecialchars($detalleTutoria['nombre_materia']);
+}
 include __DIR__ . '/../partials/page_header.php';
 ?>
 
@@ -242,4 +266,33 @@ include __DIR__ . '/../partials/page_header.php';
     setTimeout(function () { btn.classList.remove('loading'); }, 1200);
   });
 })();
+
+<?php if (isset($detalleTutoria) && $detalleTutoria): ?>
+document.addEventListener('DOMContentLoaded', function () {
+  const tabs = {
+    tutorias: 'tab-tutorias',
+    reuniones: 'tab-reuniones',
+    informes: 'tab-informes',
+    comprobantes: 'tab-comprobantes'
+  };
+  const paneIds = {
+    tutorias: 'pane-tutorias',
+    reuniones: 'pane-reuniones',
+    informes: 'pane-informes',
+    comprobantes: 'pane-comprobantes'
+  };
+  const hasReuniones = <?= !empty(array_filter($reuniones, fn($r) => (int)$r['id_tutoria'] === $detalleTutoria['id_tutoria'])) ? 'true' : 'false' ?>;
+  const hasInformes = <?= !empty(array_filter($informes, fn($i) => (int)$i['id_tutoria'] === $detalleTutoria['id_tutoria'])) ? 'true' : 'false' ?>;
+  const hasComprobantes = <?= !empty($comprobantes) ? 'true' : 'false' ?>;
+  let targetTab = 'reuniones';
+  if (hasInformes) targetTab = 'informes';
+  else if (hasReuniones) targetTab = 'reuniones';
+  else if (hasComprobantes) targetTab = 'comprobantes';
+  const btn = document.getElementById(tabs[targetTab]);
+  const pane = document.getElementById(paneIds[targetTab]);
+  if (btn && pane) {
+    btn.click();
+  }
+});
+<?php endif; ?>
 </script>

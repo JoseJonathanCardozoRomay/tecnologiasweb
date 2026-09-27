@@ -14,7 +14,7 @@ $historialModel = new HistorialModel($pdo);
 // SPRINT 6 (hardening): saneamiento y validación estricta de entradas GET.
 $filtro_tipo    = limpiarTexto($_GET['tipo_evento'] ?? '', 60);
 $filtro_usuario = limpiarTexto($_GET['id_usuario'] ?? '', 20);
-$filtro_desde   = validarFechaISO($_GET['desde'] ?? '') ? limpiarTexto($_GET['desde'], 10) : '';
+$filtro_desde   = validarFechaISO($_GET['desde'] ?? '') ? limpiarTexto($_GET['desde'], 10) : '2026-09-25';
 $filtro_hasta   = validarFechaISO($_GET['hasta'] ?? '') ? limpiarTexto($_GET['hasta'], 10) : '';
 $buscar_usuario = limpiarTexto($_GET['buscar_usuario'] ?? '', 80);
 $id_rol_solicitado = (int) ($_GET['id_rol'] ?? 0);

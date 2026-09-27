@@ -100,11 +100,7 @@ include __DIR__ . '/../partials/page_header.php';
                 <input type="text" name="lugar_o_enlace" class="form-control rounded-3 py-2" maxlength="200" placeholder="Salón 4 / https://meet.upds.edu.bo/..." value="<?= htmlspecialchars($_POST['lugar_o_enlace'] ?? '') ?>">
               </div>
 
-              <div class="mb-3">
-                <label class="form-label fw-semibold text-secondary small text-uppercase">Evidencia (JPG, PNG o PDF · máx 5MB)</label>
-                <input type="file" name="evidencia" id="evidencia-input" class="form-control rounded-3 py-2" accept="<?= implode(',', array_map(fn($e) => '.' . $e, ReunionModel::extensionesPermitidas())) ?>">
-                <div class="form-text">Sube la captura o documento que respalde la reunión.</div>
-              </div>
+              
 
               <div class="mb-3">
                 <label class="form-label fw-semibold text-secondary small text-uppercase">Temas tratados</label>
@@ -160,16 +156,7 @@ include __DIR__ . '/../partials/page_header.php';
                     </div>
                   </div>
                   <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <?php if (!$realizada): ?>
-                      <span class="badge border px-3 py-1 bg-secondary bg-opacity-10 text-secondary border-secondary-subtle" title="El seguimiento se habilita cuando la reunión ya se realizó.">
-                        <i class="bi bi-clock me-1"></i>Pendiente de realizar
-                      </span>
-                      <button type="button" class="btn btn-sm btn-secondary rounded-3" disabled
-                              title="El seguimiento se habilita una vez que la reunión se haya realizado.">
-                        <i class="bi bi-lock me-1"></i>Seguimiento
-                      </button>
-                    <?php else: ?>
-                      <?php if ($seg): ?>
+                    <?php if ($seg): ?>
                         <span class="badge border px-3 py-1 <?= ReunionModel::claseAsistencia($seg['asistencia']) ?>">
                           <?= htmlspecialchars(ReunionModel::etiquetaAsistencia($seg['asistencia'])) ?>
                         </span>
@@ -214,7 +201,6 @@ include __DIR__ . '/../partials/page_header.php';
                           </a>
                         </div>
                       <?php endif; ?>
-                    <?php endif; ?>
                   </div>
                 </div>
               </li>
@@ -229,7 +215,7 @@ include __DIR__ . '/../partials/page_header.php';
 <div class="modal fade" id="modalSeguimiento" tabindex="-1" aria-labelledby="modalSeguimientoTitulo" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content rounded-4 border-0 shadow">
-      <form method="POST" action="/controllers/reuniones_registrar.php" autocomplete="off">
+      <form method="POST" action="/controllers/reuniones_registrar.php" autocomplete="off" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="accion" value="seguimiento">
         <input type="hidden" name="id_reunion" id="segIdReunion" value="">
@@ -289,6 +275,12 @@ include __DIR__ . '/../partials/page_header.php';
             <textarea name="compromisos" id="segCompromisos" class="form-control rounded-3 py-2" rows="3" maxlength="1000"
                       placeholder="Un compromiso por línea, con su fecha de entrega"></textarea>
           </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary small text-uppercase">Evidencia (JPG, PNG o PDF · máx 5MB)</label>
+            <input type="file" name="evidencia" id="segEvidenciaInput" class="form-control rounded-3 py-2" accept=".jpg,.jpeg,.png,.pdf,application/pdf,image/jpeg,image/png">
+            <div class="form-text">Sube la captura o documento que respalde la reunión (opcional).</div>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -305,18 +297,22 @@ include __DIR__ . '/../partials/page_header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('evidencia-input')?.addEventListener('change', function (e) {
-    const archivo = e.target.files[0];
+  function validarEvidencia(input) {
+    const archivo = input.files[0];
     if (!archivo) return;
     const ext = archivo.name.split('.').pop().toLowerCase();
     const permitidas = ['jpg', 'jpeg', 'png', 'pdf'];
     if (!permitidas.includes(ext)) {
       mostrarToast('La evidencia debe ser JPG, PNG o PDF.', 'danger');
-      e.target.value = '';
+      input.value = '';
     } else if (archivo.size > 5 * 1024 * 1024) {
       mostrarToast('El archivo no puede superar los 5MB.', 'danger');
-      e.target.value = '';
+      input.value = '';
     }
+  }
+
+  document.getElementById('segEvidenciaInput')?.addEventListener('change', function (e) {
+    validarEvidencia(e.target);
   });
 
   const marcar = function (prefijo, valor) {
@@ -344,6 +340,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('segTemas').textContent = datos.temas || '—';
       document.getElementById('segObservaciones').value = datos.observaciones || '';
       document.getElementById('segCompromisos').value = datos.compromisos || '';
+      document.getElementById('segEvidenciaInput').value = '';
       document.getElementById('segEstado').innerHTML = datos.registrado
         ? '<i class="bi bi-check-circle me-1"></i>Seguimiento registrado. Podés editarlo.'
         : '<i class="bi bi-exclamation-circle me-1"></i>Primer registro de seguimiento.';

@@ -50,8 +50,10 @@ include __DIR__ . '/../partials/page_header.php';
 
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label fw-semibold text-secondary small text-uppercase">N.º de informe *</label>
-              <input type="number" name="numero_informe" class="form-control rounded-3 py-2" min="1" value="<?= htmlspecialchars($_POST['numero_informe'] ?? '') ?>" required>
+              <label class="form-label fw-semibold text-secondary small text-uppercase">N.º de informe (automático)</label>
+              <div class="form-control rounded-3 py-2 bg-light border-secondary-subtle fw-semibold text-primary" id="display-numero-informe">
+                Informe #<span id="siguienteNumeroInforme"><?= $id_tutoria > 0 ? $siguienteNumeroInforme : '—' ?></span>
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold text-secondary small text-uppercase">Porcentaje de avance *</label>

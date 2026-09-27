@@ -5,6 +5,7 @@ requerirSesion();
 
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/ReunionModel.php';
+require_once __DIR__ . '/../models/EstudianteModel.php';
 
 $id_reunion = (int) ($_GET['id'] ?? 0);
 if ($id_reunion <= 0) {
@@ -26,11 +27,35 @@ if ($rol === 'tutor' && (int) ($reunion['id_usuario_tutor'] ?? 0) !== $id_usuari
     require __DIR__ . '/../views/errores/403.php';
     exit;
 }
-if ($rol === 'estudiante' && (int) ($reunion['id_usuario_estudiante'] ?? 0) !== $id_usuario) {
-    http_response_code(403);
-    require __DIR__ . '/../views/errores/403.php';
-    exit;
+
+if ($rol === 'estudiante') {
+    $estudiante = (new EstudianteModel($pdo))->obtenerPorUsuario($id_usuario);
+    if (!$estudiante) {
+        http_response_code(403);
+        require __DIR__ . '/../views/errores/403.php';
+        exit;
+    }
+    $tutoriaId = (int) ($reunion['id_tutoria'] ?? 0);
+    $esEstudianteDeTutoria = false;
+    if ($tutoriaId > 0) {
+        // Verificar tanto en tutoria_estudiantes (grupo) como en tutorias.id_estudiante (individual)
+        $stmt = $pdo->prepare(
+            "SELECT 1 FROM (
+                SELECT id_estudiante FROM tutoria_estudiantes WHERE id_tutoria = :id_tutoria1
+                UNION
+                SELECT id_estudiante FROM tutorias WHERE id_tutoria = :id_tutoria2
+            ) AS t WHERE id_estudiante = :id_estudiante"
+        );
+        $stmt->execute([':id_tutoria1' => $tutoriaId, ':id_tutoria2' => $tutoriaId, ':id_estudiante' => $estudiante['id_estudiante']]);
+        $esEstudianteDeTutoria = (bool) $stmt->fetchColumn();
+    }
+    if (!$esEstudianteDeTutoria) {
+        http_response_code(403);
+        require __DIR__ . '/../views/errores/403.php';
+        exit;
+    }
 }
+
 if (!in_array($rol, ['tutor', 'estudiante', 'administrador', 'auxiliar'], true)) {
     http_response_code(403);
     require __DIR__ . '/../views/errores/403.php';

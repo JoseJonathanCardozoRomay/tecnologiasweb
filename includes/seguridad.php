@@ -138,10 +138,21 @@ function enmascarar_json_auditable(?string $json): ?string
     return enmascarar_texto_auditable($json);
 }
 
+function obtenerIpClienteReal(): string
+{
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        return trim($ips[0]);
+    } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    } else {
+        return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    }
+}
+
 function ip_cliente(): string
 {
-    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'desconocida');
-    return substr($ip, 0, 45);
+    return obtenerIpClienteReal();
 }
 
 function excede_limite_cuenta(PDO $pdo, string $cuenta, int $maxIntentos = LIMITE_INTENTOS_POR_CUENTA, int $ventanaMinutos = VENTANA_INTENTOS_LOGIN_MIN): bool

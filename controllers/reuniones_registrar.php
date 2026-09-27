@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!$reunionModel->reunionRealizada($reunion)) {
             $errores[] = 'El seguimiento solo puede registrarse una vez que la reunión se haya realizado.';
         } else {
+            $evidencia_url = procesarEvidencia();
             try {
                 $reunionModel->registrarSeguimiento(
                     $id_reunion,
@@ -61,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $asistencia,
                     $cumplimiento,
                     $observaciones ?: null,
-                    $compromisos ?: null
+                    $compromisos ?: null,
+                    $evidencia_url
                 );
                 (new HistorialModel($pdo))->registrar(
                     (int) ($_SESSION['id_usuario'] ?? 0),
@@ -72,6 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: reuniones_registrar.php' . ($id_tutoria > 0 ? '?id_tutoria=' . $id_tutoria : ''));
                 exit;
             } catch (Throwable $e) {
+                if ($evidencia_url) {
+                    @unlink(__DIR__ . '/../' . $evidencia_url);
+                }
                 $errores[] = $e->getMessage();
             }
         }
