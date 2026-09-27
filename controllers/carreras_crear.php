@@ -1,12 +1,19 @@
 <?php
 require_once __DIR__ . '/../includes/verificar_sesion.php';
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/flash.php';
 
 $carreraModel = new CarreraModel($pdo);
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
+
     $nombre = trim($_POST['nombre_carrera'] ?? '');
 
     if (empty($nombre)) {
@@ -16,10 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errores)) {
         try {
             $carreraModel->crear($nombre);
-            header("Location: carreras_listar.php");
+            flash_set('success', 'Carrera registrada correctamente.');
+            header('Location: carreras_listar.php');
             exit;
         } catch (PDOException $e) {
-            $errores[] = "Error al registrar la carrera: " . $e->getMessage();
+            $errores[] = "Error al registrar la carrera.";
         }
     }
 }

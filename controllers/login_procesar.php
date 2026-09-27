@@ -3,6 +3,7 @@ session_start();
 require_once '../config/conexion.php';
 require_once '../config/Response.php';
 require_once '../models/UsuarioModel.php';
+require_once '../models/HistorialModel.php';
 
 $esJSON = stripos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
 
@@ -18,7 +19,9 @@ $raw = file_get_contents('php://input');
 $cuerpoJSON = json_decode($raw, true);
 
 $usuarioInput = trim($_POST['usuario'] ?? $cuerpoJSON['usuario'] ?? '');
-$contrasenaInput = $_POST['contrasena'] ?? $cuerpoJSON['contrasena'] ?? '';
+// trim() solo descarta espacios/tabulaciones/nuevas linea/NUL de los extremos:
+// conserva intactos los caracteres especiales de la clave (@ . + - etc.).
+$contrasenaInput = trim((string) ($_POST['contrasena'] ?? $cuerpoJSON['contrasena'] ?? ''));
 
 $modelo = new UsuarioModel($pdo);
 $usuario = $modelo->obtenerPorUsuario($usuarioInput);
@@ -32,9 +35,13 @@ function registrarAcceso(PDO $pdo, $id_usuario, $resultado): void
 if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaInput, $usuario['contrasena_hash'])) {
     $_SESSION['id_usuario'] = $usuario['id_usuario'];
     $_SESSION['nombre'] = $usuario['nombre'];
+    $_SESSION['apellido'] = $usuario['apellido'] ?? '';
     $_SESSION['rol'] = $usuario['nombre_rol'];
 
     registrarAcceso($pdo, $usuario['id_usuario'], 'exitoso');
+
+    $historial = new HistorialModel($pdo);
+    $historial->registrar((int) $usuario['id_usuario'], 'LOGIN', 'Inicio de sesión exitoso de ' . $usuario['nombre'] . ' ' . ($usuario['apellido'] ?? ''));
 
     if ($esJSON) {
         Response::json([
@@ -46,6 +53,9 @@ if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaIn
 
     switch ($usuario['nombre_rol']) {
         case 'administrador':
+            header('Location: ../controllers/usuarios_listar.php');
+            break;
+        case 'auxiliar':
             header('Location: ../controllers/usuarios_listar.php');
             break;
         case 'tutor':

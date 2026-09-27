@@ -1,8 +1,13 @@
 <?php
 require_once __DIR__ . '/../includes/verificar_sesion.php';
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/flash.php';
 
 $materiaModel = new MateriaModel($pdo);
 $carreraModel = new CarreraModel($pdo);
@@ -10,6 +15,8 @@ $carreraModel = new CarreraModel($pdo);
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
+
     $datos = [
         'nombre_materia' => trim($_POST['nombre_materia'] ?? ''),
         'id_carrera'     => $_POST['id_carrera'] ?? null,
@@ -22,10 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errores)) {
         try {
             $materiaModel->crear($datos);
-            header("Location: materias_listar.php");
+            flash_set('success', 'Materia registrada correctamente.');
+            header('Location: materias_listar.php');
             exit;
         } catch (PDOException $e) {
-            $errores[] = "Ocurrió un error al guardar la materia: " . $e->getMessage();
+            $errores[] = "Ocurrió un error al guardar la materia.";
         }
     }
 }

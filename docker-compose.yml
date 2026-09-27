@@ -7,6 +7,7 @@ services:
       - "8000:80"
     volumes:
       - ./:/var/www/html
+      - ./docker/php.ini:/usr/local/etc/php/conf.d/zz-app.ini:ro
     environment:
       - DB_HOST=db
       - DB_NAME=tutorias_db

@@ -1,7 +1,11 @@
 <?php
-session_start();
-
 require_once __DIR__ . '/../config/Response.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$esAPI = stripos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
 
 function verificar_sesion()
 {
@@ -23,4 +27,11 @@ function verificar_rol($roles_permitidos)
     return true;
 }
 
-verificar_sesion();
+// Modo API (JSON): responde 401 con el formato de Response.php.
+// Modo página (HTML): redirige al login como middleware de vistas.
+if ($esAPI) {
+    verificar_sesion();
+} elseif (!isset($_SESSION['id_usuario'])) {
+    header('Location: /views/login/login.php');
+    exit;
+}

@@ -59,7 +59,7 @@ $action = $_GET['action'] ?? null;
 try {
     switch ($action) {
         case 'listar':
-            verificar_rol(['administrador']);
+            verificar_rol(['administrador', 'auxiliar']);
 
             $tutorModel = new TutorModel($pdo);
             Response::json($tutorModel->obtenerTodos(), 200, 'Tutores obtenidos.');
@@ -112,6 +112,127 @@ try {
             );
             break;
 
+        case 'por_materia':
+            verificar_sesion();
+
+            $id_materia = $_GET['id_materia'] ?? null;
+            if (!ctype_digit((string) $id_materia)) {
+                Response::error('El parámetro id_materia es obligatorio y debe ser numérico.', 422);
+            }
+
+            $tutorModel = new TutorModel($pdo);
+            $id_carrera = $_GET['id_carrera'] ?? null;
+
+            if (($_SESSION['rol'] ?? '') === 'estudiante') {
+                require_once __DIR__ . '/../models/EstudianteModel.php';
+                $estudiante = (new EstudianteModel($pdo))->obtenerPorUsuario((int) ($_SESSION['id_usuario'] ?? 0));
+                if (!$estudiante) {
+                    Response::error('Perfil de estudiante no encontrado.', 404);
+                }
+                $id_carrera = (int) $estudiante['id_carrera'];
+            }
+
+            if ($id_carrera !== null && $id_carrera !== '') {
+                if (!ctype_digit((string) $id_carrera)) {
+                    Response::error('El parámetro id_carrera debe ser numérico.', 422);
+                }
+                $tutores = $tutorModel->obtenerPorMateriaYCarrera((int) $id_materia, (int) $id_carrera);
+            } else {
+                $tutores = $tutorModel->obtenerPorMateria((int) $id_materia);
+            }
+
+            Response::json($tutores, 200, 'Tutores disponibles para la materia.');
+            break;
+
+        case 'por_carrera':
+            verificar_sesion();
+
+            $id_carrera = $_GET['id_carrera'] ?? null;
+            if (!ctype_digit((string) $id_carrera)) {
+                Response::error('El parámetro id_carrera es obligatorio y debe ser numérico.', 422);
+            }
+
+            $tutorModel = new TutorModel($pdo);
+            Response::json(
+                $tutorModel->obtenerPorCarreraConDetalle((int) $id_carrera),
+                200,
+                "Tutores de la carrera #$id_carrera."
+            );
+            break;
+
+        case 'carreras':
+            verificar_rol(['administrador', 'auxiliar']);
+
+            require_once __DIR__ . '/../models/CarreraModel.php';
+            $carreraModel = new CarreraModel($pdo);
+            Response::json($carreraModel->obtenerTodas(), 200, 'Carreras obtenidas.');
+            break;
+
+        case 'mis_carreras':
+            verificar_rol('tutor');
+
+            $id_tutor = obtenerIdTutor($pdo, $_SESSION['id_usuario']);
+            if (!$id_tutor) {
+                Response::error('Perfil de tutor no encontrado para este usuario.', 404);
+            }
+
+            $tutorModel = new TutorModel($pdo);
+            Response::json($tutorModel->carrerasDelTutor((int) $id_tutor), 200, 'Carreras del tutor.');
+            break;
+
+        case 'guardar_carreras':
+            verificar_rol('tutor');
+
+            $id_tutor = obtenerIdTutor($pdo, $_SESSION['id_usuario']);
+            if (!$id_tutor) {
+                Response::error('Perfil de tutor no encontrado para este usuario.', 404);
+            }
+
+            $datos = leerCuerpo();
+            $ids_carreras = $datos['ids_carreras'] ?? [];
+            if (!is_array($ids_carreras)) {
+                Response::error('ids_carreras debe ser un arreglo.', 422);
+            }
+
+            $tutorModel = new TutorModel($pdo);
+            $tutorModel->asignarCarreras((int) $id_tutor, array_map('intval', $ids_carreras));
+
+            Response::json(
+                ['id_tutor' => (int) $id_tutor, 'carreras_asignadas' => count($ids_carreras)],
+                200,
+                'Carreras del tutor actualizadas.'
+            );
+            break;
+
+        case 'asignar_carreras':
+            verificar_rol(['administrador', 'auxiliar']);
+
+            $datos = leerCuerpo();
+            validarCamposObligatorios($datos, ['id_tutor']);
+
+            if (!ctype_digit((string) $datos['id_tutor'])) {
+                Response::error('id_tutor debe ser numérico.', 422);
+            }
+
+            $ids_carreras = $datos['ids_carreras'] ?? [];
+            if (!is_array($ids_carreras)) {
+                Response::error('ids_carreras debe ser un arreglo.', 422);
+            }
+
+            $tutorModel = new TutorModel($pdo);
+            if (!$tutorModel->obtenerPorId((int) $datos['id_tutor'])) {
+                Response::error('Tutor no encontrado.', 404);
+            }
+
+            $tutorModel->asignarCarreras((int) $datos['id_tutor'], array_map('intval', $ids_carreras));
+
+            Response::json(
+                ['id_tutor' => (int) $datos['id_tutor'], 'carreras_asignadas' => count($ids_carreras)],
+                200,
+                'Carreras del tutor actualizadas.'
+            );
+            break;
+
         case 'materias':
             verificar_rol(['administrador']);
 
@@ -148,6 +269,10 @@ try {
             if (!is_array($ids_materias)) {
                 Response::error('ids_materias debe ser un arreglo.', 422);
             }
+            $ids_carreras = $datos['ids_carreras'] ?? [];
+            if (!is_array($ids_carreras)) {
+                Response::error('ids_carreras debe ser un arreglo.', 422);
+            }
 
             try {
                 $pdo->beginTransaction();
@@ -173,6 +298,9 @@ try {
 
                 if (!empty($ids_materias)) {
                     $tutorModel->asignarMaterias($id_tutor, array_map('intval', $ids_materias));
+                }
+                if (!empty($ids_carreras)) {
+                    $tutorModel->asignarCarreras($id_tutor, array_map('intval', $ids_carreras));
                 }
 
                 $pdo->commit();

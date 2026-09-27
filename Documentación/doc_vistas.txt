@@ -1,0 +1,764 @@
+﻿================================================================================
+DOCUMENTACIÓN DEL SISTEMA DE TUTORÍAS ACADÉMICAS - UPDS SEDE TARIA
+VISTAS E INTERFAZ DE USUARIO (doc_vistas.txt)
+================================================================================
+
+SECCIÓN 1. ESTRUCTURA DE VISTAS Y LAYOUT
+--------------------------------------------------------------------------------
+Todas las vistas internas se renderizan dentro de un layout común:
+  views/layouts/header.php  (apertura, CSS, clases de shell, topbar),
+  views/layouts/footer.php  (scripts, cierre, helpers de confirmación).
+
+Sistema de plantillas de cabecera/componentes reutilizables (views/partials/):
+  - page_header.php : título de página con icono, descripción, contador,
+                      breadcrumbs (migas) y bloque de acciones. Contrato de
+                      variables: $titulo, $descripcion, $icono, $contador,
+                      $colorContador, $migas, $accion.
+  - paginacion.php   : paginador reutilizable ("Mostrando X-Y de Z") y ventana
+                      de páginas. El selector por_pagina (10/25/50) es opcional
+                      ($mostrarSelector, por defecto true); la vista de historial
+                      lo desactiva aquí porque lo reubica en su panel superior.
+  - kpi_card.php     : tarjeta KPI (icono, valor, etiqueta, variante de color).
+                      Variantes: primary, warning, info, success, accent.
+  - empty_state.php  : estado vacío con icono, título, texto y acción opcional.
+  - form_materia_docente.php y form_agenda.php: bloques de formulario
+                      reutilizados en la solicitud de tutoría.
+  - (existe además la estructura de menús/selects de gestión en
+     views/usuario*, views/tutores*, views/carreras*, views/materias*).
+
+La vista de login (views/login/login.php) es independiente del layout: página
+completa de dos paneles (marca institucional + formulario de acceso) con el
+icono de la universidad, botón "Iniciar Sesión" y alternativa de mostrar/ocultar
+la contraseña (togglePassword). Actualiza la sesión y redirige por rol.
+
+Estilo global: assets/css/upds-theme.css (573 líneas) sobre Bootstrap 5.3.3 +
+Bootstrap Icons 1.11.3 + fuente "Plus Jakarta Sans". Define tokens de marca
+(--upds-navy #002b49, --upds-accent #9fb8cc, etc.), status-badges, avatares,
+KPIs, toasts, Select2 y login.
+
+
+
+SECCIÓN 2. LAYOUT COMÚN: SIDEBAR, TOPBAR Y CAMPANA DE NOTIFICACIONES
+--------------------------------------------------------------------------------
+--- Sidebar colapsable (administrador, auxiliar, tutor) ---
+  * Barra lateral fija (260 px) con marca UPDS, secciones de navegación
+    (.sidebar-section), enlaces (.sidebar-link con :hover y estado .active con
+    barra izquierda de 3 px) y tarjeta del usuario conectado.
+  * MODO COLAPSADO: el botón #btnSidebarToggle (botón de hamburguesa en la
+    topbar) alterna la clase body.sidebar-colapsado que reduce la barra a
+    88 px, centra los iconos y oculta las etiquetas; al pasar el cursor sobre
+    la barra colapsada esta se expande temporalmente a 260 px (hover). El
+    estado se persiste en el navegador (localStorage) para recordar la
+    preferencia en la próxima visita.
+  * En pantallas pequeñas (max-width 991.98px) la sidebar se convierte en
+    off-canvas móvil (.mobile-offcanvas) con su propia barra superior.
+
+--- Topbar y campana de notificaciones ---
+  * La barra superior (.app-topbar, 72 px) contiene el botón de colapso del
+    sidebar y los accesos del usuario (nombre, rol, avatar).
+  * BOTÓN CAMPANA (.notif-bell-btn): muestra el número de notificaciones no
+    leídas en el badge .notif-count y un menú desplegable (.notif-menu) con la
+    lista de las más recientes (icono, texto, hora y punto indicador de no
+    leída). Cada 30 segundos consulta notificaciones_consultar.php (fetch) y
+    actualiza el contador y la lista sin recargar la página. Al hacer clic en
+    una notificación la marca como leída y abre su enlace.
+  * BARRA DEL ESTUDIANTE (.student-navbar): en lugar de sidebar, los
+    estudiantes ven un menú horizontal navy (.nav) con enlaces claros y el
+    enlace activo resaltado con borde inferior; este menú también integra la
+    campana de notificaciones.
+  * Al agregar/actualizar un elemento del sistema se disparan TOASTS
+    (mostrarToast) al pie de la pantalla (variantes success/danger/warning/info).
+
+--- Confirmaciones (SweetAlert2, helpers en layouts/footer.php) ---
+  * enviarPostSeguro(url, extras): enviar peticiones POST con CSRF.
+  * confirmarEliminacion(url, mensaje), confirmarDetencion(url),
+    confirmarCancelacion(url) (con motivo obligatorio 5-255 caracteres),
+    confirmarFinalizacion(url, estados) (selector de estado de conclusión MG),
+    confirmarTransicion(url, mensaje, tipo). Todas usan la clase suad
+    "swal-upds-popup" para mantener el estilo institucional vía tema CSS.
+
+
+
+SECCIÓN 3. VISTAS POR ROL
+--------------------------------------------------------------------------------
+
+=== 3.1 ADMINISTRADOR ===
+  - views/admin/usuarios_listar/crear/editar.php: gestión de usuarios
+    (rol, estado activo, avatar, acciones eliminar/editar).
+  - views/admin/historial.php: AUDITORÍA DE EVENTOS con filtros por
+    categoría en forma de PESTAÑAS horizontales ("Todas las categorías" y
+    los grupos "Sesiones y Acceso", "Gestión de Cartas y Pagos",
+    "Seguimiento Académico", "Tribunales y Tutores", más el grupo dinámico
+    "Otros eventos" para los no catalogados). La búsqueda por categoría usa
+    el prefijo "categoria:<nombre>". USABILIDAD/SPRINT: (a) las pestañas y
+    el selector "Registros por página" REFRESCAN LA TABLA DE INMEDIATO
+    (submit automático del GET sin botón), mientras que el botón "Filtrar"
+    azul queda como acción explícita para los criterios combinados de
+    usuario, desde y hasta; (b) el selector por_pagina (10/25/50) se MOVIÓ
+    de la paginación inferior al panel superior (filas junto a Usuario,
+    Desde, Hasta y botones), con onchange que reenvía la categoría activa
+    vía un campo oculto tipo_evento y vuelve a la página 1. Limpiar
+    restablece todos los filtros. Tabla de eventos con icono/badge por tipo,
+    operador (avatar), descripción, IP y fecha.
+  - views/admin/accesos.php: REGISTRO DE ACCESOS con KPIs (intentos
+    totales, exitosos, fallidos) y filtros de estado + búsqueda por IP.
+  - views/admin/bitacora.php: BITÁCORA DE USUARIOS con avatar de operador/
+    afectado, badge de acción y modal con detalles JSON; paginación.
+  - views/admin/mg_comprobantes.php: VALIDACIÓN DE COMPROBANTES de la
+    Modalidad de Grado: count de pendientes, tabla con estudiante (avatar),
+    monto, estado (Aprobado/Rechazado) con motivo del rechazo o validador;
+    modales #aprobarModal y #rechazarModal solo visibles para el
+    administrador (el auxiliar ve un candado "Solo el administrador puede
+    validar comprobantes"). Al aprobar se habilita el acceso a la MG.
+  - views/admin/carreras/materias/tutores/*: CRUD de catálogos con listados
+    filtrables/ordenables, formularios de alta/edición y disponibilidad del
+    tutor (selects múltiples con Select2 para materias/carreras y bloques
+    horarios).
+  - views/admin/tutorias/listar.php, asignar.php: GESTIÓN DE TUTORÍAS con 5
+    KPIs, pestañas/pills por estado, búsqueda y la tarjeta "Asignar Tutoría de
+    Graduación" (estudiante -> tutor -> materia, con filtro dinámico de
+    tutores por carrera del estudiante y control de CUPO con bloque de
+    "Sobreasignación aprobada por Decanatura"; selección de modalidad de
+    graduación con su descripción/minimos e información de agenda).
+  - views/admin/tutorias/tribunales.php: COMPOSICIÓN DE TRIBUNALES con tres
+    selectores (miembro 1, miembro 2 y miembro 3 opcional), acción de
+    asignar/editar/eliminar y notificación a los involucrados.
+  - views/admin/tutorias/expediente.php: EXPEDIENTE DE DOCUMENTOS con
+    formulario de adjunto (doc, docx, pdf, máx 5 MB) y tabla de documentos
+    del expediente con avatares de origen/destino.
+
+=== 3.2 AUXILIAR ===
+  Igual que el administrador en la GESTIÓN OPERATIVA (tutorías, tribunales,
+  expediente, tutores, comprobantes -pero sin poder aprobar/rechazar-,
+  bitácora), pero SIN las vistas de auditoría completa: no accede a
+  usuarios (crear/eliminar), ni a accesos, ni a historial.
+
+=== 3.3 TUTOR (DOCENTE) ===
+  - views/tutor/panel.php: PANEL DEL TUTOR con KPIs (materias a cargo,
+    bloques horarios, solicitudes por atender, tutorías realizadas, badges
+    de pendientes/realizadas) y la tabla de "Solicitudes y tutorías" con
+    acciones por estado: aceptar pendiente (confirmar sesión), rechazar
+    (cancelar con motivo), marcar realizada, cancelar confirmada, y
+    FINALIZAR MG (con confirmación del estado de conclusión).
+  - views/tutor/cartas.php: CARTAS DE DESIGNACIÓN con KPIs (recibidas,
+    por responder, aceptadas, cupo disponible) y modales por carta que
+    reproducen el cuerpo de la "CARTA DE DESIGNACIÓN N.º" con botones
+    Aceptar/Rechazar (rechazo pide motivo mínimo 5 caracteres).
+  - views/tutor/reuniones.php: formulario "Nueva reunión" (tutoría, fecha,
+    horas, asistencia si/no/tardanza, lugar o enlace, evidencia con
+    validación de extensión y 5 MB, observaciones) + tabla "Reuniones
+    registradas" con estado de asistencia y enlace a la evidencia.
+  - views/tutor/informes.php: formulario "Nuevo informe" (número, porcentaje
+    de avance 0-100 con barra de progreso acumulada, fecha límite,
+    descripción) + tabla de informes registrados.
+  - views/tutor/disponibilidad.php: gestión de su especialidad, materias,
+    carreras y bloques horarios.
+
+=== 3.4 ESTUDIANTE ===
+  - views/estudiante/panel.php: PANEL DEL ESTUDIANTE con KPIs (solicitadas,
+    pendientes, confirmadas, realizadas), aviso de perfil incompleto, bloque
+    "Modalidad de Grado" (tarjeta con candado si no cumple requisitos y el
+    botón "Ver requisitos"; activa con "Solicitar Grado" cuando el acceso MG
+    está habilitado), y la tabla "Mis tutorías" con acción de cancelar solo
+    en estado pendiente.
+  - views/estudiante/historial.php: PESTAÑAS (nav-pills) con contadores:
+    Tutorías (con tipo y estado), Reuniones (con asistencia y evidencia),
+    Informes (con % de avance) y Comprobantes (con estado y motivo de
+    rechazo si existe).
+  - views/estudiante/modalidad_grado.php: REQUISITOS para la MG con
+    check-list dinámico (materias 54, semestres 9, comprobante, desbloqueo),
+    formulario "Registrar comprobante de pago" (monto, fecha, archivo
+    jpg/jpeg/png/pdf) y listado "Mis comprobantes".
+  - views/tutorias/solicitar.php: SOLICITUD DE TUTORÍA con pestañas "Apoyo"
+    y "Modalidad de Grado" (esta última bloqueada con candado si no cumple
+    requisitos), selectores dependientes materia->tutor (poblados vía API)
+    y agenda (fecha, horario, modalidad, lugar, observaciones).
+  - views/tutorias/unirse.php: TUTORÍAS DE APOYO ABIERTAS con estados de
+    cupo (inscritos/mínimo de cupos), botón "Unirme".
+  - views/notificaciones/listar.php: BUZÓN con estado no leída resaltada,
+    acción de "marcar todas como leídas", tabla con tipo, mensaje, origen
+    (avatar) y estado; paginación y vacíos con bitmap.
+  - views/partials/form_agenda.php y form_materia_docente.php: fragmentos
+    reutilizables del formulario de solicitud.
+
+
+
+SECCIÓN 4. COMPONENTES DE INTERFAZ REUTILIZABLES
+--------------------------------------------------------------------------------
+  * avatar() (includes/vista_helpers.php): círculo de 38 px con las INICIALES
+    del nombre y apellido; color por rol: administrador/auxiliar -> avatar-admin,
+    tutor -> avatar-tutor, estudiante -> avatar-student.
+  * rol_badge() / estado_badge(): píldoras con colores semánticos para el rol
+    del usuario (Admin/Auxiliar/Tutor/Estudiante) y para los estados del
+    sistema (Pendiente, Confirmada, Asignada, Aceptada, En proceso, En
+    reasignación, Realizada, Finalizada, Cancelada, Aprobado, Rechazado,
+    Activo, Inactivo). estado_badge añade el nombre de la conclusión cuando la
+    tutoría está Finalizada.
+  * kpi_card.php: tarjetas KPI con variantes de color (primary/warning/info/
+    success/accent) en paneles y reportes.
+  * page_header.php: cabecera uniforme con breadcrumbs, título, icono,
+    contador y bloque de acciones (botones "Nuevo", "Exportar", etc.).
+  * Formularios con SELECTS BÚSQUEDABLES: la clase select2-enabled activa
+    Select2 en español (plugins/select2-init.js) para selectores largos
+    (materias, tutores, carreras, modalidades y filtros de historial).
+
+
+
+SECCIÓN 5. ACCESIBILIDAD, RESPONSIVE E IMPRESIÓN
+--------------------------------------------------------------------------------
+  * La plantilla es responsive: en escritorio show sidebar fija; en móvil
+    (<= 991.98px) se sustituye por menú off-canvas y se amoldan las tarjetas.
+  * Se respeta prefers-reduced-motion: las animaciones (campana, transiciones)
+    se desactivan si el usuario lo solicita en el sistema operativo.
+  * Reglas @media print: se ocultan sidebar, topbar, botones y paginación para
+    imprimir limpiamente tablas e informes (relevante para el expediente y las
+    cartas de designación).
+
+
+
+================================================================================
+SPRINT 6 - MEJORAS GLOBALES DE UX, MODULARIZACI�N Y SEGURIDAD (VISTAS)
+================================================================================
+
+COMPONENTE REUTILIZABLE DE FILTROS: views/partials/panel_filtros.php
+  * Nuevo componente de filtrado unificado para TODAS las listas del proyecto
+    (sin hardcodeo de HTML; toda opci�n proviene del controlador/modelo).
+  * Configuraci�n por variables:
+      - $filtroQ / $filtroQNombre / $filtroQPlaceholder / $filtroQAuto
+        (autosubmit con debounce 500 ms) / $filtroQAutocompleteUrl.
+      - $filtroSelectores (selects din�micos), $filtroFechas (desde/hasta).
+      - $filtroTabs (pesta�as inmediatas con subida autom�tica).
+      - $filtroPorPagina / $filtroPorPaginaOpciones (10/25/50).
+      - $filtroOcultos, $filtroAction, $filtroBotones, $filtroLimpiarUrl.
+  * El JavaScript se emite una sola vez por p�gina (marcador
+    $GLOBALS['__panel_filtros_js_v2']).
+  * Toda salida se escapa con htmlspecialchars (XSS).
+
+VISTAS MIGRADAS AL COMPONENTE (Admin, Auxiliar, Tutor y Estudiante):
+  - views/admin/historial.php ......... pesta�as de categor�a din�micas (de la
+                                       BD) + b�squeda de usuario por texto y
+                                       teclado con AUTCOMPLETADO (JSON) + rol de
+                                       usuario + fechas + por_p�gina.
+  - views/usuarios/listar.php ......... b�squeda + estado din�mico + por_p�gina.
+  - views/carreras/listar.php ......... b�squeda + por_p�gina.
+  - views/materias/listar.php ......... b�squeda + carrera din�mica + por_p�gina.
+  - views/tutores/listar.php .......... b�squeda + por_p�gina.
+  - views/tutorias/listar.php ......... pesta�as de estado din�micas seg�n
+                                       TutoriaModel::estadosPermitidos() +
+                                       b�squeda + por_p�gina.
+  - views/admin/accesos.php ........... pesta�as Exitosas/Fallidas (datos de la
+                                       BD) + b�squeda + por_p�gina.
+  - views/admin/bitacora.php .......... b�squeda + acci�n din�mica + por_p�gina.
+  - views/admin/mg_comprobantes.php ... b�squeda + estado din�mico + por_p�gina
+                                       (el controlador ahora pagina los datos).
+  - views/notificaciones/listar.php ... b�squeda con autosubmit + por_p�gina.
+  - views/tutorias/unirse.php ......... b�squeda + por_p�gina (Estudiante).
+
+PAGINACI�N UNIFICADA:
+  * El selector de registros por p�gina vive �NICAMENTE arriba (en el panel de
+    filtros); la paginaci�n inferior se incluye con $mostrarSelector = false
+    (views/partials/paginacion.php) para evitar selectores duplicados.
+  * Fix previo mantenido: fallback $pag ?? $paginacion en paginacion.php.
+
+CAMBIOS ANTERIORES DE ESTA SESI�N (incluidos aqu� por historial):
+  * Codificaci�n UTF-8 en todo el sitio (metadatos + header de salida).
+  * Pesta�as del Historial y Auditor�a redise�adas (estilos .historial-tab).
+  * Selector de registros por p�gina reubicado de la esquina superior derecha
+    al bloque de filtros.
+  * Correcci�n de paginaci�n en vistas que usaban $paginacion en lugar de $pag.
+SPRINT 6 (continuacion) - ASIGNACION Y GESTION DE TRIBUNALES (Modalidad de Grado)
+Vista: views/tutorias/tribunales.php
+  * Filtrado estricto por carrera: los selects solo listan docentes vinculados a la
+    carrera del estudiante (tabla docente_carreras), con estado activo y excluyendo
+    automaticamente al tutor asignado de la tutoria.
+  * Busqueda/filtro por especialidad o materias impartidas: GET q_tribunal (server-side),
+    LIKE escapado, con botones Buscar/Limpiar y valor persistido al recargar o al fallar.
+  * Tribunal 1 y 2 obligatorios; opcionales dinamicos hasta Tribunal 5: el servidor
+    renderiza bloques ocultos (data-num 3..5) que se muestran con "Agregar tribunal" y
+    se quitan con su boton. Sincronizacion de duplicados entre selects y modales via
+    delegacion JS (class tutoria-tribunal-select).
+  * Lista de asignados: badge "Tribunal N (obligatorio/opcional)", boton lapiz para
+    reemplazar (siempre disponible) y papelera deshabilitada en los 2 tribunales base y
+    cuando el expediente tiene 2 como maximo. Modal de edicion filtrado por carrera con
+    sugerencia de materias (GROUP_CONCAT materias_carrera).
+  * Alertas: informacion con estudiante/carrera; advertencia si la carrera no tiene
+    docentes o el filtro no arroja resultados; mensajes de error escapados (htmlspecialchars).
+  * Descripcion de pagina actualizada ("el Tribunal 1 y 2 son obligatorios y puedes
+    integrar hasta 5 por expediente").
+
+CAMBIOS ANTERIORES DE ESTA SESION:
+  * Seeder (database/seed.php): tablas truncadas + datos de demo/desarrollo.
+
+================================================================================
+SPRINT 7 - MODULO MODALIDADES DE GRADO (VISTAS)
+--------------------------------------------------------------------------------
+Nuevas vistas bajo views/mg/ (renderizadas dentro del layout comun
+header/footer.php y reutilizando los partials page_header, panel_filtros y
+paginacion). El modulo se agrupa en una seccion nueva del menu lateral
+"Modalidad de Grado" (visible para administrador y auxiliar); en el menu
+auxiliar el vinculo de comprobantes pasa a llamarse "Comprobantes MG".
+
+  views/mg/parametros.php
+  * Pagina unica de parametros (HU-020): formulario por tarjetas con grilla de
+    inputs segun el tipo del parametro (entero/decimal/texto/booleano),
+    leyenda descriptiva por configuracion y guardado por POST a
+    mg_parametros_guardar.php. Acceso restringido a administrador.
+
+  views/mg/modalidades/listar.php | crear.php | editar.php
+  * CRUD de modalidades de grado (HU-022 / RN-MG-01: las 5 opciones fijas).
+    Listado tabular con badge de "Requiere tutor" / "Sin tutor", flujo
+    (mgFlujoLabel) y estado activa/inactiva; formularios de alta/edicion con
+    select de flujo desde mgFlujos(). Eliminacion protegida con confirmacion.
+
+  views/mg/cohortes/listar.php | crear.php | editar.php
+  * CRUD de cohortes (HU-022): listado con estado (planificada/abierta/
+    cerrada), rango de fechas y observaciones; validacion de superposicion de
+    periodos y orden de fechas (MgCohorteModel). Formularios con inputs date.
+
+  views/mg/expedientes/listar.php
+  * HU-024: listado de expedientes de modalidad de grado con buscador por
+    estudiante/RU, filtros por estado y cohorte, y paginacion. Muestra
+    estudiante, modalidad, cohorte, estado (mgEstadoExpedienteBadge sobre el
+    esquema status-badge del tema) y el tutor de la asignacion activa
+    (subconsulta tutor_asignado).
+
+  views/mg/expedientes/crear.php
+  * HU-024: alta de expediente. Select de estudiante (solo con
+    acceso_mg_desbloqueado y sin expediente activo), modalidad y cohorte;
+    campo de detalle de solicitud obligatorio y resumen de la informacion
+    cursada del estudiante.
+
+  views/mg/expedientes/ficha.php
+  * HU-025: ficha completa del expediente.
+    - Tres tarjetas resumen: estudiante (avatar, RU, @correo, carrera,
+      semestre y materias completadas), modalidad (flujo, cohorte, requisito
+      de tutor) y solicitud (fecha, detalle, validador, resolucion).
+    - Formulario de avance de estado (mg_expediente_estado.php) con select de
+      los 6 estados y campo de resolucion/observacion.
+    - Pesta�as Bootstrap: "Asignacion de tutor" y "Historial de asignaciones".
+      * Sin tutor requerido: alerta informativa.
+      * Con asignacion activa: bloque verde con nombre/correo/especialidad del
+        tutor, feccha de asignacion, badge "Asignacion activa" y boton para
+        finalizar la asignacion.
+      * Sin asignacion: tabla de candidatos afines (tutoresAfines) ordenada
+        por afinidad de materias con radio de seleccion, materias afines como
+        badges, barra de progreso de carga < carga recomendada/maxima, aviso
+        de "carga maxima alcanzada" (radio deshabilitado) o "sobre la carga
+        recomendada", y boton "Asignar tutor" con observaciones opcionales.
+      * Historial: tabla con tutor, operador que asigno, fecha, estado
+        activa/finalizada y observaciones (contador en la pestana).
+    - El titulo de pagina muestra la etiqueta del estado actual como badge de
+      texto (page_header escapa $contador, por lo que no se pasa HTML).
+
+  Notas de las vistas MG:
+    - Requieren los helpers includes/mg_catalogos.php (mgFlujos,
+      mgFlujoLabel, mgExpEstadoLabel, mgEstadoExpedienteBadge) incluido desde
+      el controlador antes de cargar la vista.
+    - Los form-text/ayudas evitan emitir variables no definidas ($est solo se
+      usa dentro de los foreach).
+
+--------------------------------------------------------------------------------
+ACTUALIZACION 010 (addenda dentro del SPRINT 7):
+  * views/mg/calendario/listar.php: listado de hitos por cohorte con selector
+    de cohorte (submit automatico), descripcion/tipo/fecha/orden por fila,
+    badges de tipo (mgTipoHitoBadge) y acciones editar/eliminar con
+    confirmarEliminacion(). Nuevo hito enlaza a crear.php?cohorte=<id>.
+  * views/mg/calendario/crear.php | editar.php: formularios con select de
+    cohorte (crear, preseleccion desde GET cohorte), titulo, fecha, orden,
+    tipo (mgTiposHito) y descripcion; reutilizan page_header y footer.
+  * Menu lateral: nueva opcion "Calendario MG" (bi-calendar-event) en la seccion
+    Modalidad de Grado para administrador y auxiliar (desktop y movil), activa
+    con menuActivo('mg_calendario').
+
+===============================================================================
+ADDENDA BLOQUE FINAL SPRINT 7 (HU-023/027/029/030/031/032/033/038)
+Fecha: 2026-09-26
+===============================================================================
+Vistas nuevas en views/mg/:
+
+  * padron/importar.php (HU-023)
+    - Stats del ultimo resultado (leidas/creados/actualizados/expedientes),
+      tabla de filas rechazadas con motivo, formulario cohorte + CSV
+      (enctype multipart) y nota con formato aceptado y credenciales
+      generadas.
+
+  * defensas/listar.php (HU-029)
+    - Filtros cohorte y estado (programada/evaluada), tarjetas/columnas por
+      defensa con mgDefensaEstadoBadge(), estudiante, modalidad, ambiente,
+      fecha-hora, tribunales (presidente/vocal) y nota_final o correlativo de
+      citacion. Acciones: evaluar (si programada), editar, eliminar con
+      confirmarEliminacion().
+
+  * defensas/programar.php (HU-029)
+    - Formulario modo crear/editar (action con ?id= cuando edicion). Selects
+      de cohorte y expediente (al elegir expediente se cargan por POST los
+      docentes afines), ambiente, fecha/hora (con validacion JS de hora),
+      observaciones y checkboxes de tribunales con limite JS minimo/maximo
+      segun parametros. Muestra errores y, al editar, los valores actuales.
+
+  * defensas/evaluar.php (HU-031)
+    - Si estado=programada: formulario de notas por tribunal (name="nota[id]",
+      0..100) con boton de guardado y advertencia del cambio de estado.
+      Si evaluada: muestra notas individuales, promedio (mgResultadoBadge),
+      resultado, correlativo de citacion y enlace a la carta del tutor.
+
+  * cartas/carta_tutor.php (HU-027)
+    - Documento A4 valido para imprimir (HTML limpio + @media print):
+      membrete UPDS (mgDatosInstitucion), numero de carta (correlativo o
+      provisional MG-CTA-TUT-...), fecha, datos del tutor (especialidad y
+      correo), titulo de la investigacion / modalidad y firmas del coordinador
+      y del tutor. Boton imprimir (window.print).
+
+  * cartas/citacion_defensa.php (HU-030)
+    - Documento A4: citacion con correlativo (MG-CIT-...), lugar y fecha de la
+      defensa, ambiente, hora, tribunal (presidente + vocales), estudiante y
+      titulo; normas de puntualidad y firmas. @media print limpio.
+
+  * reportes/cohorte.php (HU-032)
+    - Selector de cohorte, KPIs (total, con/sin tutor, programadas, evaluadas,
+      aprobados/reprobados y promedio) y tabla consolidada por expediente
+      (estado, defensa, nota final, resultado). Boton "Exportar CSV" enlaza a
+      ?cohorte=N&exportar=1. JS de totales acordes al tema.
+
+  * alertas/panel.php (HU-033/038)
+    - Tarjetas por alerta con codigo, nivel (mgAlertasNivelBadge), titulo,
+      mensaje y referencias (RU o nombres, +N si exceden 4). Boton "Marcar
+      atendida" abre modal (form POST a mg_alertas_atender.php con csrf) que
+      exige nota. Seccion de historial (codigo, atendida por, nota, fecha).
+
+  * layouts/header.php (enlaces anadidos en los 4 bloques del menu)
+    - Admin y auxiliar (desktop y movil): "Defensas" (bi-calendar2-check,
+      mg_defensas_listar), "Importar Padron" (bi-upload, mg_padron_importar)
+      y "Reportes" (bi-file-earmark-bar-chart, mg_reportes_cohorte), en la
+      seccion Modalidad de Grado.
+    - Solo administrador (desktop y movil): "Alertas" (bi-exclamation-triangle,
+      mg_alertas.php).
+
+  * En views/mg/expedientes/ficha.php: boton "Carta de asignacion"
+    (mg_carta_tutor.php?id_expediente=N, target=_blank) junto a la asignacion
+    activa.
+
+ADDENDA 2026-09-26 - CIERRE Y ENDURECIMIENTO DE SEGURIDAD (SPRINT 7)
+======================================================================
+
+  * login/login.php
+    - Sin cambios de maquetado. Se documenta el contrato con
+      controllers/login_procesar.php: el campo de contrasena se envia como
+      name="contrasena" (y como 'contrasena' en el cuerpo JSON alterno).
+    - El controlador aplica trim() a ese valor, de modo que los espacios
+      accidentales en los extremos ya no impiden el acceso, mientras que los
+      caracteres especiales de la clave se conservan.
+    - El formulario mantiene csrf_campo() y autocomplete="current-password".
+
+ADDENDA 2026-09-26 - FLUJO DEL ESTUDIANTE Y NOTIFICACIONES DE MG (SPRINT 7)
+=========================================================================
+
+  * estudiante/mg_portal.php (nueva)
+    - Vista "fat" del bloque estudiante (mismo patron que panel.php e
+      historial.php): exigirRol(['estudiante']) y arma el portal con
+      EstudianteModel, MgExpedienteModel, MgCalendarioModel, MgDefensaModel y
+      NotificationModel.
+    - Calcula $mgCompletada igual que panel.php/historial.php para que el
+      navbar se comporte igual en todas las paginas del estudiante.
+    - Sin expediente activo: empty_state que distingue "nunca solicito" (con
+      enlace a sus comprobantes) de "todos concliados/cerrados".
+    - Con expediente activo: 4 KPIs (N� de expediente, hitos cumplidos, dias
+      para la defensa, avisos sin leer), ficha del expediente (modalidad,
+      flujo, cohorte, periodo, RU, carrera, solicitud, validacion,
+      resolucion), tarjeta de tutor (o aviso de que aun no tiene tutor),
+      cronograma de hitos de la cohorte con el proximo hito destacado, acordeon
+      de defensas/citaciones (horario, ambiente, correlativo MG-CIT, tribunal,
+      nota final) y panel de avisos recientes.
+    - Reutiliza los partials page_header, kpi_card y empty_state, y los badges
+      mgEstadoExpedienteBadge, mgTipoHitoBadge, mgDefensaEstadoBadge y
+      mgResultadoBadge.
+
+  * layouts/header.php
+    - Navbar del estudiante: nuevo enlace "Modalidad de Grado"
+      (bi-mortarboard-fill, /views/estudiante/mg_portal.php) entre "Mis
+      Tutor�as" y "Solicitar Tutor�a", marcado activo con
+      menuActivo('estudiante/mg_portal').
+
+--------------------------------------------------------------------------------
+ACTUALIZACION 013 (addenda del SPRINT 8):
+  * views/tutor/reuniones.php
+    - Pestanas Agendar reuniones y Seguimiento; el registro ya no pide
+      asistencia y el seguimiento se edita en linea (modal) por reunion.
+    - Guarda la reunion, sus evidencias y el seguimiento sin agendar otra.
+    - Botones PDF y DOC por reunion con seguimiento registrado.
+    - Si se abre directamente sin $reuniones/$seguimientos redirige a
+      reuniones_registrar.php en lugar de emitir avisos de variable indefinida.
+  * views/partials/tutor_reuniones_tabla.php (nuevo)
+    - Historial de reuniones del tutor con filtro por tutoria, insignia de
+      asistencia y cumplimiento, descarga de evidencia y botones de informe
+      PDF/DOC habilitados solo cuando existe seguimiento.
+  * views/tutores/disponibilidad.php
+    - Casillas de carreras y materias deshabilitadas salvo para el
+      administrador, con la insignia "Solo administrador".
+    - Formulario de solicitud (materias, horarios, carreras) visible solo para
+      el tutor, con el historial de sus solicitudes y su estado.
+  * views/admin/solicitudes_tutor.php (nuevo)
+    - Tabla de solicitudes de actualizacion con filtros por estado y tutor,
+      detalle de la solicitud y botones de aprobar o rechazar con motivo.
+  * views/estudiante/modalidad_grado.php
+    - La descarga del comprobante usa mg_comprobantes_descargar.php y se
+      deshabilita cuando archivo_disponible() indica que no hay archivo en
+      disco; redirige al controlador si se abre sin $reporteElegibilidad.
+  * views/estudiante/historial.php
+    - Misma descarga segura y mismo criterio de boton deshabilitado para los
+      comprobantes del historial.
+  * views/admin/mg_comprobantes.php
+    - La accion Ver del comprobante se habilita solo si el archivo existe en
+      disco; en caso contrario muestra el boton deshabilitado.
+  * views/notificaciones/listar.php
+    - Modal de detalle con el mensaje completo y el enlace seguro ya validado
+      por el helper; redirige al controlador si se abre sin $pendientes.
+  * views/layouts/header.php
+    - Enlaces de P8 en los cuatro bloques del menu: Mis horarios y materias
+      para el tutor, Solicitudes deActualizacion para administracion y auxiliar.
+  * assets/css/upds-theme.css
+    - Panel del login centrado (login-form-panel), regla .student-main para el
+      pie institucional en el panel del estudiante y estilos de las tarjetas
+      seleccionables del modal de finalizacion de modalidad de grado.
+  * views/layouts/footer.php
+    - confirmarFinalizacion() con SweetAlert2: resumen de la modalidad, aviso
+      de que no se puede deshacer y una sola alerta por accion.
+
+
+================================================================================
+ACTUALIZACION 014 (interfaz, perfil del docente y validacion de comprobantes)
+================================================================================
+
+CONTROLES
+--------------------------------------------------------------------------------
+  * controllers/mg_comprobantes_listar.php
+    - Detecta peticion AJAX por la cabecera X-Requested-With o por Accept:
+      application/json y responde con JSON en lugar de HTML.
+    - Introduce responderJson($payload, $codigo) para uniformar las respuestas.
+    - El flujo de validacion se ejecuta dentro de try/catch: primero
+      InvalidArgumentException (422) y despues Throwable (500), de modo que un
+      fallo al cambiar el estado o al actualizar el acceso a Modalidad de Grado
+      ya no deja la aplicacion en pantalla de error fatal.
+    - El error de CSRF se resuelve antes de llamar a csrf_validar() mediante
+      csrf_token_valido(), porque csrf_validar() termina la ejecucion con exit y
+      no propaga excepciones; en modo JSON devuelve 403 con el mensaje en
+      espanol en lugar de texto plano.
+    - Reutiliza el flujo HTML cuando no hay JavaScript (envio clasico del
+      formulario): 302 a la lista con mensaje flash, sin perder funcionalidad.
+    - La respuesta JSON de exito incluye success, message y el comprobante ya
+      actualizado (estado, badge HTML, motivo, validador) mas el total de
+      pendientes, para que el frontend actualice la fila sin recargar.
+    - Anade validaciones de estado: 400 sin id valido, 404 si el comprobante no
+      existe y 409 si ya fue validado, evitando reprocesos.
+    - La deshabilitacion de Modalidad de Grado tambien queda protegida por
+      try/catch y notifica el error mediante flash.
+  * controllers/tutor_perfil.php (nuevo)
+    - Exclusivo del rol tutor; 403 para el resto de roles y 302 si no hay
+      sesion. Redirige al panel cuando el usuario no tiene perfil de docente.
+    - GET muestra la vista; POST valida con CSRF, longitud maxima, formato de
+      correo y de telefono, y guarda dentro de una transaccion.
+    - Ante correo duplicado o fallo de base de datos revierte la transaccion e
+      informa el motivo; la sesion de expiracion se resuelve con flash y
+      redireccion, sin mostrar la pagina de error del servidor.
+    - Actualiza nombre y apellido en la sesion para que la cabecera y el
+      sidebar muestren el valor correcto tras guardar.
+
+MODELOS
+--------------------------------------------------------------------------------
+  * models/UsuarioModel.php
+    - Nuevo metodo actualizarPerfilPropio($id_usuario, $datos): actualiza solo
+      nombre, apellido, correo y telefono. No toca id_rol, usuario ni estado,
+      de modo que un docente no pueda modificar su propio rol ni su cuenta.
+  * models/TutorModel.php
+    - Nuevo metodo actualizarPerfil($id_tutor, $especialidad, $biografia) para
+      los datos academicos editables por el propio docente.
+  * models/ComprobanteModel.php
+    - obtenerPorId() ahora incluye el JOIN con estudiantes, usuarios y validador,
+      por lo que devuelve nombre, apellido, usuario, correo, validador_nombre y
+      validador_apellido. Antes solo devolvia las columnas de
+      comprobantes_pago_mg y el nombre del validador llegaba vacio a la vista y
+      a la respuesta JSON.
+
+VISTAS
+--------------------------------------------------------------------------------
+  * views/layouts/header.php
+    - Elimina el boton Salir del header superior derecho, que duplicaba el
+      icono de cierre del sidebar. Se conservan el icono del sidebar y el de la
+      barra movil; el navbar del estudiante mantiene su Salir porque el alumno
+      no dispone de sidebar.
+    - El nombre y el avatar del docente, tanto en el header como en el pie del
+      sidebar, enlazan a /controllers/tutor_perfil.php con title y aria-label
+      "Ver y editar mi perfil".
+  * views/tutor/perfil.php (nuevo)
+    - Panel con los datos personales (nombre, apellido, correo, telefono) y los
+      academicos (especialidad, biografia) en un unico formulario con CSRF.
+    - Usuario, rol, estado y carreras se muestran en solo lectura, ya que los
+      asigna la administracion; incluye enlace a Horarios y materias.
+    - Los errores de validacion se listan en una alerta y los valores enviados
+      se conservan en los campos.
+  * views/admin/mg_comprobantes.php
+    - Los modales de Aprobar y Rechazar salen del elemento tbody y se colocan al final de la pagina. Estaban dentro de la tabla, HTML invalido que el
+      navegador reubicaba y que provocaba el solapamiento de textos y elementos.
+    - Cada modal incorpora aria-labelledby con titulo propio, modal-dialog
+      centered, icono en el encabezado, parrafo de confirmacion con el nombre
+      del estudiante y el monto, label con for al textarea del motivo y textos
+      de ayuda.
+    - Las filas incluyen data-comprobante-fila, data-comprobante-estado y
+      data-comprobante-acciones para poder actualizarse sin recargar.
+    - Los botones de accion pasan a la clase js-validar-comprobante y los
+      formularios a js-form-comprobante, conservando method POST para que la
+      pagina siga funcionando sin JavaScript.
+    - Nuevo script que intercepta el envio, muestra un spinner en el boton,
+      consume la respuesta JSON, cierra el modal con la instancia de Bootstrap,
+      lanza un toast de exito o error y reemplaza el badge y las acciones de la
+      fila; si la fila ya no existe recarga la pagina y cualquier fallo de red
+      se muestra como toast sin romper la aplicacion.
+
+INCLUDES
+--------------------------------------------------------------------------------
+  * includes/csrf.php
+    - Nuevo csrf_token_valido() que devuelve el resultado de la comparacion en
+      hash_equals sin terminar la ejecucion.
+    - csrf_validar() reutiliza esa funcion y conserva el 403 con texto plano
+      para el resto de la aplicacion.
+
+RECURSOS
+--------------------------------------------------------------------------------
+  * assets/css/upds-theme.css
+    - Nuevo bloque para .comprobante-modal: z-index 1060 sobre un backdrop en
+      1055 con opacidad .55, anchura maxima de 520px, bordes redondeados,
+      sombra, y padding/margin propio en encabezado, cuerpo y pie para que
+      titulo, confirmacion, textarea y botones no se pisen entre si.
+
+COMPROBACIONES
+--------------------------------------------------------------------------------
+  - 29 rutas con sesion real (invitado, estudiante, tutor, auxiliar y
+    administrador) sin avisos de PHP: 0 problemas.
+  - Endpoint JSON: 200 al aprobar y al rechazar con badge, motivo, validador y
+    total de pendientes; 400 sin id, 404 inexistente, 409 ya validado, 422 sin
+    motivo, 403 por rol o por CSRF y 500 ante fallo inesperado.
+  - Envio clasico sin JavaScript: 302 y estado correcto en base de datos.
+  - Estructura: 0 modales dentro de la tabla, IDs unicos, los 21
+    aria-labelledby resuelven a un id existente, label[for] coincide con el id
+    del textarea y los 10 pendientes generan 20 modales.
+  - Perfil del docente: 200 al tutor, 403 al administrador y al estudiante,
+    302 sin sesion, validaciones visibles sin guardar y datos restaurados al
+    terminar las pruebas.
+
+================================================================================
+ACTUALIZACION 015 (interfaz, seguridad de archivos y PDF institucional)
+================================================================================
+Alcance: navegacion y retornos, presentacion de permisos del docente y
+visualizacion de la Carta de Designacion. Sin cambios de esquema ni de logica
+de negocio.
+
+NAVEGACION Y RETORNOS
+--------------------------------------------------------------------------------
+  * views/partials/page_header.php
+    - Boton "Volver" automatico. Si la vista no define $accion, el encabezado
+      deduce el destino del nivel padre de $migas y renderiza el boton. Con
+      esto todas las vistas de detalle y formulario de los cuatro roles
+      ofrecen un retorno visible sin repetir el HTML del enlace en cada archivo.
+    - Variable nueva y opcional: $volver = ['url' => ..., 'texto' => ...].
+      Permite indicar el destino cuando la vista ya define otros botones de
+      accion y no conviene deducirlo del breadcrumb.
+    - Se mantiene la limpieza de variables al final del partial para que no se
+      filtren a las siguientes inclusiones.
+
+  * Rutas de las migas de pan corregidas
+    - views/tutorias/asignar.php: tutorias_listar.php -> /controllers/tutorias_listar.php
+    - views/tutorias/tribunales.php: ../controllers/tutorias_listar.php -> /controllers/tutorias_listar.php
+    - views/tutorias/expediente.php: ../controllers/tutorias_listar.php -> /controllers/tutorias_listar.php
+    - views/tutores/crear.php: ../controllers/tutores_listar.php -> /controllers/tutores_listar.php
+    - views/tutores/disponibilidad.php: ../controllers/tutores_listar.php -> /controllers/tutores_listar.php
+    - views/tutor/cartas.php, informes.php y reuniones.php: panel.php -> /views/tutor/panel.php
+    - Todas quedaron root-relativas. Antes, un usuario que abria una de estas
+      paginas encontraba un 404 al pulsar el enlace del breadcrumb.
+    - Se corrigio tambien el boton Volver de views/tutores/crear.php y del
+      caso administrador de views/tutores/disponibilidad.php.
+
+CARTAS DE DESIGNACION
+--------------------------------------------------------------------------------
+  * views/tutor/cartas.php
+    - El modal de cada carta pasa a dos pestanas: Resumen y Documento PDF.
+      Resumen conserva el detalle de la designacion y la firma; Documento PDF
+      muestra el archivo servido por el backend.
+    - El panel PDF incluye un iframe con vista previa, un boton Descargar PDF y
+      un boton Imprimir.
+    - La descarga se resuelve con fetch y credentials same-origin, se valida que
+      la respuesta sea application/pdf y se genera un blob con el nombre
+      carta-designacion-{id}.pdf. Si el backend responde 403 o 404, el mensaje
+      se muestra como Toast y no se descarga nada.
+    - imprimirCartaPDF(id) reutiliza un iframe oculto y llama a print() sobre el
+      visor ya cargado, es decir, la funcion nativa del navegador sobre el PDF.
+    - El marco oculto se reutiliza entre impresiones para no recargar el
+      documento en cada clic.
+    - Estructura validada: el modal esta fuera de cualquier tabla, los ids son
+      unicos por carta y el enlace de descarga lleva data-carta-pdf-descargar
+      para que el JavaScript lo distinga del href de respaldo.
+
+EXPEDIENTE
+--------------------------------------------------------------------------------
+  * views/tutorias/expediente.php
+    - La etiqueta del boton de descarga sigue al tipo real del archivo: muestra
+      Descargar PDF o Descargar documento segun la extension. Antes decia
+      siempre Descargar PDF aunque el archivo fuera DOC o DOCX.
+    - El boton Imprimir se deshabilita con un texto explicativo para DOC y DOCX,
+      que no se renderizan de forma imprimible en el visor.
+    - Al pulsar Descargar se comprueba primero que el archivo siga disponible.
+      Si el backend responde con error, el mensaje aparece en una alerta dentro
+      del modal y tambien como Toast, en lugar de una descarga fallida y
+      silenciosa.
+    - La impresion usa window.print() sobre el iframe ya cargado; solo si el
+      navegador lo bloquea se recurre a window.open con impresion al cargar, y
+      si tambien se bloquea se avisa mediante Toast.
+    - El modal limpia el iframe al cerrarse para no dejar el documento cargado
+      en memoria.
+
+PERMISOS DEL DOCENTE
+--------------------------------------------------------------------------------
+  * views/tutores/disponibilidad.php
+    - Para el rol tutor, los 22 checkboxes de carreras y los 28 de materias se
+      renderizan deshabilitados, con un aviso visible de que solo el
+      administrador puede modificarlos.
+    - El horario se mantiene editable, que es el flujo que el docente ya
+      usaba y que se decidio conservar.
+    - Se agrega la accion para solicitar el cambio, que llega al administrador
+      por la solicitud de actualizacion ya existente.
+    - Para el administrador la vista no cambia: sigue controlando materias,
+      carreras y bloques.
+
+PAGINA DE ERROR
+--------------------------------------------------------------------------------
+  * views/errores/404.php (nuevo)
+    - Reutiliza la cabecera y el pie del sistema, de modo que un recurso
+      inexistente no devuelva HTML pelado ni rompa la navegacion.
+    - Muestra un motivo opcional ($motivo) definido por el controlador, mas
+      enlaces para volver al panel segun el rol de la sesion.
+
+ESTILOS
+--------------------------------------------------------------------------------
+  * assets/css/upds-theme.css
+    - Contraste de los enlaces de tabla para que sean legibles sobre el fondo
+      alternado.
+    - Estados hover, focus visible y activo en enlaces, botones y filas, con
+      foco consistente y visible para navegacion por teclado.
+    - Separadores de tabla y altura de celda uniforme.
+    - Regla de ancho maximo para pantallas ultraanchas, con alternativa
+      equivalente en anchos moviles.
+
+COMPROBACIONES
+--------------------------------------------------------------------------------
+  - 192 archivos PHP pasan php -l; 0 con BOM y 0 con codificacion danada.
+  - Migracion de rutas: los cinco destinos rotos y los botones Volver
+    automaticos responden 200 con sesion del rol correspondiente. Las vistas de
+    Cartas, Reuniones e Informes ya traian su propio boton Volver al panel.
+  - Cartas: 1 modal por carta, 1 iframe de previsualizacion, boton Descargar
+    PDF y boton Imprimir con onclick imprimirCartaPDF(id), y la funcion
+    definida una sola vez en la pagina.
+  - Expediente: elementos btnDocumentoDescargarTexto y modalDocumentoError
+    presentes, abrirModal declarado una vez y la impresion delegada a
+    print() del visor.
+  - Estructura: no hay botones anidados ni enlaces dentro de enlaces; los
+    modales siguen fuera de las tablas.
+================================================================================

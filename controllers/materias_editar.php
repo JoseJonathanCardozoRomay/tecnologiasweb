@@ -1,21 +1,28 @@
 <?php
 require_once __DIR__ . '/../includes/verificar_sesion.php';
+require_once __DIR__ . '/../includes/auth.php';
+requerirRol(['administrador']);
+
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/flash.php';
 
 $materiaModel = new MateriaModel($pdo);
 $carreraModel = new CarreraModel($pdo);
 
 $id = $_GET['id'] ?? $_POST['id_materia'] ?? null;
 if (!$id) {
-    header("Location: materias_listar.php");
+    header('Location: materias_listar.php');
     exit;
 }
 
 $errores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_validar();
+
     $datos = [
         'nombre_materia' => trim($_POST['nombre_materia'] ?? ''),
         'id_carrera'     => $_POST['id_carrera'] ?? null,
@@ -28,17 +35,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errores)) {
         try {
             $materiaModel->actualizar($id, $datos);
-            header("Location: materias_listar.php");
+            flash_set('success', 'Materia actualizada correctamente.');
+            header('Location: materias_listar.php');
             exit;
         } catch (PDOException $e) {
-            $errores[] = "Error al actualizar la materia: " . $e->getMessage();
+            $errores[] = "Error al actualizar la materia.";
         }
     }
 }
 
 $materia_actual = $materiaModel->obtenerPorId($id);
 if (!$materia_actual) {
-    header("Location: materias_listar.php");
+    header('Location: materias_listar.php');
     exit;
 }
 

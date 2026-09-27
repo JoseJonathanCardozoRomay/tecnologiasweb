@@ -150,7 +150,7 @@ try {
             break;
 
         case 'todas':
-            verificar_rol(['administrador']);
+            verificar_rol(['administrador', 'auxiliar']);
 
             $estado = $_GET['estado'] ?? null;
             $fecha_desde = $_GET['fecha_desde'] ?? null;

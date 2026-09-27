@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS estudiantes (
   id_usuario INT NOT NULL UNIQUE,
   id_carrera INT NOT NULL,
   semestre TINYINT NOT NULL,
+  materias_completadas INT NOT NULL DEFAULT 0,
+  acceso_mg_desbloqueado TINYINT(1) NOT NULL DEFAULT 0,
+  mg_desbloqueado_por INT NULL,
+  mg_desbloqueado_fecha DATETIME NULL,
   registro_universitario VARCHAR(30) UNIQUE,
   CONSTRAINT fk_estudiantes_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
   CONSTRAINT fk_estudiantes_carreras FOREIGN KEY (id_carrera) REFERENCES carreras(id_carrera) ON UPDATE CASCADE
@@ -97,6 +101,27 @@ CREATE TABLE IF NOT EXISTS disponibilidad_tutor (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------
+-- Modalidades de graduación (entes oficiales)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS modalidades_graduacion (
+  id_modalidad INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(80) NOT NULL,
+  descripcion TEXT,
+  minimo_reuniones_semana TINYINT NOT NULL DEFAULT 1,
+  cantidad_informes TINYINT NOT NULL DEFAULT 3,
+  activa TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Estados de cierre de un expediente de Modalidad de Grado (catálogo 3FN)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS estados_conclusion_mg (
+  id_estado_conclusion INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(50) NOT NULL,
+  descripcion VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
 -- Tutorías (sesiones agendadas)
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tutorias (
@@ -104,17 +129,22 @@ CREATE TABLE IF NOT EXISTS tutorias (
   id_estudiante INT NOT NULL,
   id_tutor INT NOT NULL,
   id_materia INT NOT NULL,
+  id_modalidad INT NULL,
+  id_estado_conclusion INT NULL,
+  tipo ENUM('apoyo','grado') NOT NULL DEFAULT 'apoyo',
   fecha DATE NOT NULL,
   hora_inicio TIME NOT NULL,
   hora_fin TIME NOT NULL,
   modalidad ENUM('presencial','virtual') NOT NULL DEFAULT 'presencial',
   lugar_o_enlace VARCHAR(200),
-  estado ENUM('pendiente','confirmada','realizada','cancelada') NOT NULL DEFAULT 'pendiente',
+  estado ENUM('pendiente','confirmada','asignada','aceptada','en_proceso','en_reasignacion','realizada','cancelada','finalizada') NOT NULL DEFAULT 'pendiente',
   observaciones TEXT,
   fecha_solicitud DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_tutorias_estudiante FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON UPDATE CASCADE,
   CONSTRAINT fk_tutorias_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON UPDATE CASCADE,
   CONSTRAINT fk_tutorias_materia FOREIGN KEY (id_materia) REFERENCES materias(id_materia) ON UPDATE CASCADE,
+  CONSTRAINT fk_tutorias_modalidad FOREIGN KEY (id_modalidad) REFERENCES modalidades_graduacion(id_modalidad) ON UPDATE CASCADE,
+  CONSTRAINT fk_tutorias_estado_conclusion FOREIGN KEY (id_estado_conclusion) REFERENCES estados_conclusion_mg(id_estado_conclusion) ON UPDATE CASCADE,
   INDEX idx_tutoria_fecha (fecha),
   INDEX idx_tutoria_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -143,6 +173,184 @@ CREATE TABLE IF NOT EXISTS registro_accesos (
   CONSTRAINT fk_accesos_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------
+-- Cartas de designación (flujo coordinación -> tutor)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cartas_designacion (
+  id_carta INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutoria INT NOT NULL,
+  id_tutor INT NOT NULL,
+  id_estudiante INT NOT NULL,
+  fecha_generacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  fecha_firma DATETIME NULL,
+  estado ENUM('pendiente','aceptada','rechazada') NOT NULL DEFAULT 'pendiente',
+  motivo_rechazo TEXT NULL,
+  CONSTRAINT fk_carta_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE,
+  CONSTRAINT fk_carta_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON UPDATE CASCADE,
+  CONSTRAINT fk_carta_estudiante FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Reuniones (sesiones con asistencia y evidencia)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reuniones (
+  id_reunion INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutoria INT NOT NULL,
+  fecha DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  lugar_o_enlace VARCHAR(200),
+  asistio_estudiante ENUM('si','no','tardanza') NOT NULL DEFAULT 'si',
+  evidencia_url VARCHAR(255),
+  observaciones TEXT,
+  CONSTRAINT fk_reunion_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Informes de avance (evidencia de progreso 0-100%)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS informes_avance (
+  id_informe INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutoria INT NOT NULL,
+  numero_informe TINYINT NOT NULL,
+  fecha_limite DATE NULL,
+  fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  porcentaje_avance TINYINT NOT NULL DEFAULT 0 CHECK (porcentaje_avance BETWEEN 0 AND 100),
+  descripcion_avance TEXT,
+  CONSTRAINT fk_informe_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE,
+  UNIQUE KEY uq_informe_tutoria (id_tutoria, numero_informe)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Tribunales (2 docentes por tutoría; nunca el tutor asignado)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tribunales (
+  id_tribunal INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  id_tutoria INT NOT NULL,
+  CONSTRAINT fk_tribunal_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  CONSTRAINT fk_tribunal_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE,
+  UNIQUE KEY uq_tribunal_tutoria (id_usuario, id_tutoria)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Historial y auditoría (logins, logouts y eventos críticos)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS historial_auditoria (
+  id_historial INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NULL,
+  tipo_evento VARCHAR(60) NOT NULL,
+  descripcion TEXT NOT NULL,
+  fecha_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ip_origen VARCHAR(45),
+  CONSTRAINT fk_historial_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Configuración del sistema (parámetros de negocio)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS configuracion_sistema (
+  clave VARCHAR(50) PRIMARY KEY,
+  valor VARCHAR(100) NOT NULL,
+  descripcion VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Estudiante en tutoría (varios estudiantes por tutoría de apoyo)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tutoria_estudiantes (
+  id_tutoria INT NOT NULL,
+  id_estudiante INT NOT NULL,
+  fecha_inscripcion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_tutoria, id_estudiante),
+  CONSTRAINT fk_te_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE,
+  CONSTRAINT fk_te_estudiante FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Comprobantes de pago para Modalidad de Grado
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS comprobantes_pago_mg (
+  id_comprobante INT AUTO_INCREMENT PRIMARY KEY,
+  id_estudiante INT NOT NULL,
+  monto DECIMAL(10,2) NOT NULL,
+  fecha_pago DATE NOT NULL,
+  ruta_archivo VARCHAR(255) NOT NULL,
+  estado ENUM('pendiente','aprobado','rechazado') NOT NULL DEFAULT 'pendiente',
+  motivo_rechazo TEXT NULL,
+  fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+  validado_por INT NULL,
+  fecha_validacion DATETIME NULL,
+  CONSTRAINT fk_comprobante_estudiante FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_estudiante) ON DELETE CASCADE,
+  CONSTRAINT fk_comprobante_operador FOREIGN KEY (validado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+  INDEX idx_comprobante_estado (estado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Carreras de los docentes (filtro estricto por carrera)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS docente_carreras (
+  id_docente_carrera INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutor INT NOT NULL,
+  id_carrera INT NOT NULL,
+  UNIQUE KEY uq_docente_carrera (id_tutor, id_carrera),
+  CONSTRAINT fk_dc_tutor FOREIGN KEY (id_tutor) REFERENCES tutores(id_tutor) ON DELETE CASCADE,
+  CONSTRAINT fk_dc_carrera FOREIGN KEY (id_carrera) REFERENCES carreras(id_carrera) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Bitácora de auditoría de usuarios (admin / auxiliar)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS bitacora_auditoria_usuarios (
+  id_bitacora INT AUTO_INCREMENT PRIMARY KEY,
+  id_operador INT NOT NULL,
+  id_afectado INT NOT NULL,
+  accion ENUM('crear','editar','eliminar') NOT NULL,
+  detalles TEXT NULL,
+  fecha_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ip_origen VARCHAR(45),
+  CONSTRAINT fk_bitacora_operador FOREIGN KEY (id_operador) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  CONSTRAINT fk_bitacora_afectado FOREIGN KEY (id_afectado) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  INDEX idx_bitacora_fecha (fecha_hora)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Notificaciones (campana del header; tiempo real vía polling)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notificaciones (
+  id_notificacion INT AUTO_INCREMENT PRIMARY KEY,
+  id_destinatario INT NOT NULL,
+  id_origen INT NULL,
+  tipo VARCHAR(60) NOT NULL,
+  mensaje VARCHAR(500) NOT NULL,
+  enlace VARCHAR(255) NULL,
+  leida TINYINT(1) NOT NULL DEFAULT 0,
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notif_destinatario FOREIGN KEY (id_destinatario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  CONSTRAINT fk_notif_origen FOREIGN KEY (id_origen) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+  INDEX idx_notif_destinatario (id_destinatario, leida),
+  INDEX idx_notif_fecha (fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------
+-- Documentos enviados en el expediente de la tutoría
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS documentos_expediente (
+  id_documento INT AUTO_INCREMENT PRIMARY KEY,
+  id_tutoria INT NOT NULL,
+  id_origen INT NOT NULL,
+  id_destinatario INT NOT NULL,
+  nombre_original VARCHAR(255) NOT NULL,
+  ruta_archivo VARCHAR(255) NOT NULL,
+  descripcion VARCHAR(500) NULL,
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_doc_exp_tutoria FOREIGN KEY (id_tutoria) REFERENCES tutorias(id_tutoria) ON DELETE CASCADE,
+  CONSTRAINT fk_doc_exp_origen FOREIGN KEY (id_origen) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  CONSTRAINT fk_doc_exp_destinatario FOREIGN KEY (id_destinatario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  INDEX idx_doc_exp_tutoria (id_tutoria),
+  INDEX idx_doc_exp_destinatario (id_destinatario)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- =========================================================
 -- Datos semilla iniciales
 -- =========================================================
@@ -151,7 +359,8 @@ CREATE TABLE IF NOT EXISTS registro_accesos (
 INSERT INTO roles (id_rol, nombre_rol) VALUES 
 (1, 'administrador'), 
 (2, 'tutor'), 
-(3, 'estudiante')
+(3, 'estudiante'),
+(4, 'auxiliar')
 ON DUPLICATE KEY UPDATE nombre_rol = VALUES(nombre_rol);
 
 -- Carreras
@@ -199,6 +408,39 @@ INSERT INTO usuarios (id_usuario, id_rol, nombre, apellido, correo, usuario, con
 (3, 3, 'Maria', 'Estudiante', 'estudiante@tutorias.local', 'estudiante1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000003', 'activo')
 ON DUPLICATE KEY UPDATE usuario = VALUES(usuario);
 
-INSERT INTO estudiantes (id_estudiante, id_usuario, id_carrera, semestre, registro_universitario) VALUES
-(1, 3, 1, 4, 'RU-2026-98765')
+INSERT INTO estudiantes (id_estudiante, id_usuario, id_carrera, semestre, materias_completadas, registro_universitario) VALUES
+(1, 3, 1, 9, 54, 'RU-2026-98765')
 ON DUPLICATE KEY UPDATE semestre = VALUES(semestre);
+
+-- Modalidades de graduación (entes oficiales)
+INSERT INTO modalidades_graduacion (id_modalidad, nombre, descripcion, minimo_reuniones_semana, cantidad_informes, activa) VALUES
+(1, 'Proyecto', 'Trabajo práctico orientado a construir un producto software. Se exige 1 reunión semanal y 3 informes de avance.', 1, 3, 1),
+(2, 'Tesis', 'Investigación formal con sustento teórico y metodológico. Se exige 2 reuniones semanales y 4 informes de avance.', 2, 4, 1),
+(3, 'Trabajo Dirigido', 'Solución a un problema real de la institución o empresa. Se exige 1 reunión semanal y 4 informes de avance.', 1, 4, 1)
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+
+-- Estados de cierre del expediente de Modalidad de Grado
+INSERT INTO estados_conclusion_mg (id_estado_conclusion, nombre, descripcion) VALUES
+(1, 'Aprobada', 'El estudiante aprobó la defensa y concluyó la Modalidad de Grado.'),
+(2, 'Reprobada', 'El estudiante no aprobó la defensa de la Modalidad de Grado.'),
+(3, 'Abandono', 'El estudiante abandonó la Modalidad de Grado sin concluir.'),
+(4, 'Otros', 'Otro resultado de cierre del expediente de grado.')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion);
+
+-- Configuración del sistema (parámetros de negocio)
+INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
+('cupo_minimo_apoyo', '3', 'Número mínimo de estudiantes por tutoría de apoyo para habilitarla.'),
+('cupo_maximo_mg', '5', 'Límite de estudiantes por tutor en Modalidad de Grado.'),
+('materias_requeridas_mg', '54', 'Materias culminadas requeridas para acceder a Modalidad de Grado.'),
+('semestres_requeridos_mg', '9', 'Semestres requeridos para acceder a Modalidad de Grado.')
+ON DUPLICATE KEY UPDATE valor = VALUES(valor), descripcion = VALUES(descripcion);
+
+-- 4. Auxiliar de prueba (auxiliar / password)
+INSERT INTO usuarios (id_usuario, id_rol, nombre, apellido, correo, usuario, contrasena_hash, telefono, estado) VALUES
+(14, 4, 'Auxiliar', 'Coordinación', 'auxiliar@tutorias.local', 'auxiliar', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '70000014', 'activo')
+ON DUPLICATE KEY UPDATE usuario = VALUES(usuario);
+
+-- Carreras de los docentes (filtro estricto por carrera)
+INSERT INTO docente_carreras (id_tutor, id_carrera) VALUES
+(1, 1)
+ON DUPLICATE KEY UPDATE id_carrera = VALUES(id_carrera);

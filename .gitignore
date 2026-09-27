@@ -1,0 +1,15 @@
+# Copias en cache generadas en runtime (se regeneran solas, no son fuente)
+uploads/cartas/carta_*.pdf
+uploads/cartas/*.tmp
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Dependencias
+node_modules/
+vendor/

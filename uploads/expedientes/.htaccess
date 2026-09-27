@@ -1,0 +1,9 @@
+# Bloquear ejecucion de scripts en la carpeta de documentos del expediente
+<FilesMatch "\.(php|phtml|php3|php4|php5|phar)$">
+    Require all denied
+</FilesMatch>
+
+php_flag engine off
+
+# No listar el directorio
+Options -Indexes

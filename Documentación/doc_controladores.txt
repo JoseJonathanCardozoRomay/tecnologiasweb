@@ -1,0 +1,926 @@
+﻿================================================================================
+DOCUMENTACIÓN DEL SISTEMA DE TUTORÍAS ACADÉMICAS - UPDS SEDE TARIA
+CONTROLADORES, LÓGICA DE NEGOCIO Y AUDITORÍA (doc_controladores.txt)
+================================================================================
+
+SECCIÓN 1. PATRÓN DE DISEÑO (MVC PROPIO)
+--------------------------------------------------------------------------------
+El proyecto usa un patrón MVC ligero sin framework; la URL determina el
+controlador (un archivo PHP de controllers/), que a su vez:
+
+  1) Protege el acceso (includes/auth.php y includes/verificar_sesion.php):
+     - requerirSesion(): si no hay sesión válida redirige al login (o devuelve
+       401 JSON si la petición espera JSON: cabecera "Accept: application/json").
+     - requerirRol([...]): valida el rol de $_SESSION['rol'] y devuelve HTTP 403
+       (vista views/errores/403.php para HTML, 403 JSON para API).
+  2) Valida el token CSRF en operaciones de escritura (csrf_validar()).
+  3) Levanta los modelos, ejecuta la lógica de negocio y, cuando corresponde,
+     registra auditoría.
+  4) Prepara variables y carga la vista (views/...) o responde JSON con
+     config/Response.php (formato estándar: status/code/message).
+
+Roles del sistema (guardados en $_SESSION['rol'] al iniciar sesión):
+   1=administrador, 2=tutor, 3=estudiante, 4=auxiliar.
+
+Los controladores se agrupan por dominio:
+   - Gestión de usuarios y accesos  (usuarios_*, accesos_*, bitacora_*, logout)
+   - Catálogos                       (carreras_*, materias_*, tutores_*)
+   - Tutorías                        (tutorias_*, tribunales_*, cartas_*,
+                                      informes_*, reuniones_*)
+   - Modalidad de Grado              (mg_comprobantes_*, expediente_*)
+   - Notificaciones                  (notificaciones_*)
+   - API JSON                        (TutoriaController, TutorController)
+   - Autenticación                   (login_procesar)
+
+
+
+SECCIÓN 2. AUTENTICACIÓN Y SESIÓN
+--------------------------------------------------------------------------------
+--- controllers/login_procesar.php ---
+  * Acepta POST (formulario) o JSON (contenido "application/json").
+  * Autentica contra usuarios por "usuario" o "correo" y verifica la
+    contraseña con password_verify (campo del formulario: contrasena).
+  * Registra AUDITORÍA DE ACCESO en registro_accesos (resultado exitoso o
+    fallido + IP) y un evento LOGIN en historial_auditoria.
+  * Si falla, guarda mensaje flash (login_error) y redirige al login.
+
+--- controllers/logout.php ---
+  * Registra LOGOUT en historial_auditoria y destruye la sesión.
+  * Redirige a views/login/login.php.
+
+--- includes/sesion.php (protección de sesión) ---
+  * SESION_TIEMPO_INACTIVIDAD = 1800 seg. (expira por inactividad).
+  * Cookies HttpOnly + Secure + SameSite=Lax; regeneración de id.
+
+--- includes/csrf.php ---
+  * csrf_token secreto rotado por sesión; csrf_validar() usa hash_equals.
+  * Todos los formularios de escritura llevan csrf_campo() y el controlador
+    lo valida (en las vistas, confirmarEliminacion/enviarPostSeguro en
+    layouts/footer.php replican el CSRF en peticiones AJAX).
+
+
+
+SECCIÓN 3. GESTIÓN DE USUARIOS Y AUDITORÍA DE MANTENIMIENTOS
+--------------------------------------------------------------------------------
+--- controllers/usuarios_crear.php ---  (requerirRol administrador o auxiliar)
+  * Crea cuenta con password_hash y datos básicos; valida unicidad de usuario
+    y correo.
+  * REGISTRA EN BITÁCORA: BitacoraModel::registrar(operador, afectado, 'crear',
+    detalles JSON con los datos) -> bitacora_auditoria_usuarios.
+
+--- controllers/usuarios_editar.php ---  (administrador o auxiliar)
+  * Permite cambiar datos y contraseña.
+  * REGISTRA EN BITÁCORA con acción 'editar' y detalles JSON con datos
+    anteriores y nuevos.
+
+--- controllers/usuarios_eliminar.php ---  (SOLO administrador)
+  * Elimina el usuario; protege contra la eliminación de administradores y de
+    la propia sesión.
+  * REGISTRA EN BITÁCORA con acción 'eliminar' (el afectado queda marcado para
+    la consulta como "usuario eliminado (#id)").
+
+--- controllers/usuarios_listar.php ---  (administrador o auxiliar)
+  * Listado paginado y ordenable con filtro de búsqueda (lista_controlador.php/
+    lista_helper.php).
+  * Permite cambiar rol/estado activo del usuario.
+
+--- controllers/accesos_listar.php ---  (SOLO administrador)
+  * Lista registro_accesos con filtros de estado (Todos/Exitosos/Fallidos),
+    búsqueda por usuario o IP y KPIs (totales, exitosos, fallidos).
+
+--- controllers/bitacora_listar.php ---  (administrador o auxiliar)
+  * Lista bitacora_auditoria_usuarios con búsqueda (operador, afectado, acción,
+    detalles) y modal de detalle (JSON formateado).
+
+
+
+SECCIÓN 4. CATÁLOGOS (carreras, materias, tutores) - administrador
+--------------------------------------------------------------------------------
+--- controllers/carreras_*.php ---
+  * crear / editar / eliminar / listar. CRUD básico de carreras; eliminar y
+    crear/editar validan CSRF. El listado usa filtro por nombre y orden por
+    id/nombre/materias/estudiantes (totales calculados).
+
+--- controllers/materias_*.php ---
+  * crear / editar / eliminar / listar. La materia pertenece a una carrera;
+    el listado permite filtrar por id_carrera y busca en nombre_materia o
+    nombre_carrera. Validan nombre y carrera.
+
+--- controllers/tutores_*.php ---
+  * tutores_crear.php (administrador): crea el perfil de tutor junto con la
+    cuenta de usuario (rol tutor) y valida correo, clave >= 6 y unicidad.
+  * tutores_listar.php (administrador/auxiliar): listado con búsqueda.
+  * tutores_disponibilidad.php (administrador, auxiliar o el propio tutor):
+    guarda especialidad, materias, carreras y bloques horarios. Valida días
+    (Lunes..Sabado), formato HH:MM y hora_fin > hora_inicio; usa la const
+    DIAS_SEMANA. Es el punto de configuración de la disponibilidad docente.
+
+NOTA: No existen tutores_editar.php/tutores_eliminar.php como archivos planos;
+la actualización de perfiles y asignación de materias/carreras se resuelve vía
+la API TutorController (Sección 8) y tutores_disponibilidad.php.
+
+
+
+SECCIÓN 5. GESTIÓN DE TUTORÍAS (flujo principal)
+--------------------------------------------------------------------------------
+--- controllers/tutorias_solicitar.php ---  (estudiante)
+  * Renderiza el formulario de solicitud (apoyo o grado) usando TutorController
+    para cargar tutores por materia/carrera.
+  * Incluye la pestaña "Modalidad de Grado" bloqueada con candado si no se
+    cumplen los requisitos.
+
+--- controllers/tutorias_unirse.php ---  (estudiante)
+  * Un estudiante se inscribe en una tutoría de apoyo abierta (cupo).
+  * REGISTRA TUTORIA_UNIDO en historial_auditoria.
+
+--- controllers/tutorias_asignar.php ---  (administrador o auxiliar)
+  * Asigna manualmente la tutoría de graduación (estudiante + tutor + materia
+    + modalidad de graduación + agenda).
+  * VALIDACIÓN DE CUPO: compara el cupo del tutor contra config
+    'cupo_maximo_mg' (máx. 5 activas). Si el tutor está lleno, exige el
+    checkbox "Sobreasignación aprobada por Decanatura" (sobreasignar=1).
+  * Al asignar genera la CARTA DE DESIGNACIÓN (CartaModel::crear) que llega al
+    tutor para aceptarla/rechazarla.
+  * REGISTRA TUTORIA_ASIGNADA en historial_auditoria.
+
+--- controllers/tutorias_listar.php ---  (administrador o auxiliar)
+  * Listado completo con 5 KPIs (total, pendientes, confirmadas, realizadas,
+    canceladas), filtros por estado y búsqueda; acciones de gestión
+    (confirmar/cancelar/realizar/finalizar MG + expediente).
+
+--- controllers/tutorias_cambiar_estado.php ---  (según acción)
+  * Transiciones de estado: pendiente->confirmada (aceptar), confirmada->
+    realizada, ->cancelada (con motivo), y FINALIZAR MODALIDAD DE GRADO.
+  * Para finalizar una MG exige id_estado_conclusion (catálogo
+    estados_conclusion_mg); al finalizar registra TUTORIA_FINALIZADA.
+  * REGISTRA TUTORIA_ASIGNADA/TUTORIA_CANCELADA/TUTORIA_FINALIZADA (según
+    transición). Envía notificaciones a los involucrados.
+
+--- controllers/tribunales_asignar.php ---  (administrador o auxiliar)
+  * Composición de tribunales evaluadores (máx. 3 docentes).
+  * Acciones registradas en historial_auditoria:
+        TRIBUNAL_ASIGNADO   (asignar miembros),
+        TRIBUNAL_MODIFICADO (editar/reemplazar miembros),
+        TRIBUNAL_ELIMINADO  (retirar un miembro).
+  * Envía notificaciones TRIBUNAL_ASIGNADO/TRIBUNAL_MODIFICADO/TRIBUNAL_ELIMINADO
+    a los tutores/estudiantes de la tutoría.
+  * Validación de negocios (TribunalModel): total de miembros entre 2 y 3; el
+    modo agregar solo añade docentes aún no asignados (no repite).
+
+--- controllers/cartas_responder.php ---  (tutor)
+  * El tutor acepta o rechaza la carta de designación (con motivo/rechazo
+    obligatorio, >= 5 caracteres).
+  * Al aceptar la carta, la tutoría pasa a estado valido y el flujo continúa.
+  * REGISTRA CARTA_ACEPTADA / CARTA_RECHAZADA y notifica a la administración.
+
+--- controllers/informes_registrar.php ---  (tutor)
+  * Registra informes de avance sobre tutorías en estado aceptada/en_proceso.
+  * Valida fecha, porcentaje (0-100), número de informe y que la tutoría
+    pertenezca al tutor.
+  * REGISTRA INFORME_REGISTRADO en historial_auditoria.
+
+--- controllers/reuniones_registrar.php ---  (tutor)
+  * Registra reuniones con fecha/hora, asistencia (si/no/tardanza) y evidencia
+    adjunta.
+  * EVIDENCIA: extensiones jpg/jpeg/png/pdf, máx. 5 MB, subida a
+    uploads/evidencias/ con nombre aleatorio y validación MIME doble.
+  * Efecto colateral: si la tutoría estaba 'aceptada', pasa a 'en_proceso'.
+  * REGISTRA REUNION_REGISTRADA en historial_auditoria.
+
+
+
+SECCIÓN 6. MODALIDAD DE GRADO (pagas, expediente, desbloqueo)
+--------------------------------------------------------------------------------
+--- controllers/mg_comprobantes_registrar.php ---  (estudiante)
+  * Página principal de la MG: muestra el reporte de elegibilidad (materias
+    requeridas, semestres, comprobante, desbloqueo) y el formulario para subir
+    el comprobante de pago.
+  * Validación de elegibilidad mediante EstudianteModel::puedeAccederMG() con
+    las config materias_requeridas_mg (54) y semestres_requeridos_mg (9).
+  * Sube el comprobante a uploads/comprobantes/ (jpg/jpeg/png/pdf, 5 MB) y
+    crea el registro con estado 'pendiente'.
+  * REGISTRA COMPROBANTE_MG en historial_auditoria y notifica a los
+    administradores (COMPROBANTE_MG_*).
+
+--- controllers/mg_comprobantes_listar.php ---  (admin ve todos; validación
+                                                 SOLO administrador)
+  * Lista de comprobantes (pendientes/aprobados/rechazados). El auxiliar puede
+    ver pero NO validar (las acciones se bloquean con candado).
+  * FLUJO DE APROBACIÓN: el administrador aprueba (estado=aprobado -> habilita
+    acceso_mg_desbloqueado del estudiante) o rechaza (estado=rechazado con
+    motivo). En ambos casos:
+        - REGISTRA COMPROBANTE_MG_APROBADO o COMPROBANTE_MG_RECHAZADO en
+          historial_auditoria.
+        - Notifica al estudiante (notificación COMPROBANTE_MG_APROBADO /
+          COMPROBANTE_MG_RECHAZADO).
+  * Al deshabilitar el acceso se registra MG_DESHABILITADA.
+
+--- controllers/expediente_documentos.php ---  (administrador o auxiliar)
+  * Adjunta documentos al expediente de la tutoría de MG (uploads/expedientes/).
+  * Restricciones: extensiones doc/docx/pdf, máx. 5 MB.
+  * REGISTRA DOCUMENTO_ENVIADO en historial_auditoria y notifica al
+    destinatario (DOCUMENTO_RECIBIDO).
+
+
+
+SECCIÓN 7. NOTIFICACIONES (buzón interno)
+--------------------------------------------------------------------------------
+--- controllers/notificaciones_listar.php ---  (requerirSesion, cualquier rol)
+  * Listado paginado/ordenable de las notificaciones del usuario con contador
+    de pendientes y acción "marcar todas como leídas".
+
+--- controllers/notificaciones_consultar.php ---  (requerirSesion, API JSON)
+  * Devuelve JSON las últimas notificaciones y el conteo sin leer; lo consume
+    la campana de la barra superior (polling cada 30 s).
+
+--- controllers/notificaciones_marcar.php ---  (POST, CSRF)
+  * Marca como leída una notificación concreta (id_notificacion) o todas
+    (todas=1). Redirige a la lista o responde JSON según el contexto.
+
+
+
+SECCIÓN 8. CONTROLADORES API (JSON) - TutoriaController y TutorController
+--------------------------------------------------------------------------------
+Ambos sitúan en config/Response.php y verificar_sesion.php, que detecta la
+cabecera "Accept: application/json" para responder 401/403 en JSON. El cuerpo
+se lee con leerCuerpo() (php://input JSON con fallback a $_POST) y las horas/
+fechas se validan con validarHora()/validarFecha() (checkdate).
+
+--- controllers/TutoriaController.php ---
+  * action=solicitar     (estudiante): crea solicitud de tutoría.
+  * action=mis_tutorias  (estudiante o tutor): lista tutorías del usuario.
+  * action=cambiar_estado(tutor): transición de estado de la tutoría.
+  * action=todas         (admin/auxiliar): listado completo con filtros de
+                         estado y rango de fechas (formato YYYY-MM-DD).
+  * Otros 404. No registra auditoría (los flujos web con auditoría pasan por
+    los controladores planos).
+
+--- controllers/TutorController.php ---
+  * action=listar / detalle / por_materia / por_carrera / materias
+    (selects y paneles de asignación; por_materia fuerza la carrera del
+    estudiante).
+  * action=disponibilidad (tutor): guarda bloques horarios con validación de
+    días y horas (validarBloque, const DIAS_SEMANA).
+  * action=guardar_carreras / mis_carreras (tutor), asignar_carreras /
+    asignar_materias (admin/auxiliar en la gestión de tutores).
+  * action=mi_perfil (tutor).
+  * action=crear (admin): crea tutor completo en transacción (usuario +
+    perfil + materias + carreras) devolviendo 201 con id_tutor e id_usuario.
+  * Otros 404.
+
+
+
+SECCIÓN 9. AUDITORÍA DEL SISTEMA (resumen de quién escribe qué)
+--------------------------------------------------------------------------------
+Hay tres fuentes de trazabilidad, todas con la IP del operador
+($_SERVER['REMOTE_ADDR']):
+
+  1) registro_accesos            -> solo login_procesar.php (incluye intentos
+                                     fallidos). Lectura: accesos_listar (admin).
+  2) historial_auditoria (eventos)-> lo escriben: login (LOGIN), logout
+     (LOGOUT), reuniones_registrar (REUNION_REGISTRADA), informes_registrar
+     (INFORME_REGISTRADO), cartas_responder (CARTA_ACEPTADA/RECHAZADA),
+     tribunales_asignar (TRIBUNAL_ASIGNADO/MODIFICADO/ELIMINADO),
+     tutorias_asignar (TUTORIA_ASIGNADA), tutorias_unirse (TUTORIA_UNIDO),
+     tutorias_cambiar_estado (TUTORIA_CANCELADA/FINALIZADA, etc.),
+     mg_comprobantes_registrar (COMPROBANTE_MG), mg_comprobantes_listar
+     (COMPROBANTE_MG_APROBADO/RECHAZADO, MG_DESHABILITADA),
+     expediente_documentos (DOCUMENTO_ENVIADO).
+     Lectura: historial_listar (admin) con categorías y filtros.
+     Nota UX/SPRINT: historial_listar soporta filtros vía GET que la vista
+     reenvía automáticamente (submit inmediato) al pulsar una pestaña de
+     categoría (tipo_evento="categoria:<nombre>") o al cambiar por_pagina;
+     el botón "Filtrar" aplica de forma explícita usuario + rango de fechas.
+     La categoría activa persiste entre submits mediante el campo oculto
+     tipo_evento, y el cambio de por_pagina reinicia a la página 1.
+  3) bitacora_auditoria_usuarios -> solo usuarios_crear (crear), usuarios_editar
+     (editar) y usuarios_eliminar (eliminar) vía BitacoraModel, con detalles
+     JSON. Lectura: bitacora_listar (admin/auxiliar).
+
+PERMISOS POR DOMINIO (resumen):
+   - administrador:        todo (incluye usuarios_eliminar, historial, accesos,
+                           catálogos, validar comprobantes, finalizar MG).
+   - auxiliar:             gestión de tutorías, tribunales, expediente,
+                           comprobantes (solo ver), tutores, bitácora. SIN
+                           historial de accesos ni eliminación de usuarios.
+   - tutor:                responde cartas, registra reuniones/informes,
+                           acepta/cancela tutorías, gestiona disponibilidad.
+   - estudiante:           solicita tutorías, se une a tutorías de apoyo,
+                           sube comprobantes MG, consulta su historial.
+
+================================================================================
+SPRINT 6 - ENDURECIMIENTO Y SANEAMIENTO DE CONTROLADORES
+================================================================================
+
+NUEVO ENDPOINT DE AUTCOMPLETADO: controllers/buscar_usuarios.php
+  * Devuelve JSON application/json; charset=utf-8 con sugerencias de usuarios
+    activos: [{id, label}] donde label = "Nombre Apellido (@username)".
+  * B�squeda por nombre, apellido o username; saneada y limitada; solo usuarios
+    activos y con rol registrado (consulta preparada, LIKE escapado, LIMIT 10).
+
+HELPERS DE VALIDACI�N (includes/lista_controlador.php):
+  * limpiarTexto(valor, max)  : recorta y limita la longitud.
+  * validarFechaISO()          : exige formato YYYY-MM-DD (filtros de fechas).
+  * escapaLike()               : escapa \ % _ para sentencias LIKE preparadas.
+  * parametrosListado()        : ahora saneado por defecto: orden (30),
+                                  q (100), estado (30); por_pagina validado
+                                  contra la lista de opciones permitidas.
+
+HISTORIAL Y AUDITOR�A (controllers/historial_listar.php reescrito):
+  * Todos los par�metros GET son saneados (tipo_evento, id_usuario, fechas,
+    buscar_usuario, id_rol).
+  * El filtro de rol es DIN�MICO: los roles se leen desde la BD
+    (UsuarioModel::obtenerRoles) y se valida el id contra esa lista
+    (sin hardcodeo de IDs).
+  * El filtro por categor�a (categoria:<nombre>) se resuelve a sus eventos y se
+    ignora si la categor�a no existe.
+  * B�squeda de usuario por texto (nombre/apellido/username) + rol combinables
+    con fechas y categor�a.
+
+OTROS LISTADOS SANEADOS (patr�n uniforme):
+  * usuarios, carreras, materias (id_carrera validado como entero), tutores,
+    tutor�as, accesos (?estado), bit�cora (?accion), notificaciones,
+    comprobantes MG (?estado) y unirse (?q) aplican parametrosListado() +
+    limpiarTexto/validaci�n antes de filtrar/paginar.
+  * mg_comprobantes_listar.php ahora pagina y filtra (q y estado) con paginaci�n
+    �nica en cabecera.
+  * tutorias_unirse.php: b�squeda por materia/tutor + por p�gina (Estudiante).
+
+SEGURIDAD APLICADA EN TODO EL SPRINT:
+  * Consultas con PDO preparado y par�metros vinculados en los modelos; para
+    LIKE se usa escapaLike() de modo que los comodines del usuario son literales.
+  * Salida de cualquier dato en vistas mediante htmlspecialchars.
+
+CAMBIOS ANTERIORES DE ESTA SESI�N:
+  * Seeder (database/seed.php): tablas truncadas + datos de demo/desarrollo;
+    todas las claves por defecto "Control123+".
+  * Paginaci�n por p�gina en cabecera en los listados arriba mencionados.
+SPRINT 6 (continuacion) - ASIGNACION Y GESTION DE TRIBUNALES (Modalidad de Grado)
+Controlador: controllers/tribunales_asignar.php
+  * Se incorpora includes/lista_controlador.php para sanitizar entradas (limpiarTexto).
+  * Recoleccion dinamica de tribunales 1..5 recorriendo maximoTribunales() en vez de
+    campos fijos; se emiten los mismos mensajes de validacion del modelo.
+  * Validaciones de seguridad/negocio antes del guardado:
+      - Sin docentes duplicados dentro del mismo expediente (POST y modelo).
+      - Minimo 2 tribunales (Tribunal 1 y 2 obligatorios); maximo 5 por expediente.
+      - Pertenencia a carrera (docente_carreras) verificada server-side contra
+        docentesDisponibles(); el tutor de la tutoria queda fuera.
+      - Solo usuarios con estado activo pueden ser tribunal.
+  * Parametro q_tribunal saneado (max 60) y aplicado al listado de docentes; en errores
+    la pagina se re-renderiza conservando la tutoria y el filtro.
+  * Todos los POST son seguros: CSRF, consultas PDO preparadas, transaccion + INSERT
+    IGNORE en asignacion (modo agregar ignora miembros ya presentes).
+  * Se registra historial (TRIBUNAL_ASIGNADO/MODIFICADO/ELIMINADO) y notificaciones a
+    estudiante, tutor y docentes involucrados en cada accion del tribunal.
+
+CAMBIOS ANTERIORES DE ESTA SESION:
+  * Seeder (database/seed.php): tablas truncadas + datos de demo/desarrollo.
+
+================================================================================
+SPRINT 7 - MODULO MODALIDADES DE GRADO (CONTROLADORES)
+--------------------------------------------------------------------------------
+Doce nuevos controladores en controllers/ con el patron MVC propio
+(verificar_sesion + auth/requerirRol + csrf_validar + modelos + flash + vista).
+Roles: parametros solo administrador; modalidades, cohortes y expedientes para
+administrador y auxiliar.
+
+  mg_parametros_listar.php
+    - Carga todas las configuraciones (MgParametroModel->obtenerTodas()) y
+      presenta views/mg/parametros.php.
+
+  mg_parametros_guardar.php (POST, administrador)
+    - csrf_validar(); itera la lista autorizada de claves y actualiza solo las
+      presentes en $_POST['valor'][clave] (evita inyeccion de claves
+      arbitrarias). Flash de confirmacion con el numero de filas actualizadas.
+
+  mg_modalidades_listar.php / insertar / editar / eliminar
+    - CRUD de modalidades de grado con validacion de nombre unico
+      (MgModalidadModel->existeNombre, <> id en edicion), flujo dentro de
+      mgFlujos() y aplicacion de regla de negocio requiere_tutor (examen de
+      areas / excelencia sin tutor). Eliminacion intentada protegida por FK
+      cuando la modalidad ya tiene expedientes. URL limpia via redirect y
+      mensaje flash.
+
+  mg_cohortes_listar.php / insertar / editar / eliminar
+    - CRUD de cohortes con nombre_periodo unico (existePeriodo), fechas
+      validadas (validarFechaISO + MgCohorteModel->validarFechas), y
+      transicion de estado abierta/cerrada/planificada.
+
+  mg_expedientes_listar.php
+    - Listado con buscador q (nombre/RU) y filtros estado/cohorte mediante
+      lista_controlador (paginacion y URL de filtros). Carga MgCohorteModel
+      para poblar el filtro de cohortes y mg_catalogos para los badges.
+
+  mg_expedientes_crear.php
+    - Alta de expediente: valida estudiante (debe existir, con
+      acceso_mg_desbloqueado y sin expediente activo), modalidad y cohorte
+      activa; insercion con MgExpedienteModel->crear y redirect a la ficha.
+
+  mg_expediente.php (GET)
+    - Ficha HU-025: obtiene expediente, historial, asignacion activa,
+      candidatos afines y parametros de carga (tutor_carga_recomendada,
+      tutor_carga_maxima, dias_limite_confirmacion_tutor,
+      requiere_acta_aceptacion_tutor) y renderiza views/mg/expedientes/ficha.php.
+
+  mg_expediente_asignar.php (POST)
+    - Asignacion asistida de tutor. Validaciones en cascada:
+      1) expediente activo existente -> rechaza ("ya tiene tutor activo");
+      2) modalidad sin tutor -> rechaza;
+      3) tutor no afino a la carrera (esTutorAfin) -> rechaza;
+      4) tutor con carga_actual >= carga_maxima -> rechaza.
+    - Llama MgExpedienteModel->asignarTutor() (transaccion: cierra asignaciones
+      activas previas, inserta la nueva 'activa', pasa el expediente a
+      'tutor_asignado') y notifica con flash. Nota: lastInsertId() se captura
+      INMEDIATAMENTE despues del INSERT (ejecutar un UPDATE entre medio
+      reinicia a 0 el valor de mysql_insert_id de la conexion PDO).
+
+  mg_expediente_estado.php (POST)
+    - Cambio de estado a cualquiera de los 6 validos (MgExpedienteModel::
+      ESTADOS); al pasar a 'validado' registra validado_por/fecha_validacion,
+      al volver a 'solicitado' los limpia. Actualiza resolucion_admin si llega
+      texto. Requiere mg_catalogos.php al inicio para el mensaje de flash.
+
+  mg_expediente_finalizar_asignacion.php (POST)
+    - Marca 'finalizada' la asignacion activa (finalizarAsignacion) sin tocar
+      el estado del expediente; el registro permanece en el historial y permite
+      una nueva asignacion.
+
+Seguridad: todos los POST validan token CSRF (csrf_validar()), uso de
+declaraciones preparadas en los modelos y saneamiento de enteros. Las
+redirecciones preservan el contexto (vuelven a la ficha o al listado) y los
+mensajes se entregan via flash_set().
+
+--------------------------------------------------------------------------------
+ACTUALIZACION 010 (addenda dentro del SPRINT 7):
+  * mg_calendario_listar.php (GET, admin+auxiliar): pagina de hitos por cohorte;
+    selector de cohorte (default: la abierta o la primera), muestra el rango de
+    fechas y estado de la cohorte activa, count de hitos y acciones editar/elimar.
+  * mg_calendario_crear.php (GET+POST): valida cohorte existente, titulo
+    obligatorio (max 120), fecha ISO (validarFechaISO), tipo_hito dentro de
+    mgTiposHito() y orden 0-999; redirect a listar?cohorte=<id>.
+  * mg_calendario_editar.php (GET+POST): misma validacion; redirect a la cohorte
+    del hito.
+  * mg_calendario_eliminar.php (POST): elimina el hito y vuelve a la cohorte
+    correspondiente. Todos los POST con csrf_validar() y flash.
+
+===============================================================================
+ADDENDA BLOQUE FINAL SPRINT 7 (HU-023/027/029/030/031/032/033/038)
+Fecha: 2026-09-26
+===============================================================================
+Controladores nuevos en controllers/:
+
+  * mg_padron_importar.php (HU-023)
+    - Roles: administrador, auxiliar.
+    - GET: formulario de importacion (cohorte + archivo CSV).
+    - POST (multipart, archivo_csv + id_cohorte_mg): MgPadronModel::importarFilas().
+      Resumen en sesion flash: leidas, creados (estudiantes+usuarios), 
+      actualizados y expedientes creados; detalle de filas rechazadas.
+    - Fuera de rol o sin POST valido: redireccion a la lista de expedientes.
+
+  * mg_defensas_listar.php (HU-029)
+    - Roles: administrador, auxiliar.
+    - Filtros: cohorte, estado (programada/evaluada). Badges con
+      mgDefensaEstadoBadge() y citacion disponible cuando hay correlativo.
+    - Enlace a programar/editar (mg_defensas_programar.php?id=N) y a evaluar
+      (solo estado programada). Eliminar via POST confirmado a 
+      mg_defensas_eliminar.php.
+
+  * mg_defensas_programar.php (HU-029)
+    - Roles: administrador, auxiliar. Modo edicion = GET id>0 (accion en el
+      form via action="...?id="). Unica defensa por expediente.
+    - Candidatos: MgDefensaModel::candidatos(cohorte) => expedientes sin
+      defensa en estado tutor_asignado/en_curso.
+    - Validaciones: fecha ISO, orden de horas, ambiente valido, 2..5 tribunales
+      (parametros tribunales_min_mg/tribunales_max_mg) sin repetidos, todos
+      afines a la carrera del estudiante, el tutor activo del expediente no
+      puede ser tribunal, anti-cruces de agenda: ambiente y docente/tutor
+      ocupados en el rango (conflictoAmbiente() y docenteOcupado()).
+    - Helpers locales mgHoraValida() y mgHoraNumero() para horarios HH:MM.
+
+  * mg_defensas_eliminar.php (HU-029)
+    - POST + csrf_validar(); campo id (GET o POST). Elimina defensa y sus
+      tribunales (ON DELETE CASCADE). Flash + redirect a la lista con cohorte.
+
+  * mg_defensa_evaluar.php (HU-031)
+    - Roles: administrador, auxiliar. GET id>0 (obtenerConDetalle).
+    - POST: notas por tribunal (nota[id_tribunal_defensa_mg], 0..100). Con
+      todas las notas: MgDefensaModel::evaluar() calcula promedio y resultado
+      (promedio >= nota_aprobacion_mg => aprobado, si no reprobado) y
+      actualizarEstadoExpediente() pasa el expediente a concluido (aprobado)
+      o cerrado (reprobado) con resolucion_admin descriptiva. Flash del
+      promedio/resultado.
+
+  * mg_carta_tutor.php (HU-027)
+    - Roles: administrador, auxiliar. GET id_expediente>0; requiere asignacion
+      activa. Si la asignacion no tiene correlativo_carta genera
+      mgSiguienteCorrelativo('carta_tutor', gestion) y lo persiste
+      (idempotente). Requiere includes/csrf.php via mg_catalogos en las cartas.
+    - Vista standalone A4 (membrete UPDS, destinatario, cuerpo, firmas), con
+      boton de impresion y @media print.
+
+  * mg_citacion_defensa.php (HU-030)
+    - Roles: administrador, auxiliar. GET id (defensa). Si defensas_mg no tiene
+      correlativo genera mgSiguienteCorrelativo('citacion_defensa', gestion) y
+      lo persiste via MgDefensaModel::asignarCorrelativo(). Vista standalone A4
+      con datos del tribunal, ambiente, fecha y hora.
+
+  * mg_reportes_cohorte.php (HU-032)
+    - Roles: administrador, auxiliar.
+    - GET cohorte: MgReporteModel::consolidado() + KPIs (total, con/sin tutor,
+      programadas, evaluadas, aprobados, reprobados, promedio).
+    - GET exportar=1: CSV con BOM UTF-8 (para Excel) y separador ';'; nombre:
+      reporte_cohorte_<periodo>_<YYYYMMDD_HHMMSS>.csv. Estado expediente y nota
+      fina/resultado por fila.
+
+  * mg_alertas.php (HU-033/038)
+    - Rol: SOLO administrador (403 para auxiliar).
+    - GET: MgAlertaModel::calcular($parametros) produce A1..A9 con nivel
+      (critica/advertencia/informativa) y referencias; historial de atenciones
+      (MgAlertaModel::historial()). Requiere includes/csrf.php para el modal.
+
+  * mg_alertas_atender.php (HU-038)
+    - Rol: SOLO administrador. POST + csrf_validar().
+    - Campos: codigo, titulo, mensaje, id_referencia, nota (obligatoria, max
+      255). MgAlertaModel::atender() guarda snapshot en alertas_mg con
+      atendida=1, atendida_por=sesion y nota. Flash + redirect a mg_alertas.php.
+
+ADDENDA 2026-09-26 - CIERRE Y ENDURECIMIENTO DE SEGURIDAD (SPRINT 7)
+======================================================================
+
+  ACTUALIZACION DE LA CREDENCIAL DEL ADMINISTRADOR
+  ------------------------------------------------
+  * database/012_admin_password.sql (migracion idempotente)
+    - UPDATE usuarios SET contrasena_hash = <bcrypt> WHERE usuario = 'admin'
+      OR correo = 'admin@sistema-tutorias.edu.bo'.
+    - El hash se genero con PHP 8.2 nativo:
+      password_hash('@g4t.a56', PASSWORD_BCRYPT)  ->  prefijo $2y$, 60 chars.
+    - Solo se almacena el hash; la contrasena nunca se escribe en la BD.
+    - Al final incluye una verificacion de solo lectura (algoritmo y longitud).
+    - Aplicar:
+      cmd /c "docker exec -i tutorias_db mysql -uroot -proot_password
+      tutorias_db < database\012_admin_password.sql"
+
+  * database/015_update_admin_password.php (script idempotente alterno)
+    - docker exec tutorias_web php
+      /var/www/html/database/015_update_admin_password.php
+    - Regenera el hash bcrypt en cada ejecucion (sal nueva) y lo aplica sobre
+      la cuenta de administracion.
+    - Al finalizar imprime el resultado de password_verify() como control.
+
+  * database/seed.php (seeder actualizado)
+    - El usuario 'admin' se siembra con
+      password_hash('@g4t.a56', PASSWORD_BCRYPT); el resto de usuarios
+      mantiene 'Control123+'.
+    - Evita que un re-seed del seeder revierta la credencial del
+      administrador.
+
+  SANITIZACION Y AUTENTICACION (LOGIN)
+  ------------------------------------
+  * controllers/login_procesar.php
+    - El campo de contrasena ahora se sanitiza con trim():
+        $contrasenaInput = trim((string) ($_POST['contrasena']
+            ?? $cuerpoJSON['contrasena'] ?? ''));
+    - trim() descarta unicamente espacio, tabulador, salto de linea, retorno de
+      carro y NUL de los extremos: conserva intactos los caracteres especiales
+      de la clave ('@', '.', '+', '-').
+    - El cast (string) evita que un valor JSON no escalar llegue a
+      password_verify().
+    - La comprobacion de la clave mantiene el uso seguro de
+      password_verify($contrasenaInput, $usuario['contrasena_hash']),
+      con validacion previa de $usuario['estado'] === 'activo'.
+    - El campo 'usuario' se mantiene con trim() y la busqueda sigue siendo
+      parametrizada (UsuarioModel::obtenerPorUsuario()).
+
+  VERIFICACION EN VIVO (2026-09-26)
+  ---------------------------------
+  - Login admin / "  @g4t.a56  " (con espacios en los extremos):
+    302 -> ../controllers/usuarios_listar.php y luego 200 en la pagina
+    protegida (sidebar del rol administrador).
+  - Control negativo con 'Control123+': 302 -> ../views/login/login.php.
+  - registro_accesos: id 61 'exitoso', id 62 'fallido'.
+
+ADDENDA 2026-09-26 - FLUJO DEL ESTUDIANTE Y NOTIFICACIONES DE MG (SPRINT 7)
+=========================================================================
+
+  AVISOS INTERNOS AL ESTUDIANTE (3 eventos notificados)
+  -----------------------------------------------------
+  Los tres eventos usan el helper mgAvisarEstudiante()
+  (includes/mg_catalogos.php), que resuelve
+  expedientes_mg -> estudiantes -> usuarios.id_destinatario y escribe en
+  notificaciones mediante NotificationModel::crear(). El enlace de todos los
+  avisos es /views/estudiante/mg_portal.php y el origen es el operador de
+  sesion. Ningun flujo aborta si el aviso no se puede guardar.
+
+  * controllers/mg_expediente_estado.php
+    - Tras MgExpedienteModel::cambiarEstado() (y actualizarResolucion()), envia
+      un aviso de tipo MG_EXPEDIENTE_ESTADO al estudiante con el nuevo estado
+      ya etiquetado via mgExpEstadoLabel() y la fecha del dia.
+
+  * controllers/mg_expediente_asignar.php
+    - Tras MgExpedienteModel::asignarTutor(), vuelve a leer la asignacion con
+      asignacionActiva() para incluir el nombre del docente, y envia un aviso
+      de tipo MG_TUTOR_ASIGNADO.
+    - Nuevo require de includes/mg_catalogos.php.
+
+  * controllers/mg_defensas_programar.php
+    - Tras crear() o actualizar(), envia un aviso de tipo
+      MG_DEFENSA_PROGRAMADA con la fecha en espa�ol (mgFechaEspanol), el
+      horario, el nombre del ambiente y el numero de docentes del tribunal.
+    - En modo edicion el mensaje dice "reprogramada".
+
+--------------------------------------------------------------------------------
+ACTUALIZACION 013 (addenda del SPRINT 8):
+  * controllers/reuniones_registrar.php
+    - El formulario de registro ya no captura asistencia ni cumplimiento: la
+      asistencia se pasa a la pestana Seguimiento y se sincroniza con
+      reuniones.asistio_estudiante al guardar el seguimiento.
+    - Valida que la reunion sea del tutor autenticado (id_usuario_tutor de
+      tutorias.tutor contra $_SESSION['id_usuario']) y devuelve 403 si no.
+    - Rechaza el seguimiento de una reunion futura con 409.
+    - Acepta id_tutoria del filtro GET, conserva $id_tutoria para la vista y
+      entrega $seguimientos indexados por id_reunion.
+  * controllers/reuniones_informe.php (nuevo)
+    - Descarga protegida del informe final en PDF o DOC
+      (reuniones_informe.php?id_reunion=N&formato=pdf|doc; por defecto PDF).
+    - 400 si id_reunion no es valido, 404 si la reunion no existe, 403 si el
+      rol no es propietario ni administracion y 409 si no hay seguimiento.
+    - Arma una sola lista de bloques (seccion, campos, parrafo) y la renderiza
+      con PdfReporte o con DocReporte segun el formato pedido.
+    - Guarda el archivo en uploads/informes/, actualiza reuniones.informe_url y
+      registra el evento INFORME_REUNION en historial_auditoria.
+  * controllers/reuniones_evidencia.php
+    - Sirve la evidencia de la reunion validando rol y propiedad; 404 si la
+      reunion no tiene evidencia o el archivo no existe en disco.
+  * controllers/tutores_disponibilidad.php
+    - Solo el rol administrador ejecuta asignarMaterias() y asignarCarreras();
+      el auxiliar y el tutor pueden editar especialidad y horarios.
+    - Nueva accion "solicitar" (solo tutor) que registra la solicitud y notifica
+      a la administracion con tipo TUTOR_SOLICITUD.
+    - Entrega $puedeAsignar a la vista para deshabilitar las casillas de carreras
+      y materias cuando el rol no puede modificarlas.
+  * controllers/solicitudes_tutor_listar.php (nuevo)
+    - Panel de administracion: lista paginada de solicitudes con filtro por
+      estado y por tutor, y detalle de cada solicitud.
+  * controllers/solicitudes_tutor_responder.php (nuevo)
+    - Aprueba o rechaza con CSRF y motivo obligatorio en el rechazo; valida
+      rol administrador/auxiliar, existence de la solicitud y estado pendiente.
+    - Notifica al tutor con el resultado y deja la respuesta registrada.
+  * controllers/mg_comprobantes_descargar.php
+    - Descarga el comprobante validando que pertenece al estudiante conectado
+      (o a un rol de administracion); 400 sin id, 404 si no existe o si el
+      archivo no esta en disco, 403 si es de otro estudiante.
+  * controllers/mg_comprobantes_registrar.php
+    - Envuelve el comprobante en la vista modalidad_grado con $reporteElegibilidad
+      ya preparado, de modo que la vista no se pueda abrir directamente.
+  * controllers/mg_defensa_evaluar.php
+    - Tras evaluar la defensa notifica al estudiante con mgAvisarEstudiante y
+      tipo MG_DEFENSA_EVALUADA, includiendo resultado, promedio y fecha.
+  * controllers/notificaciones_listar.php
+    - Entrega $pendientes a la vista para el contador de la cabecera.
+
+
+================================================================================
+ACTUALIZACION 014 (interfaz, perfil del docente y validacion de comprobantes)
+================================================================================
+
+CONTROLES
+--------------------------------------------------------------------------------
+  * controllers/mg_comprobantes_listar.php
+    - Detecta peticion AJAX por la cabecera X-Requested-With o por Accept:
+      application/json y responde con JSON en lugar de HTML.
+    - Introduce responderJson($payload, $codigo) para uniformar las respuestas.
+    - El flujo de validacion se ejecuta dentro de try/catch: primero
+      InvalidArgumentException (422) y despues Throwable (500), de modo que un
+      fallo al cambiar el estado o al actualizar el acceso a Modalidad de Grado
+      ya no deja la aplicacion en pantalla de error fatal.
+    - El error de CSRF se resuelve antes de llamar a csrf_validar() mediante
+      csrf_token_valido(), porque csrf_validar() termina la ejecucion con exit y
+      no propaga excepciones; en modo JSON devuelve 403 con el mensaje en
+      espanol en lugar de texto plano.
+    - Reutiliza el flujo HTML cuando no hay JavaScript (envio clasico del
+      formulario): 302 a la lista con mensaje flash, sin perder funcionalidad.
+    - La respuesta JSON de exito incluye success, message y el comprobante ya
+      actualizado (estado, badge HTML, motivo, validador) mas el total de
+      pendientes, para que el frontend actualice la fila sin recargar.
+    - Anade validaciones de estado: 400 sin id valido, 404 si el comprobante no
+      existe y 409 si ya fue validado, evitando reprocesos.
+    - La deshabilitacion de Modalidad de Grado tambien queda protegida por
+      try/catch y notifica el error mediante flash.
+  * controllers/tutor_perfil.php (nuevo)
+    - Exclusivo del rol tutor; 403 para el resto de roles y 302 si no hay
+      sesion. Redirige al panel cuando el usuario no tiene perfil de docente.
+    - GET muestra la vista; POST valida con CSRF, longitud maxima, formato de
+      correo y de telefono, y guarda dentro de una transaccion.
+    - Ante correo duplicado o fallo de base de datos revierte la transaccion e
+      informa el motivo; la sesion de expiracion se resuelve con flash y
+      redireccion, sin mostrar la pagina de error del servidor.
+    - Actualiza nombre y apellido en la sesion para que la cabecera y el
+      sidebar muestren el valor correcto tras guardar.
+
+MODELOS
+--------------------------------------------------------------------------------
+  * models/UsuarioModel.php
+    - Nuevo metodo actualizarPerfilPropio($id_usuario, $datos): actualiza solo
+      nombre, apellido, correo y telefono. No toca id_rol, usuario ni estado,
+      de modo que un docente no pueda modificar su propio rol ni su cuenta.
+  * models/TutorModel.php
+    - Nuevo metodo actualizarPerfil($id_tutor, $especialidad, $biografia) para
+      los datos academicos editables por el propio docente.
+  * models/ComprobanteModel.php
+    - obtenerPorId() ahora incluye el JOIN con estudiantes, usuarios y validador,
+      por lo que devuelve nombre, apellido, usuario, correo, validador_nombre y
+      validador_apellido. Antes solo devolvia las columnas de
+      comprobantes_pago_mg y el nombre del validador llegaba vacio a la vista y
+      a la respuesta JSON.
+
+VISTAS
+--------------------------------------------------------------------------------
+  * views/layouts/header.php
+    - Elimina el boton Salir del header superior derecho, que duplicaba el
+      icono de cierre del sidebar. Se conservan el icono del sidebar y el de la
+      barra movil; el navbar del estudiante mantiene su Salir porque el alumno
+      no dispone de sidebar.
+    - El nombre y el avatar del docente, tanto en el header como en el pie del
+      sidebar, enlazan a /controllers/tutor_perfil.php con title y aria-label
+      "Ver y editar mi perfil".
+  * views/tutor/perfil.php (nuevo)
+    - Panel con los datos personales (nombre, apellido, correo, telefono) y los
+      academicos (especialidad, biografia) en un unico formulario con CSRF.
+    - Usuario, rol, estado y carreras se muestran en solo lectura, ya que los
+      asigna la administracion; incluye enlace a Horarios y materias.
+    - Los errores de validacion se listan en una alerta y los valores enviados
+      se conservan en los campos.
+  * views/admin/mg_comprobantes.php
+    - Los modales de Aprobar y Rechazar salen del elemento tbody y se colocan al final de la pagina. Estaban dentro de la tabla, HTML invalido que el
+      navegador reubicaba y que provocaba el solapamiento de textos y elementos.
+    - Cada modal incorpora aria-labelledby con titulo propio, modal-dialog
+      centered, icono en el encabezado, parrafo de confirmacion con el nombre
+      del estudiante y el monto, label con for al textarea del motivo y textos
+      de ayuda.
+    - Las filas incluyen data-comprobante-fila, data-comprobante-estado y
+      data-comprobante-acciones para poder actualizarse sin recargar.
+    - Los botones de accion pasan a la clase js-validar-comprobante y los
+      formularios a js-form-comprobante, conservando method POST para que la
+      pagina siga funcionando sin JavaScript.
+    - Nuevo script que intercepta el envio, muestra un spinner en el boton,
+      consume la respuesta JSON, cierra el modal con la instancia de Bootstrap,
+      lanza un toast de exito o error y reemplaza el badge y las acciones de la
+      fila; si la fila ya no existe recarga la pagina y cualquier fallo de red
+      se muestra como toast sin romper la aplicacion.
+
+INCLUDES
+--------------------------------------------------------------------------------
+  * includes/csrf.php
+    - Nuevo csrf_token_valido() que devuelve el resultado de la comparacion en
+      hash_equals sin terminar la ejecucion.
+    - csrf_validar() reutiliza esa funcion y conserva el 403 con texto plano
+      para el resto de la aplicacion.
+
+RECURSOS
+--------------------------------------------------------------------------------
+  * assets/css/upds-theme.css
+    - Nuevo bloque para .comprobante-modal: z-index 1060 sobre un backdrop en
+      1055 con opacidad .55, anchura maxima de 520px, bordes redondeados,
+      sombra, y padding/margin propio en encabezado, cuerpo y pie para que
+      titulo, confirmacion, textarea y botones no se pisen entre si.
+
+COMPROBACIONES
+--------------------------------------------------------------------------------
+  - 29 rutas con sesion real (invitado, estudiante, tutor, auxiliar y
+    administrador) sin avisos de PHP: 0 problemas.
+  - Endpoint JSON: 200 al aprobar y al rechazar con badge, motivo, validador y
+    total de pendientes; 400 sin id, 404 inexistente, 409 ya validado, 422 sin
+    motivo, 403 por rol o por CSRF y 500 ante fallo inesperado.
+  - Envio clasico sin JavaScript: 302 y estado correcto en base de datos.
+  - Estructura: 0 modales dentro de la tabla, IDs unicos, los 21
+    aria-labelledby resuelven a un id existente, label[for] coincide con el id
+    del textarea y los 10 pendientes generan 20 modales.
+  - Perfil del docente: 200 al tutor, 403 al administrador y al estudiante,
+    302 sin sesion, validaciones visibles sin guardar y datos restaurados al
+    terminar las pruebas.
+
+================================================================================
+ACTUALIZACION 015 (interfaz, seguridad de archivos y PDF institucional)
+================================================================================
+Alcance: navegacion y retornos, permisos de materias/carreras del docente,
+archivos de expediente, notificaciones JSON y generacion de la Carta de
+Designacion en PDF desde el backend. No se modifico la logica de negocio de
+tutorias, reuniones ni tribunales ya existente.
+
+CONTROLADORES
+--------------------------------------------------------------------------------
+  * controllers/carta_pdf.php (nuevo)
+    - Genera el PDF de la Carta de Designacion a partir de los datos de
+      cartas_designacion, que solo almacena informacion y ningun archivo.
+    - Autorizacion: solo el tutor destinatario (coincidencia de id_tutor con el
+      tutor de la sesion) y el personal administrativo (administrador y
+      auxiliar). Cualquier otro rol recibe 403.
+    - Consulta con INNER JOIN sobre tutorias, tutores, usuarios, estudiantes,
+      carreras, materias y modalidades_graduacion; LEFT JOIN donde el dato es
+      opcional (carrera y modalidad).
+    - La copia cacheada se versiona con sha256 de la fila completa mas los
+      datos institucionales: si el docente acepta o rechaza la carta cambian
+      estado, fecha_firma y motivo_rechazo, el hash cambia y el PDF se
+      regenera. No se sirve nunca un documento obsoleto. Las versiones
+      anteriores se purgan con carta_purgar_versiones().
+    - Escritura atomica: temporal + rename, chmod 0644 y segunda validacion
+      sobre el archivo ya escrito en disco.
+    - Parametro ver=ver (inline) o ver=descargar (adjunto), con nombre
+      carta-designacion-{id}.pdf en Content-Disposition.
+
+  * controllers/tutores_disponibilidad.php
+    - El alcance de modificacion del docente se limitaba al horario, pero el
+      formulario tambien permitia enviar materias y carreras. Ahora el backend
+      ignora ambos conjuntos cuando el rol no es administrador, de modo que un
+      POST forjado no altera el plan de estudios del tutor.
+
+  * includes/archivos.php
+    - responder_error_archivo() sirve 404 con la pagina de error del proyecto
+      (views/errores/404.php) en lugar de texto plano cuando la peticion espera
+      HTML, y mantiene la respuesta JSON para las llamadas de API.
+    - Expone verify_stored_file(), pdf_is_structurally_valid(),
+      servir_archivo_almacenado() y responder_error_archivo() como la unica
+      via de entrega de archivos.
+
+VISTAS
+--------------------------------------------------------------------------------
+  * views/partials/page_header.php
+    - Boton "Volver" automatico: si la vista no define $accion, se deduce del
+      nivel padre de $migas. Una sola fuente de verdad para el retorno, igual
+      en detalles y formularios de los cuatro roles.
+    - Nueva variable opcional $volver = ['url' => ..., 'texto' => ...] para
+      indicar el destino cuando la vista ya trae otros botones de accion.
+
+  * views/tutorias/asignar.php, views/tutorias/tribunales.php,
+    views/tutorias/expediente.php, views/tutores/crear.php,
+    views/tutores/disponibilidad.php, views/tutor/cartas.php,
+    views/tutor/reuniones.php, views/tutor/informes.php
+    - Corregidas las rutas de las migas de pan, que apuntan a controladores
+      inexistentes (tutorias_listar.php, tutores_listar.php y panel.php
+      relativas) y devolvian 404. Todas son ahora root-relativas.
+
+  * views/tutor/cartas.php
+    - El modal de la carta pasa a tener dos pestanas: Resumen y Documento PDF.
+    - El panel PDF ofrece descargar (blob validado en el navegador) e imprimir
+      con la funcion nativa del navegador sobre el PDF servido por el backend.
+    - La descarga se resuelve con fetch y credentials same-origin; si el
+      backend responde con error, el mensaje se muestra como Toast en lugar de
+      abrir una pestana en blanco o descargar un archivo corrupto.
+
+  * views/tutorias/expediente.php
+    - La etiqueta del boton de descarga sigue al tipo real del archivo
+      (Descargar PDF / Descargar documento) en lugar de anunciar PDF siempre.
+    - El boton Imprimir se deshabilita para DOC y DOCX, que no son imprimibles
+      de forma nativa en el visor del modal.
+    - Al descargar se comprueba primero que el archivo siga disponible y, si el
+      backend responde con error, el mensaje aparece dentro del modal y como
+      Toast en vez de dejar una descarga fallida sin aviso.
+    - La impresion usa window.print() sobre el visor ya cargado, con apertura
+      de una ventana nueva solo como alternativa.
+
+  * views/tutores/disponibilidad.php
+    - Los 22 checkboxes de carreras y los 28 de materias se muestran
+      deshabilitados para el docente, con aviso visible de que solo el
+      administrador puede modificarlos, y el boton para solicitar el cambio.
+
+  * views/errores/404.php (nuevo)
+    - Pagina de error con la misma cabecera y pie que el resto del sistema y
+      motivo opcional, para que un recurso inexistente no devuelva HTML pelado.
+
+RECURSOS
+--------------------------------------------------------------------------------
+  * assets/css/upds-theme.css
+    - Contraste de enlaces de tabla, estados hover, focus visible y activo,
+      separadores de tabla y una regla de ancho maximo para pantallas
+      ultraanchas, con alternativa equivalente en moviles.
+
+  * views/layouts/footer.php
+    - Las notificaciones se consultan por JSON con X-Requested-With y
+      credentials same-origin, en lugar de imprimir el listado completo dentro
+      del pie de cada pagina.
+
+COMPROBACIONES
+--------------------------------------------------------------------------------
+  - 192 archivos PHP pasan php -l sin advertencias; 0 archivos con BOM y
+    0 secuencias de codificacion danada.
+  - Navegacion: los destinos rotos de las migas de pan y los botones Volver
+    automaticos responden 200 para el rol correspondiente; los 403 restantes son
+    guards de rol funcionando.
+  - Carta de Designacion: 200 y application/pdf para el tutor destinatario, el
+    administrador y el auxiliar; 403 para el tutor de otra carta y para el
+    estudiante; 404 para una carta inexistente; 400 sin identificador.
+    PDF de una pagina con xref de 6 offsets correctos y 0 desajustados.
+  - Invalidacion de cache: tras pasar la carta de aceptada a rechazada en la
+    base, el PDF siguiente regenera el archivo con otro nombre, purga el
+    anterior y muestra el estado nuevo. La carta de prueba quedo restaurada.
+  - Proteccion del directorio: el acceso directo a uploads/cartas/carta_*.pdf
+    y el listado del directorio devuelven 403, mientras que el controlador
+    sigue entregando el documento.
+  - Expediente: JSON 200 con la tutoria y 404 con JSON para tutoria o archivo
+    inexistente. PDF valido y PDF de 3 MB aceptados; PNG renombrado a .pdf y PDF
+    truncado rechazados con 422; DOCX real aceptado. Registros y archivos de
+    prueba eliminados.
+  - Permisos del docente: el POST forjado de los checkboxes deshabilitados no
+    produce efecto sobre materias y carreras. Se restauraron la especialidad y
+    los tres bloques de disponibilidad originales.
+================================================================================
