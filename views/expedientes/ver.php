@@ -3,6 +3,29 @@
 require_once __DIR__ . '/../layouts/header.php';
 require_once __DIR__ . '/../layouts/navbar.php';
 
+// Funciones pequeñas para mantener la vista más limpia
+$escapar = static function ($valor): string {
+    return htmlspecialchars(
+        (string) $valor,
+        ENT_QUOTES,
+        'UTF-8'
+    );
+};
+
+$formatearFecha = static function (
+    ?string $fecha,
+    bool $incluirHora = false
+): string {
+    if (!$fecha) {
+        return 'Pendiente';
+    }
+
+    return date(
+        $incluirHora ? 'd/m/Y H:i' : 'd/m/Y',
+        strtotime($fecha)
+    );
+};
+
 $nombresEtapa = [
     'previa' => 'Etapa previa',
     'mg1' => 'Modalidad de Grado I',
@@ -30,22 +53,18 @@ $nombresEstado = [
                     </p>
 
                     <h1>
-                        <?= htmlspecialchars(
+                        <?= $escapar(
                             $expediente['nombre']
                             . ' '
-                            . $expediente['apellido'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            . $expediente['apellido']
                         ) ?>
                     </h1>
 
                     <p>
-                        <?= htmlspecialchars(
+                        <?= $escapar(
                             $expediente['nombre_modalidad']
                             . ' · '
-                            . $expediente['codigo_cohorte'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            . $expediente['codigo_cohorte']
                         ) ?>
                     </p>
                 </div>
@@ -53,10 +72,8 @@ $nombresEstado = [
                 <div class="form-actions">
                     <?php if ($puedeEditar): ?>
                         <a
-                            href="<?= htmlspecialchars(
-                                $rutaBase,
-                                ENT_QUOTES,
-                                'UTF-8'
+                            href="<?= $escapar(
+                                $rutaBase
                             ) ?>controllers/expedientes_editar.php?id=<?= (int) $idExpediente ?>"
                             class="primary-action"
                         >
@@ -65,10 +82,8 @@ $nombresEstado = [
                     <?php endif; ?>
 
                     <a
-                        href="<?= htmlspecialchars(
-                            $rutaBase,
-                            ENT_QUOTES,
-                            'UTF-8'
+                        href="<?= $escapar(
+                            $rutaBase
                         ) ?>controllers/expedientes_listar.php"
                         class="secondary-link"
                     >
@@ -79,18 +94,12 @@ $nombresEstado = [
 
             <?php if ($mensaje !== ''): ?>
                 <div
-                    class="alert alert-<?= htmlspecialchars(
-                        $tipoMensaje,
-                        ENT_QUOTES,
-                        'UTF-8'
+                    class="alert alert-<?= $escapar(
+                        $tipoMensaje
                     ) ?>"
                     role="alert"
                 >
-                    <?= htmlspecialchars(
-                        $mensaje,
-                        ENT_QUOTES,
-                        'UTF-8'
-                    ) ?>
+                    <?= $escapar($mensaje) ?>
                 </div>
             <?php endif; ?>
 
@@ -194,6 +203,7 @@ $nombresEstado = [
                 class="tab-content"
                 id="contenidoExpediente"
             >
+                <!-- Datos generales -->
                 <div
                     class="tab-pane fade show active"
                     id="datos"
@@ -208,12 +218,10 @@ $nombresEstado = [
                                     <span>Estudiante</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
+                                        <?= $escapar(
                                             $expediente['nombre']
                                             . ' '
-                                            . $expediente['apellido'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                            . $expediente['apellido']
                                         ) ?>
                                     </strong>
                                 </div>
@@ -224,11 +232,10 @@ $nombresEstado = [
                                     <span>Registro universitario</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
-                                            $expediente['registro_universitario']
-                                                ?: 'Sin registro',
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                        <?= $escapar(
+                                            $expediente[
+                                                'registro_universitario'
+                                            ] ?: 'Sin registro'
                                         ) ?>
                                     </strong>
                                 </div>
@@ -239,10 +246,8 @@ $nombresEstado = [
                                     <span>Carrera</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
-                                            $expediente['nombre_carrera'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                        <?= $escapar(
+                                            $expediente['nombre_carrera']
                                         ) ?>
                                     </strong>
                                 </div>
@@ -253,10 +258,8 @@ $nombresEstado = [
                                     <span>Correo</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
-                                            $expediente['correo'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                        <?= $escapar(
+                                            $expediente['correo']
                                         ) ?>
                                     </strong>
                                 </div>
@@ -267,10 +270,10 @@ $nombresEstado = [
                                     <span>Modalidad</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
-                                            $expediente['nombre_modalidad'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                        <?= $escapar(
+                                            $expediente[
+                                                'nombre_modalidad'
+                                            ]
                                         ) ?>
                                     </strong>
                                 </div>
@@ -281,12 +284,12 @@ $nombresEstado = [
                                     <span>Cohorte</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
+                                        <?= $escapar(
                                             $expediente['codigo_cohorte']
                                             . ' - '
-                                            . $expediente['nombre_cohorte'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                            . $expediente[
+                                                'nombre_cohorte'
+                                            ]
                                         ) ?>
                                     </strong>
                                 </div>
@@ -297,12 +300,14 @@ $nombresEstado = [
                                     <span>Etapa actual</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
+                                        <?= $escapar(
                                             $nombresEtapa[
-                                                $expediente['etapa_actual']
-                                            ] ?? $expediente['etapa_actual'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                                $expediente[
+                                                    'etapa_actual'
+                                                ]
+                                            ] ?? $expediente[
+                                                'etapa_actual'
+                                            ]
                                         ) ?>
                                     </strong>
                                 </div>
@@ -313,12 +318,10 @@ $nombresEstado = [
                                     <span>Estado</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
+                                        <?= $escapar(
                                             $nombresEstado[
                                                 $expediente['estado']
-                                            ] ?? $expediente['estado'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                            ] ?? $expediente['estado']
                                         ) ?>
                                     </strong>
                                 </div>
@@ -329,15 +332,12 @@ $nombresEstado = [
                                     <span>Fecha de inicio</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
-                                            date(
-                                                'd/m/Y',
-                                                strtotime(
-                                                    $expediente['fecha_inicio']
-                                                )
-                                            ),
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                        <?= $escapar(
+                                            $formatearFecha(
+                                                $expediente[
+                                                    'fecha_inicio'
+                                                ]
+                                            )
                                         ) ?>
                                     </strong>
                                 </div>
@@ -348,11 +348,10 @@ $nombresEstado = [
                                     <span>Título del trabajo</span>
 
                                     <strong>
-                                        <?= htmlspecialchars(
-                                            $expediente['titulo_trabajo']
-                                                ?: 'Todavía no definido',
-                                            ENT_QUOTES,
-                                            'UTF-8'
+                                        <?= $escapar(
+                                            $expediente[
+                                                'titulo_trabajo'
+                                            ] ?: 'Todavía no definido'
                                         ) ?>
                                     </strong>
                                 </div>
@@ -364,11 +363,10 @@ $nombresEstado = [
 
                                     <strong>
                                         <?= nl2br(
-                                            htmlspecialchars(
-                                                $expediente['observaciones']
-                                                    ?: 'Sin observaciones',
-                                                ENT_QUOTES,
-                                                'UTF-8'
+                                            $escapar(
+                                                $expediente[
+                                                    'observaciones'
+                                                ] ?: 'Sin observaciones'
                                             )
                                         ) ?>
                                     </strong>
@@ -385,22 +383,6 @@ $nombresEstado = [
                                     estudiante dentro del proceso.
                                 </p>
                             </div>
-
-                            <?php if (
-                                $puedeCambiarEtapa
-                                && $expediente['estado'] === 'activo'
-                            ): ?>
-                                <a
-                                    href="<?= htmlspecialchars(
-                                        $rutaBase,
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    ) ?>controllers/expedientes_etapa.php?id=<?= (int) $idExpediente ?>"
-                                    class="secondary-action"
-                                >
-                                    Cambiar etapa
-                                </a>
-                            <?php endif; ?>
                         </div>
 
                         <div class="table-container">
@@ -416,74 +398,86 @@ $nombresEstado = [
                                 </thead>
 
                                 <tbody>
-                                    <?php foreach (
-                                        $historialEtapas as $etapaHistorial
-                                    ): ?>
+                                    <?php if (empty($historialEtapas)): ?>
                                         <tr>
-                                            <td>
-                                                <?= htmlspecialchars(
-                                                    $nombresEtapa[
-                                                        $etapaHistorial['etapa']
-                                                    ] ?? $etapaHistorial['etapa'],
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
-                                            </td>
-
-                                            <td>
-                                                <?= htmlspecialchars(
-                                                    date(
-                                                        'd/m/Y',
-                                                        strtotime(
-                                                            $etapaHistorial['fecha_inicio']
-                                                        )
-                                                    ),
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
-                                            </td>
-
-                                            <td>
-                                                <?= $etapaHistorial['fecha_fin']
-                                                    ? htmlspecialchars(
-                                                        date(
-                                                            'd/m/Y',
-                                                            strtotime(
-                                                                $etapaHistorial['fecha_fin']
-                                                            )
-                                                        ),
-                                                        ENT_QUOTES,
-                                                        'UTF-8'
-                                                    )
-                                                    : 'En curso' ?>
-                                            </td>
-
-                                            <td>
-                                                <?= htmlspecialchars(
-                                                    $etapaHistorial['resultado']
-                                                        ?: 'Pendiente',
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
-                                            </td>
-
-                                            <td>
-                                                <?= htmlspecialchars(
-                                                    $etapaHistorial['nombre_registrador']
-                                                    . ' '
-                                                    . $etapaHistorial['apellido_registrador'],
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
+                                            <td
+                                                colspan="5"
+                                                class="empty-result"
+                                            >
+                                                No existe historial de etapas.
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <?php foreach (
+                                            $historialEtapas
+                                            as $etapaHistorial
+                                        ): ?>
+                                            <tr>
+                                                <td>
+                                                    <?= $escapar(
+                                                        $nombresEtapa[
+                                                            $etapaHistorial[
+                                                                'etapa'
+                                                            ]
+                                                        ] ?? $etapaHistorial[
+                                                            'etapa'
+                                                        ]
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $formatearFecha(
+                                                            $etapaHistorial[
+                                                                'fecha_inicio'
+                                                            ]
+                                                        )
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $etapaHistorial[
+                                                            'fecha_fin'
+                                                        ]
+                                                            ? $formatearFecha(
+                                                                $etapaHistorial[
+                                                                    'fecha_fin'
+                                                                ]
+                                                            )
+                                                            : 'En curso'
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $etapaHistorial[
+                                                            'resultado'
+                                                        ] ?: 'Pendiente'
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $etapaHistorial[
+                                                            'nombre_registrador'
+                                                        ]
+                                                        . ' '
+                                                        . $etapaHistorial[
+                                                            'apellido_registrador'
+                                                        ]
+                                                    ) ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
+                <!-- Asignación del tutor -->
                 <div
                     class="tab-pane fade"
                     id="tutor"
@@ -491,32 +485,275 @@ $nombresEstado = [
                     aria-labelledby="tutor-tab"
                     tabindex="0"
                 >
-                    <div class="form-container">
-                        <h2>Tutor asignado</h2>
+                    <div class="form-container form-container-wide">
+                        <div class="form-section-heading">
+                            <div>
+                                <h2>Tutor asignado</h2>
+
+                                <p>
+                                    Designación vigente e historial de
+                                    tutores del expediente.
+                                </p>
+                            </div>
+
+                            <?php if (
+                                !$asignacionTutor
+                                && (int) $expediente[
+                                    'requiere_tutor'
+                                ] === 1
+                                && $expediente['estado'] === 'activo'
+                                && $expediente[
+                                    'etapa_actual'
+                                ] === 'previa'
+                                && $puedeAsignarTutor
+                            ): ?>
+                                <a
+                                    href="<?= $escapar(
+                                        $rutaBase
+                                    ) ?>controllers/expedientes_asignar_tutor.php?id=<?= (int) $idExpediente ?>"
+                                    class="primary-action"
+                                >
+                                    Asignar tutor
+                                </a>
+                            <?php endif; ?>
+                            <?php if (
+                                $asignacionTutor && $puedeCambiarTutor
+                                && $expediente['estado'] === 'activo'
+                                && $expediente['etapa_actual'] !== 'previa'
+                            ): ?>
+                                <a href="<?= $escapar($rutaBase) ?>controllers/expedientes_cambiar_tutor.php?id=<?= (int) $idExpediente ?>"
+                                   class="secondary-action">Cambiar tutor</a>
+                            <?php endif; ?>
+                        </div>
 
                         <?php if (
-                            (int) $expediente['requiere_tutor'] === 1
+                            (int) $expediente[
+                                'requiere_tutor'
+                            ] !== 1
                         ): ?>
-                            <p>
-                                Todavía no existe un tutor asignado a este
-                                expediente.
-                            </p>
+                            <div
+                                class="alert alert-info"
+                                role="alert"
+                            >
+                                Esta modalidad no requiere la asignación
+                                de un tutor.
+                            </div>
+                        <?php elseif ($asignacionTutor): ?>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Tutor</span>
 
-                            <?php if ($puedeAsignarTutor): ?>
-                                <p class="field-help">
-                                    La asignación se habilitará en el módulo
-                                    siguiente y conservará todo su historial.
-                                </p>
-                            <?php endif; ?>
+                                        <strong>
+                                            <?= $escapar(
+                                                $asignacionTutor['nombre']
+                                                . ' '
+                                                . $asignacionTutor[
+                                                    'apellido'
+                                                ]
+                                            ) ?>
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Especialidad</span>
+
+                                        <strong>
+                                            <?= $escapar(
+                                                $asignacionTutor[
+                                                    'especialidad'
+                                                ] ?: 'Sin especialidad'
+                                            ) ?>
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Correo</span>
+
+                                        <strong>
+                                            <?= $escapar(
+                                                $asignacionTutor['correo']
+                                            ) ?>
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Fecha de asignación</span>
+
+                                        <strong>
+                                            <?= $escapar(
+                                                $formatearFecha(
+                                                    $asignacionTutor[
+                                                        'fecha_asignacion'
+                                                    ],
+                                                    true
+                                                )
+                                            ) ?>
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Número de carta</span>
+
+                                        <strong>
+                                            <?= $escapar(
+                                                $asignacionTutor[
+                                                    'numero_carta'
+                                                ] ?: 'Pendiente de numeración'
+                                            ) ?>
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Referencia de Decanatura</span>
+                                        <strong><?= $escapar($asignacionTutor['referencia_decanatura'] ?: 'Asignación anterior') ?></strong>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="user-cell">
+                                        <span>Estado de la carta</span>
+
+                                        <strong>
+                                            <?= $escapar(
+                                                ucfirst(
+                                                    $asignacionTutor[
+                                                        'estado_carta'
+                                                    ] ?? 'pendiente'
+                                                )
+                                            ) ?>
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
                         <?php else: ?>
-                            <p>
-                                Esta modalidad no requiere asignación de
-                                tutor.
-                            </p>
+                            <div
+                                class="alert alert-warning"
+                                role="alert"
+                            >
+                                El expediente todavía no tiene un tutor
+                                asignado.
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($historialTutores)): ?>
+                            <div class="form-section-heading mt-5">
+                                <div>
+                                    <h2>Historial de tutores</h2>
+
+                                    <p>
+                                        Las asignaciones anteriores se
+                                        conservan como respaldo.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Tutor</th>
+                                            <th>Inicio</th>
+                                            <th>Finalización</th>
+                                            <th>Estado</th>
+                                            <th>Carta</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        <?php foreach (
+                                            $historialTutores
+                                            as $tutorHistorial
+                                        ): ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="user-cell">
+                                                        <strong>
+                                                            <?= $escapar(
+                                                                $tutorHistorial[
+                                                                    'nombre'
+                                                                ]
+                                                                . ' '
+                                                                . $tutorHistorial[
+                                                                    'apellido'
+                                                                ]
+                                                            ) ?>
+                                                        </strong>
+
+                                                        <span>
+                                                            <?= $escapar(
+                                                                $tutorHistorial[
+                                                                    'especialidad'
+                                                                ] ?: 'Sin especialidad'
+                                                            ) ?>
+                                                        </span>
+                                                        <?php if ($tutorHistorial['motivo_fin']): ?>
+                                                            <span><?= $escapar($tutorHistorial['motivo_fin']) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $formatearFecha(
+                                                            $tutorHistorial[
+                                                                'fecha_asignacion'
+                                                            ]
+                                                        )
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $tutorHistorial[
+                                                            'fecha_fin'
+                                                        ]
+                                                            ? $formatearFecha(
+                                                                $tutorHistorial[
+                                                                    'fecha_fin'
+                                                                ]
+                                                            )
+                                                            : 'En curso'
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        ucfirst(
+                                                            $tutorHistorial[
+                                                                'estado'
+                                                            ]
+                                                        )
+                                                    ) ?>
+                                                </td>
+
+                                                <td>
+                                                    <?= $escapar(
+                                                        $tutorHistorial[
+                                                            'numero_carta'
+                                                        ] ?: 'Pendiente'
+                                                    ) ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
 
+                <!-- Módulos siguientes -->
                 <div
                     class="tab-pane fade"
                     id="tribunales"
@@ -527,10 +764,11 @@ $nombresEstado = [
                     <div class="form-container">
                         <h2>Tribunales y defensas</h2>
 
-                        <p>
-                            Esta sección se habilitará al implementar las
-                            historias HU-028 y HU-029.
-                        </p>
+                        <p>Consulta asignaciones de tribunal y defensas de MG1 y MG2.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="secondary-link" href="tribunales_listar.php">Ver tribunales</a>
+                            <a class="secondary-link" href="defensas_listar.php">Ver defensas</a>
+                        </div>
                     </div>
                 </div>
 
@@ -544,10 +782,8 @@ $nombresEstado = [
                     <div class="form-container">
                         <h2>Reuniones</h2>
 
-                        <p>
-                            Las reuniones forman parte de la segunda etapa
-                            del MVP.
-                        </p>
+                        <p>Consulta reuniones, asistencia y evidencias del proceso.</p>
+                        <a class="secondary-link" href="reuniones_listar.php">Ver reuniones</a>
                     </div>
                 </div>
 
@@ -561,10 +797,8 @@ $nombresEstado = [
                     <div class="form-container">
                         <h2>Informes de avance</h2>
 
-                        <p>
-                            Los informes se vincularán con los hitos del
-                            calendario correspondientes a esta cohorte.
-                        </p>
+                        <p>Consulta informes vinculados a los hitos de la cohorte.</p>
+                        <a class="secondary-link" href="informes_listar.php">Ver informes</a>
                     </div>
                 </div>
 
@@ -578,10 +812,8 @@ $nombresEstado = [
                     <div class="form-container">
                         <h2>Documentos generados</h2>
 
-                        <p>
-                            Aquí se mostrarán las cartas y citaciones
-                            generadas para el expediente.
-                        </p>
+                        <p>Las cartas emitidas y las citaciones conservan su contenido original.</p>
+                        <a class="secondary-link" href="documentos_listar.php">Ver documentos</a>
                     </div>
                 </div>
             </div>

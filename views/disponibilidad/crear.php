@@ -82,6 +82,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                 <?php endif; ?>
 
                 <form method="POST" class="module-form">
+                    <?= campoCsrf() ?>
                     <div class="form-group">
                         <label for="dia_semana">
                             Día de la semana

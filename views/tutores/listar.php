@@ -224,9 +224,11 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                                 $rutaBase,
                                                 ENT_QUOTES,
                                                 'UTF-8'
-                                            ) ?>controllers/tutores_eliminar.php"
+                                            ) ?>
+                                            controllers/tutores_eliminar.php"
                                             onsubmit="return confirm('¿Deseas eliminar este perfil de tutor?');"
                                         >
+                                         <?= campoCsrf() ?>
                                             <input
                                                 type="hidden"
                                                 name="id_tutor"

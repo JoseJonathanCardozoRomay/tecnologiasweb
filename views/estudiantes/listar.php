@@ -238,9 +238,11 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                                 $rutaBase,
                                                 ENT_QUOTES,
                                                 'UTF-8'
-                                            ) ?>controllers/estudiantes_eliminar.php"
+                                            ) ?>
+                                            controllers/estudiantes_eliminar.php"
                                             onsubmit="return confirm('¿Deseas eliminar este perfil académico?');"
                                         >
+                                         <?= campoCsrf() ?>
                                             <input
                                                 type="hidden"
                                                 name="id_estudiante"

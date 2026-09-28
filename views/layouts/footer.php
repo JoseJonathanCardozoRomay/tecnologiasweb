@@ -2,11 +2,11 @@
     <div class="container py-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
             <p class="mb-0 small">
-                &copy; <?= date('Y') ?> Tutorías Web · Tecnología Web I
+                &copy; <?= date('Y') ?> Universidad Privada Domingo Savio
             </p>
 
             <p class="mb-0 small text-body-secondary">
-                Sistema académico desarrollado con PHP, MySQL y Bootstrap
+                Sistema académico de tutorías y Modalidades de Grado
             </p>
         </div>
     </div>

@@ -67,6 +67,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                     </a>
                 <?php else: ?>
                     <form method="POST" class="module-form">
+                        <?= campoCsrf() ?>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="id_usuario">

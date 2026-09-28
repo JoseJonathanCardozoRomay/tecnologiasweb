@@ -200,9 +200,11 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                                 $rutaBase,
                                                 ENT_QUOTES,
                                                 'UTF-8'
-                                            ) ?>controllers/materias_eliminar.php"
+                                            ) ?>
+                                            controllers/materias_eliminar.php"
                                             onsubmit="return confirm('¿Deseas eliminar esta materia?');"
                                         >
+                                         <?= campoCsrf() ?>
                                             <input
                                                 type="hidden"
                                                 name="id_materia"

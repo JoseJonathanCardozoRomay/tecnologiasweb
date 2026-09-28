@@ -49,6 +49,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                 <?php endif; ?>
 
                 <form method="POST" class="module-form">
+                    <?= campoCsrf() ?>
                     <input
                         type="hidden"
                         name="id_periodo"

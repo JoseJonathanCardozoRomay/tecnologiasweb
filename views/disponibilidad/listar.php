@@ -201,9 +201,11 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                                 $rutaBase,
                                                 ENT_QUOTES,
                                                 'UTF-8'
-                                            ) ?>controllers/disponibilidad_eliminar.php"
+                                            ) ?>
+                                            controllers/disponibilidad_eliminar.php"
                                             onsubmit="return confirm('¿Deseas eliminar este horario?');"
                                         >
+                                        <?= campoCsrf() ?>
                                             <input
                                                 type="hidden"
                                                 name="id_disponibilidad"

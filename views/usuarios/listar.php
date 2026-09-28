@@ -285,7 +285,8 @@ $usuarioActual = obtenerUsuarioSesion();
                                                     $rutaBase,
                                                     ENT_QUOTES,
                                                     'UTF-8'
-                                                ) ?>controllers/usuarios_estado.php"
+                                                ) ?>
+                                                controllers/usuarios_estado.php"
                                                 onsubmit="return confirm('¿Deseas cambiar el estado de este usuario?');"
                                             >
                                                 <input

@@ -1,13 +1,15 @@
 <?php
+
 require_once __DIR__ . '/../layouts/header.php';
 require_once __DIR__ . '/../layouts/navbar.php';
+
 ?>
 
 <main class="flex-grow-1">
     <section class="login-section">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-md-8 col-lg-5">
+                <div class="col-12 col-md-9 col-lg-7 col-xl-6">
                     <div class="login-container">
                         <div class="login-heading">
                             <p class="section-label">
@@ -35,7 +37,13 @@ require_once __DIR__ . '/../layouts/navbar.php';
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" class="login-form">
+                        <form
+                            method="POST"
+                            class="login-form"
+                            autocomplete="on"
+                        >
+                            <?= campoCsrf() ?>
+
                             <div class="mb-4">
                                 <label
                                     for="usuario"
@@ -74,6 +82,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                     class="form-control"
                                     id="contrasena"
                                     name="contrasena"
+                                    maxlength="255"
                                     autocomplete="current-password"
                                     required
                                 >
@@ -99,5 +108,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
 </main>
 
 <?php
+
 require_once __DIR__ . '/../layouts/footer.php';
+
 ?>

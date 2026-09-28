@@ -138,6 +138,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                             action="../../controllers/carreras_eliminar.php"
                                             onsubmit="return confirm('¿Deseas eliminar esta carrera?');"
                                         >
+                                            <?= campoCsrf() ?>
                                             <input
                                                 type="hidden"
                                                 name="id_carrera"
