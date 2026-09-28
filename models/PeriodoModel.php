@@ -23,34 +23,25 @@ class PeriodoModel
                 p.fecha_fin,
                 p.estado,
                 p.fecha_registro,
-                COUNT(
-                    DISTINCT tp.id_tutor_periodo
+                (
+                    SELECT COUNT(*)
+                    FROM tutor_periodo AS tp
+                    WHERE tp.id_periodo = p.id_periodo
                 ) AS tutores_configurados,
-                COUNT(
-                    DISTINCT t.id_tutoria
+                (
+                    SELECT COUNT(DISTINCT t.id_estudiante)
+                    FROM tutorias AS t
+                    WHERE t.fecha_solicitud >= p.fecha_inicio
+                        AND t.fecha_solicitud < DATE_ADD(
+                            p.fecha_fin,
+                            INTERVAL 1 DAY
+                        )
+                        AND t.estado <> 'cancelada'
                 ) AS procesos_registrados
-
             FROM periodos_inscripcion AS p
-
-            LEFT JOIN tutor_periodo AS tp
-                ON tp.id_periodo = p.id_periodo
-
-            LEFT JOIN tutorias AS t
-                ON t.id_periodo = p.id_periodo
-
             WHERE
                 p.codigo LIKE :buscar_codigo
                 OR p.nombre LIKE :buscar_nombre
-
-            GROUP BY
-                p.id_periodo,
-                p.codigo,
-                p.nombre,
-                p.fecha_inicio,
-                p.fecha_fin,
-                p.estado,
-                p.fecha_registro
-
             ORDER BY
                 p.fecha_inicio DESC,
                 p.id_periodo DESC

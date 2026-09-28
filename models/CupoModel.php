@@ -9,12 +9,7 @@ class CupoModel
         $this->conexion = $conexion;
     }
 
-    /**
-     * Lista los tutores y su configuración dentro de un periodo.
-     *
-     * También calcula cuántos procesos activos tiene cada tutor.
-     * Los procesos finalizados o cancelados no ocupan cupo.
-     */
+    /** Lista tutores, cupos y estudiantes inscritos durante el periodo. */
     public function listarPorPeriodo(
         int $idPeriodo,
         string $busqueda = ''
@@ -33,91 +28,100 @@ class CupoModel
                 tp.cupo_maximo,
                 tp.activo,
                 (
-                    SELECT COUNT(*)
+                    SELECT COUNT(DISTINCT tu.id_estudiante)
                     FROM tutorias AS tu
                     WHERE tu.id_tutor = t.id_tutor
-                        AND tu.id_periodo = :periodo_ocupados
-                        AND tu.estado NOT IN (
-                            'cancelada',
-                            'finalizada'
+                        AND tu.fecha_solicitud >= p.fecha_inicio
+                        AND tu.fecha_solicitud < DATE_ADD(
+                            p.fecha_fin,
+                            INTERVAL 1 DAY
+                        )
+                        AND tu.estado IN (
+                            'pendiente_aprobacion',
+                            'observada',
+                            'confirmada',
+                            'realizada'
                         )
                 ) AS cupos_ocupados
             FROM tutores AS t
             INNER JOIN usuarios AS u
                 ON u.id_usuario = t.id_usuario
+            INNER JOIN periodos_inscripcion AS p
+                ON p.id_periodo = :id_periodo
             LEFT JOIN tutor_periodo AS tp
                 ON tp.id_tutor = t.id_tutor
-                AND tp.id_periodo = :periodo_configuracion
-            WHERE (
+                AND tp.id_periodo = p.id_periodo
+            WHERE
                 u.nombre LIKE :buscar_nombre
                 OR u.apellido LIKE :buscar_apellido
                 OR u.usuario LIKE :buscar_usuario
                 OR t.especialidad LIKE :buscar_especialidad
-            )
-            ORDER BY
-                u.nombre ASC,
-                u.apellido ASC
+            ORDER BY u.nombre ASC, u.apellido ASC
         ";
 
-        $patronBusqueda = '%' . trim($busqueda) . '%';
-
+        $patron = '%' . trim($busqueda) . '%';
         $consulta = $this->conexion->prepare($sql);
-
         $consulta->execute([
-            'periodo_ocupados' => $idPeriodo,
-            'periodo_configuracion' => $idPeriodo,
-            'buscar_nombre' => $patronBusqueda,
-            'buscar_apellido' => $patronBusqueda,
-            'buscar_usuario' => $patronBusqueda,
-            'buscar_especialidad' => $patronBusqueda
+            'id_periodo' => $idPeriodo,
+            'buscar_nombre' => $patron,
+            'buscar_apellido' => $patron,
+            'buscar_usuario' => $patron,
+            'buscar_especialidad' => $patron
         ]);
 
         return $consulta->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Obtiene la configuración de un tutor en un periodo.
-     */
+    /** Busca la configuración de un tutor en un periodo. */
     public function buscarConfiguracion(
         int $idTutor,
         int $idPeriodo
     ): ?array {
         $sql = "
             SELECT
-                tp.id_tutor_periodo,
-                tp.id_tutor,
-                tp.id_periodo,
-                tp.cupo_maximo,
-                tp.activo
-            FROM tutor_periodo AS tp
-            WHERE tp.id_tutor = :id_tutor
-                AND tp.id_periodo = :id_periodo
+                id_tutor_periodo,
+                id_tutor,
+                id_periodo,
+                cupo_maximo,
+                activo
+            FROM tutor_periodo
+            WHERE id_tutor = :id_tutor
+                AND id_periodo = :id_periodo
             LIMIT 1
         ";
 
         $consulta = $this->conexion->prepare($sql);
-
         $consulta->execute([
             'id_tutor' => $idTutor,
             'id_periodo' => $idPeriodo
         ]);
 
         $resultado = $consulta->fetch(PDO::FETCH_ASSOC);
-
         return $resultado ?: null;
     }
 
-    /**
-     * Crea o actualiza el cupo de un tutor dentro de un periodo.
-     *
-     * La combinación tutor-periodo debe ser única en la base de datos.
-     */
+    /** Comprueba que exista el perfil de tutor. */
+    public function existeTutor(int $idTutor): bool
+    {
+        $consulta = $this->conexion->prepare(
+            'SELECT COUNT(*) FROM tutores WHERE id_tutor = :id_tutor'
+        );
+        $consulta->execute(['id_tutor' => $idTutor]);
+
+        return (int) $consulta->fetchColumn() === 1;
+    }
+
+    /** Guarda la configuración; el requisito vigente fija un máximo de cinco. */
     public function guardar(
         int $idTutor,
         int $idPeriodo,
         int $cupoMaximo,
         bool $activo
     ): bool {
+        if ($cupoMaximo < 1 || $cupoMaximo > 5) {
+            return false;
+        }
+
         $sql = "
             INSERT INTO tutor_periodo (
                 id_tutor,
@@ -137,7 +141,6 @@ class CupoModel
         ";
 
         $consulta = $this->conexion->prepare($sql);
-
         return $consulta->execute([
             'id_tutor' => $idTutor,
             'id_periodo' => $idPeriodo,
@@ -146,37 +149,40 @@ class CupoModel
         ]);
     }
 
-    /**
-     * Cuenta los procesos que actualmente ocupan cupo.
-     */
+    /** Cuenta estudiantes distintos con solicitudes vigentes en el periodo. */
     public function contarOcupados(
         int $idTutor,
         int $idPeriodo
     ): int {
         $sql = "
-            SELECT COUNT(*)
-            FROM tutorias
-            WHERE id_tutor = :id_tutor
-                AND id_periodo = :id_periodo
-                AND estado NOT IN (
-                    'cancelada',
-                    'finalizada'
+            SELECT COUNT(DISTINCT tu.id_estudiante)
+            FROM tutorias AS tu
+            INNER JOIN periodos_inscripcion AS p
+                ON p.id_periodo = :id_periodo
+            WHERE tu.id_tutor = :id_tutor
+                AND tu.fecha_solicitud >= p.fecha_inicio
+                AND tu.fecha_solicitud < DATE_ADD(
+                    p.fecha_fin,
+                    INTERVAL 1 DAY
+                )
+                AND tu.estado IN (
+                    'pendiente_aprobacion',
+                    'observada',
+                    'confirmada',
+                    'realizada'
                 )
         ";
 
         $consulta = $this->conexion->prepare($sql);
-
         $consulta->execute([
-            'id_tutor' => $idTutor,
-            'id_periodo' => $idPeriodo
+            'id_periodo' => $idPeriodo,
+            'id_tutor' => $idTutor
         ]);
 
         return (int) $consulta->fetchColumn();
     }
 
-    /**
-     * Comprueba si el tutor todavía puede recibir otro proceso.
-     */
+    /** Comprueba si el tutor tiene espacio dentro de su configuración. */
     public function tieneCupoDisponible(
         int $idTutor,
         int $idPeriodo
@@ -193,41 +199,19 @@ class CupoModel
             return false;
         }
 
-        $ocupados = $this->contarOcupados(
-            $idTutor,
-            $idPeriodo
-        );
-
-        return $ocupados
+        return $this->contarOcupados($idTutor, $idPeriodo)
             < (int) $configuracion['cupo_maximo'];
     }
 
-    /**
-     * Obtiene un resumen general de los cupos del periodo.
-     */
+    /** Resume configuraciones y ocupación del periodo. */
     public function obtenerResumen(int $idPeriodo): array
     {
         $sql = "
             SELECT
                 COUNT(*) AS tutores_configurados,
+                COALESCE(SUM(activo = 1), 0) AS tutores_habilitados,
                 COALESCE(
-                    SUM(
-                        CASE
-                            WHEN activo = 1
-                            THEN 1
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ) AS tutores_habilitados,
-                COALESCE(
-                    SUM(
-                        CASE
-                            WHEN activo = 1
-                            THEN cupo_maximo
-                            ELSE 0
-                        END
-                    ),
+                    SUM(CASE WHEN activo = 1 THEN cupo_maximo ELSE 0 END),
                     0
                 ) AS cupos_totales
             FROM tutor_periodo
@@ -235,38 +219,40 @@ class CupoModel
         ";
 
         $consulta = $this->conexion->prepare($sql);
+        $consulta->execute(['id_periodo' => $idPeriodo]);
+        $resumen = $consulta->fetch(PDO::FETCH_ASSOC) ?: [];
 
-        $consulta->execute([
-            'id_periodo' => $idPeriodo
-        ]);
-
-        $resumen = $consulta->fetch(PDO::FETCH_ASSOC);
-
-        $sqlOcupados = "
-            SELECT COUNT(*)
-            FROM tutorias
-            WHERE id_periodo = :id_periodo
-                AND id_tutor IS NOT NULL
-                AND estado NOT IN (
-                    'cancelada',
-                    'finalizada'
+        $consultaOcupados = $this->conexion->prepare(" 
+            SELECT
+                tp.id_tutor,
+                COUNT(DISTINCT tu.id_estudiante) AS ocupados
+            FROM tutor_periodo AS tp
+            INNER JOIN periodos_inscripcion AS p
+                ON p.id_periodo = tp.id_periodo
+            LEFT JOIN tutorias AS tu
+                ON tu.id_tutor = tp.id_tutor
+                AND tu.fecha_solicitud >= p.fecha_inicio
+                AND tu.fecha_solicitud < DATE_ADD(
+                    p.fecha_fin,
+                    INTERVAL 1 DAY
                 )
-        ";
+                AND tu.estado IN (
+                    'pendiente_aprobacion',
+                    'observada',
+                    'confirmada',
+                    'realizada'
+                )
+            WHERE tp.id_periodo = :id_periodo
+            GROUP BY tp.id_tutor
+        ");
+        $consultaOcupados->execute(['id_periodo' => $idPeriodo]);
 
-        $consultaOcupados = $this->conexion->prepare(
-            $sqlOcupados
-        );
+        $cuposOcupados = 0;
+        foreach ($consultaOcupados->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+            $cuposOcupados += (int) $fila['ocupados'];
+        }
 
-        $consultaOcupados->execute([
-            'id_periodo' => $idPeriodo
-        ]);
-
-        $cuposOcupados = (int) $consultaOcupados
-            ->fetchColumn();
-
-        $cuposTotales = (int) (
-            $resumen['cupos_totales'] ?? 0
-        );
+        $cuposTotales = (int) ($resumen['cupos_totales'] ?? 0);
 
         return [
             'tutores_configurados' => (int) (
@@ -277,10 +263,7 @@ class CupoModel
             ),
             'cupos_totales' => $cuposTotales,
             'cupos_ocupados' => $cuposOcupados,
-            'cupos_disponibles' => max(
-                0,
-                $cuposTotales - $cuposOcupados
-            )
+            'cupos_disponibles' => max(0, $cuposTotales - $cuposOcupados)
         ];
     }
 }

@@ -89,7 +89,7 @@ class ParametroMgModel
     /**
      * Devuelve únicamente el valor de un parámetro.
      */
-    public function obtenerValor(
+    public function obtener(
         string $clave
     ): ?string {
         $sql = "
@@ -110,6 +110,15 @@ class ParametroMgModel
         return $valor !== false
             ? (string) $valor
             : null;
+    }
+
+    /**
+     * Mantiene compatibilidad con las llamadas anteriores.
+     */
+    public function obtenerValor(
+        string $clave
+    ): ?string {
+        return $this->obtener($clave);
     }
 
     /**
