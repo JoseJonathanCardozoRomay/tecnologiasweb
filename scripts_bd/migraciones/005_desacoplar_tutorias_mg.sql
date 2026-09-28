@@ -67,6 +67,33 @@ BEGIN
     END IF;
 END$$
 
+DROP PROCEDURE IF EXISTS agregar_columna_si_no_existe$$
+
+CREATE PROCEDURE agregar_columna_si_no_existe(
+    IN nombre_tabla VARCHAR(64),
+    IN nombre_columna VARCHAR(64),
+    IN definicion_columna VARCHAR(255)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = nombre_tabla
+            AND COLUMN_NAME = nombre_columna
+    ) THEN
+        SET @sql_agregar_columna = CONCAT(
+            'ALTER TABLE `', nombre_tabla,
+            '` ADD COLUMN `', nombre_columna, '` ',
+            definicion_columna
+        );
+
+        PREPARE sentencia_agregar_columna FROM @sql_agregar_columna;
+        EXECUTE sentencia_agregar_columna;
+        DEALLOCATE PREPARE sentencia_agregar_columna;
+    END IF;
+END$$
+
 DELIMITER ;
 
 -- =========================================================
@@ -155,19 +182,29 @@ CALL eliminar_fk_si_existe(
 
 ALTER TABLE tutorias
     MODIFY id_tutor INT NOT NULL,
-    MODIFY fecha DATE NOT NULL,
-    MODIFY hora_inicio TIME NOT NULL,
-    MODIFY hora_fin TIME NOT NULL,
+    MODIFY fecha DATE NULL,
+    MODIFY hora_inicio TIME NULL,
+    MODIFY hora_fin TIME NULL,
     MODIFY modalidad ENUM(
         'presencial',
         'virtual'
-    ) NOT NULL DEFAULT 'presencial',
+    ) NULL DEFAULT NULL,
     MODIFY estado ENUM(
         'pendiente',
+        'pendiente_tutor',
+        'pendiente_aprobacion',
+        'observada',
+        'rechazada',
         'confirmada',
         'realizada',
         'cancelada'
-    ) NOT NULL DEFAULT 'pendiente';
+    ) NOT NULL DEFAULT 'pendiente_tutor';
+
+CALL agregar_columna_si_no_existe(
+    'tutorias',
+    'observacion_revision',
+    'VARCHAR(500) NULL AFTER observaciones'
+);
 
 -- Restauramos la relación original con la tabla tutores.
 
@@ -183,3 +220,4 @@ ALTER TABLE tutorias
 
 DROP PROCEDURE IF EXISTS eliminar_fk_si_existe;
 DROP PROCEDURE IF EXISTS eliminar_columna_si_existe;
+DROP PROCEDURE IF EXISTS agregar_columna_si_no_existe;
