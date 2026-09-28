@@ -109,8 +109,8 @@ function obtenerPermisosPorRol(): array
         ],
 
         'tutor' => [
-            'mg.cohortes.ver',
-            'mg.calendario.ver',
+            // El tutor solo verá el calendario de sus asignaciones.
+            'mg.calendario.ver_propios',
 
             'mg.expedientes.ver_propios',
             'mg.tutores.ver_asignacion_propia',
@@ -131,8 +131,8 @@ function obtenerPermisosPorRol(): array
         ],
 
         'estudiante' => [
-            'mg.cohortes.ver',
-            'mg.calendario.ver',
+            // El estudiante solo verá el calendario de su expediente.
+            'mg.calendario.ver_propio',
 
             'mg.expedientes.ver_propio',
             'mg.tutores.ver_asignacion_propia',
@@ -161,7 +161,7 @@ function usuarioTienePermiso(string $permiso): bool
 
     $rol = $usuario['rol'] ?? '';
 
-    // El administrador conserva acceso completo
+    // El administrador conserva acceso completo.
     if ($rol === 'administrador') {
         return true;
     }
