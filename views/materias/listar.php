@@ -1,4 +1,4 @@
-<?php
+ <?php
 if (!isset($materias)) $materias = [];
 if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
@@ -103,11 +103,9 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
         <a href="index.php" class="volver">← Volver al inicio</a>
         
         <h1>📚 Listado de Materias</h1>
-
         <?php if ($rol_actual === 'administrador'): ?>
             <a href="index.php?accion=materia_crear" class="btn-nuevo">+ Nueva Materia</a>
         <?php endif; ?>
-
         <table>
             <thead>
                 <tr>
@@ -127,13 +125,17 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <?php else: ?>
                     <?php foreach ($materias as $m): ?>
                     <tr>
-                        <td><?= $m['id_materia'] ?></td>
+                        <!-- ✅ Protegido -->
+                        <td><?= htmlspecialchars($m['id_materia']) ?></td>
+                        <!-- ✅ Ya estaba bien -->
                         <td><strong><?= htmlspecialchars($m['nombre_materia']) ?></strong></td>
+                        <!-- ✅ Ya estaba bien -->
                         <td><?= htmlspecialchars($m['nombre_carrera'] ?? '—') ?></td>
                         <td>
                             <?php if ($rol_actual === 'administrador'): ?>
-                                <a href="index.php?accion=materia_editar&id=<?= $m['id_materia'] ?>" class="editar">Editar</a>
-                                <a href="index.php?accion=materia_eliminar&id=<?= $m['id_materia'] ?>" 
+                                <!-- ✅ ID protegido como número -->
+                                <a href="index.php?accion=materia_editar&id=<?= (int)$m['id_materia'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=materia_eliminar&id=<?= (int)$m['id_materia'] ?>" 
                                    class="eliminar"
                                    onclick="return confirm('¿Seguro que quieres eliminar esta materia?')">Eliminar</a>
                             <?php else: ?>

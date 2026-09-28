@@ -1,43 +1,57 @@
 <?php
 /**
- * Crear Evaluación — Solo Estudiante
+ * Crear Evaluación — ✅ Coincide EXACTAMENTE con tu tabla
  */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador', 'estudiante']);
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../models/EvaluacionModel.php';
 
-$rol = $_SESSION['usuario']['nombre_rol'] ?? '';
-
-// ✅ SOLO Estudiante puede evaluar
-if ($rol !== 'estudiante') {
-    echo "<script>alert('Solo los estudiantes pueden evaluar tutorías');history.back();</script>";
-    exit;
-}
-
-$id_tutoria = (int)($_GET['id_tutoria'] ?? 0);
-if ($id_tutoria <= 0) {
-    echo "<script>alert('Tutoría no especificada');history.back();</script>";
-    exit;
-}
-
 $modelo = new EvaluacionModel();
+$tutoriaModel = new TutoriaModel();
 $error = '';
 
-if ($modelo->yaExiste($id_tutoria)) {
-    header("Location: index.php?accion=tutorias_listar");
-    exit;
+if ($_SESSION['rol_nombre'] === 'estudiante') {
+    $tutorias = $tutoriaModel->listarPorEstudiante($_SESSION['id_usuario']);
+} else {
+    $tutorias = $tutoriaModel->listarTodos();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $calificacion = (int)($_POST['calificacion'] ?? 0);
-    $comentario = trim($_POST['comentario'] ?? '');
-    
-    if ($calificacion < 1 || $calificacion > 5) {
-        $error = 'La calificación debe ser entre 1 y 5';
+    if (!isset($_POST['csrf_token']) || !csrf_validar($_POST['csrf_token'])) {
+        $error = 'Token inválido, recarga la página';
     } else {
-        $modelo->crear($id_tutoria, $calificacion, $comentario);
-        header("Location: index.php?accion=tutorias_listar");
-        exit;
+        $id_tutoria = (int)($_POST['id_tutoria'] ?? 0);
+        $calificacion = trim($_POST['calificacion'] ?? '');
+        $comentario = trim($_POST['comentario'] ?? '');
+
+        if ($id_tutoria <= 0) {
+            $error = 'Selecciona una tutoría';
+        } elseif (empty($calificacion)) {
+            $error = 'La calificación es obligatoria';
+        } elseif (!ctype_digit($calificacion)) {
+            $error = 'La calificación debe ser un número entero (ej: 8, 9, 10)';
+        } elseif ($calificacion < 1 || $calificacion > 10) {
+            $error = 'La calificación debe estar entre 1 y 10';
+        } else {
+            $datos = [
+                'id_tutoria' => $id_tutoria,
+                'calificacion' => $calificacion,
+                'comentario' => $comentario,
+                'fecha_evaluacion' => date('Y-m-d H:i:s')
+            ];
+
+            if ($modelo->crear($datos)) {
+                header('Location: index.php?accion=evaluaciones_listar');
+                exit;
+            } else {
+                $error = 'Error al guardar la evaluación';
+            }
+        }
     }
 }
 

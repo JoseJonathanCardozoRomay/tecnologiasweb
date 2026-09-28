@@ -1,22 +1,30 @@
 <?php
 /**
- * Controlador — Eliminar Expediente
+ * Eliminar Expediente de Modalidad de Grado
  */
 require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/MgExpedienteModel.php';
 
 $modelo = new MgExpedienteModel();
-$id = (int)($_GET['id_expediente'] ?? 0);
+$id = (int)($_GET['id'] ?? 0);
 
 if ($id <= 0) {
-    echo "<script>alert('Expediente no válido');location.href='index.php?accion=mg_expedientes_listar';</script>";
+    echo "<script>alert('ID no válido'); window.location='index.php?accion=mg_expedientes_listar';</script>";
+    exit;
+}
+
+$expediente = $modelo->obtenerPorId($id);
+if (!$expediente) {
+    echo "<script>alert('Expediente no encontrado'); window.location='index.php?accion=mg_expedientes_listar';</script>";
     exit;
 }
 
 if ($modelo->eliminar($id)) {
-    echo "<script>alert('Expediente eliminado correctamente');location.href='index.php?accion=mg_expedientes_listar';</script>";
+    header('Location: index.php?accion=mg_expedientes_listar');
+    exit;
 } else {
-    echo "<script>alert('No se pudo eliminar. Puede tener registros asociados.');history.back();</script>";
+    echo "<script>alert('Error al eliminar, intenta nuevamente'); history.back();</script>";
+    exit;
 }
-exit;

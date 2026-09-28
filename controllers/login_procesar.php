@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once '../config/sesion.php';       // ✅ Agregamos esta línea
 require_once '../config/conexion.php';
 require_once '../models/UsuarioModel.php';
 
@@ -8,6 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// ✅ PROTECCIÓN CSRF — PRIMERA LÍNEA del POST
+csrf_validar();
+
+// === TU CÓDIGO ORIGINAL — SE QUEDA EXACTAMENTE IGUAL ===
 $usuarioInput = trim($_POST['usuario'] ?? '');
 $contrasenaInput = $_POST['contrasena'] ?? '';
 
@@ -30,18 +35,17 @@ if ($usuario && $usuario['estado'] === 'activo' && password_verify($contrasenaIn
             header('Location: ../controllers/usuarios_listar.php');
             break;
         case 'tutor':
-            header('Location: ../views/tutor/panel.php'); // aún no existe, lo crearemos después
+            header('Location: ../views/tutor/panel.php');
             break;
         case 'estudiante':
-            header('Location: ../views/estudiante/panel.php'); // aún no existe
+            header('Location: ../views/estudiante/panel.php');
             break;
         default:
             header('Location: ../views/login/login.php');
     }
     exit;
-
 } else {
-    // Login fallido — registrar si el usuario existe
+    // Login fallido
     if ($usuario) {
         $pdo->prepare("INSERT INTO registro_accesos (id_usuario, ip_origen, resultado) VALUES (?, ?, 'fallido')")
             ->execute([$usuario['id_usuario'], $_SERVER['REMOTE_ADDR']]);

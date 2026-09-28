@@ -1,4 +1,4 @@
-<?php
+ <?php
 require_once __DIR__ . '/../config/sesion.php';
 require_once __DIR__ . '/../models/MgDefensaModel.php';
 require_once __DIR__ . '/../models/MgTribunalModel.php';
@@ -8,9 +8,10 @@ $modelo = new MgDefensaModel();
 $modeloTribunal = new MgTribunalModel();
 $modeloExpediente = new MgExpedienteModel();
 
-$error = '';
 $tribunales = $modeloTribunal->listarTodos();
 $expedientes = $modeloExpediente->listarTodos();
+
+$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $datos = [
@@ -24,13 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     if ($datos['id_tribunal'] <= 0 || $datos['id_expediente'] <= 0 || empty($datos['fecha_defensa'])) {
-        $error = 'Completa los campos obligatorios';
+        $error = '⚠️ Completa los campos obligatorios';
     } else {
-        if ($modelo->crear($datos)) {
-            header('Location: index.php?accion=mg_defensas_listar');
+        try {
+            $modelo->crear($datos);
+            header('Location: index.php?accion=mg_defensas_listar&mensaje=creada');
             exit;
+        } catch (Exception $e) {
+            $error = $e->getMessage(); // ✅ Mensaje amigable desde el modelo
         }
-        $error = 'Error al guardar';
     }
 }
 

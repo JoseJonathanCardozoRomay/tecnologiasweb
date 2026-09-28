@@ -1,15 +1,17 @@
 <?php
+/**
+ * Editar Tutor — Permitido: Administrador
+ */
 require_once __DIR__ . '/../config/sesion.php';
-requerirRol(['administrador','tutor']);
-
+requerirRol(['administrador']);
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 
 $modelo = new TutorModel();
 $modeloUsuario = new UsuarioModel();
 $error = '';
-$id = (int)($_GET['id'] ?? 0);
 
+$id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) {
     header('Location: index.php?accion=tutores_listar');
     exit;
@@ -21,8 +23,8 @@ if (!$tutor) {
     exit;
 }
 
-// Obtener lista de usuarios para el desplegable
-$usuarios = $modeloUsuario->listarTodos();
+// ✅ Cargar SOLO usuarios con rol de tutor
+$usuarios = $modeloUsuario->listarPorRol('tutor');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $datos = [

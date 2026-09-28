@@ -1,6 +1,6 @@
 <?php
 /**
- * Modelo para la gestión de Materias
+ * Modelo Materia — Completo
  */
 require_once __DIR__ . '/../config/conexion.php';
 
@@ -13,74 +13,68 @@ class MateriaModel {
         $this->conexion = $conexion;
     }
 
-    /**
-     * Obtener todas las materias con nombre de carrera
-     */
-    public function listarTodasConCarrera() {
-        $sql = "SELECT m.*, c.nombre_carrera
+    public function listarTodos() {
+        $sql = "SELECT m.*, c.nombre_carrera 
                 FROM {$this->tabla} m
                 LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
-                ORDER BY m.nombre_materia";
+                ORDER BY m.nombre_materia ASC";
         $stmt = $this->conexion->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Listar todas las materias
-     */
+    // ✅ MÉTODO AGREGADO — El que faltaba
     public function listarTodas() {
-        $sql = "SELECT * FROM {$this->tabla} ORDER BY nombre_materia";
-        $stmt = $this->conexion->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->listarTodos();
     }
 
-    /**
-     * Obtener una materia por ID
-     */
     public function obtenerPorId($id) {
-        $sql = "SELECT * FROM {$this->tabla} WHERE id_materia = :id";
+        $id = (int)$id;
+        $sql = "SELECT m.*, c.nombre_carrera 
+                FROM {$this->tabla} m
+                LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+                WHERE m.id_materia = :id";
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Crear nueva materia
-     */
     public function crear($datos) {
-        $sql = "INSERT INTO {$this->tabla} (nombre_materia, id_carrera) 
-                VALUES (:nombre_materia, :id_carrera)";
+        $nombre = trim($datos['nombre_materia'] ?? '');
+        $id_carrera = !empty($datos['id_carrera']) ? (int)$datos['id_carrera'] : null;
+
+        if (empty($nombre)) return false;
+
+        $sql = "INSERT INTO {$this->tabla} (nombre_materia, id_carrera) VALUES (:nombre, :id_carrera)";
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':nombre_materia', $datos['nombre_materia']);
-        $stmt->bindParam(':id_carrera', $datos['id_carrera'], PDO::PARAM_INT);
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->bindParam(':id_carrera', $id_carrera);
         return $stmt->execute();
     }
 
-    /**
-     * Editar materia
-     */
-    public function editar($id, $datos) {
-        $sql = "UPDATE {$this->tabla} SET 
-                    nombre_materia = :nombre_materia,
-                    id_carrera = :id_carrera
-                WHERE id_materia = :id";
+    public function actualizar($id, $datos) {
+        $id = (int)$id;
+        $nombre = trim($datos['nombre_materia'] ?? '');
+        $id_carrera = !empty($datos['id_carrera']) ? (int)$datos['id_carrera'] : null;
+
+        if ($id <= 0 || empty($nombre)) return false;
+
+        $sql = "UPDATE {$this->tabla} SET nombre_materia = :nombre, id_carrera = :id_carrera WHERE id_materia = :id";
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':nombre_materia', $datos['nombre_materia']);
-        $stmt->bindParam(':id_carrera', $datos['id_carrera'], PDO::PARAM_INT);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->bindParam(':id_carrera', $id_carrera);
+        $stmt->bindParam(':id', $id);
         return $stmt->execute();
     }
 
-    /**
-     * Eliminar materia
-     */
     public function eliminar($id) {
+        $id = (int)$id;
+        if ($id <= 0) return false;
+
         $sql = "DELETE FROM {$this->tabla} WHERE id_materia = :id";
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id);
         return $stmt->execute();
     }
 }

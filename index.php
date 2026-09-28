@@ -1,18 +1,17 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 /**
  * DASHBOARD — Sistema de Gestión de Tutorías
- * Versión: Completa + Sprint 4 + Sprint 5 — Seguimiento
- * ✅ Corregido: Sesión primero + consultas optimizadas
+ * ✅ AGREGADO: Asignación de Materias → Tutor decide Aceptar/Rechazar
  */
-
-// ✅ PRIMERO: Cargar sesión ANTES de todo — sin espacios ni líneas vacías antes
 require_once __DIR__ . '/config/sesion.php';
 require_once __DIR__ . '/config/conexion.php';
 
 // ✅ Contar notificaciones sin leer
 $total_sin_leer = 0;
 $alertas_seguimiento_sin_leer = 0;
-
 if (isset($_SESSION['id_usuario'])) {
     global $conexion;
     
@@ -40,137 +39,137 @@ $rutas_publicas = [
 // === RUTAS PRIVADAS con permisos por rol ===
 $rutas_privadas = [
     // === ROLES ===
-    'listar'                          => ['controllers/roles_listar.php', ['administrador']],
-    'rol_crear'                       => ['controllers/rol_crear.php', ['administrador']],
-    'rol_editar'                      => ['controllers/rol_editar.php', ['administrador']],
-    'rol_eliminar'                    => ['controllers/rol_eliminar.php', ['administrador']],
+    'listar'                              => ['controllers/roles_listar.php', ['administrador']],
+    'rol_crear'                           => ['controllers/rol_crear.php', ['administrador']],
+    'rol_editar'                          => ['controllers/rol_editar.php', ['administrador']],
+    'rol_eliminar'                        => ['controllers/rol_eliminar.php', ['administrador']],
     
     // === USUARIOS ===
-    'usuarios_listar'                 => ['controllers/usuarios_listar.php', ['administrador']],
-    'usuario_crear'                    => ['controllers/usuario_crear.php', ['administrador']],
-    'usuario_editar'                   => ['controllers/usuario_editar.php', ['administrador']],
-    'usuario_eliminar'                 => ['controllers/usuario_eliminar.php', ['administrador']],
+    'usuarios_listar'                     => ['controllers/usuarios_listar.php', ['administrador']],
+    'usuario_crear'                       => ['controllers/usuario_crear.php', ['administrador']],
+    'usuario_editar'                      => ['controllers/usuario_editar.php', ['administrador']],
+    'usuario_eliminar'                    => ['controllers/usuario_eliminar.php', ['administrador']],
     
     // === CARRERAS ===
-    'carreras_listar'                  => ['controllers/carreras_listar.php', ['administrador','tutor','estudiante']],
-    'carrera_crear'                    => ['controllers/carrera_crear.php', ['administrador']],
-    'carrera_editar'                   => ['controllers/carrera_editar.php', ['administrador']],
-    'carrera_eliminar'                 => ['controllers/carrera_eliminar.php', ['administrador']],
+    'carreras_listar'                     => ['controllers/carreras_listar.php', ['administrador','tutor','estudiante']],
+    'carrera_crear'                       => ['controllers/carrera_crear.php', ['administrador']],
+    'carrera_editar'                      => ['controllers/carrera_editar.php', ['administrador']],
+    'carrera_eliminar'                    => ['controllers/carrera_eliminar.php', ['administrador']],
     
     // === MATERIAS ===
-    'materias_listar'                  => ['controllers/materias_listar.php', ['administrador','tutor','estudiante']],
-    'materia_crear'                    => ['controllers/materia_crear.php', ['administrador']],
-    'materia_editar'                   => ['controllers/materia_editar.php', ['administrador']],
-    'materia_eliminar'                 => ['controllers/materia_eliminar.php', ['administrador']],
+    'materias_listar'                     => ['controllers/materias_listar.php', ['administrador','tutor','estudiante']],
+    'materia_crear'                       => ['controllers/materia_crear.php', ['administrador']],
+    'materia_editar'                      => ['controllers/materia_editar.php', ['administrador']],
+    'materia_eliminar'                    => ['controllers/materia_eliminar.php', ['administrador']],
     
     // === TUTORES ===
-    'tutores_listar'                   => ['controllers/tutores_listar.php', ['administrador','tutor','estudiante']],
-    'tutor_crear'                      => ['controllers/tutor_crear.php', ['administrador']],
-    'tutor_editar'                     => ['controllers/tutor_editar.php', ['administrador','tutor']],
-    'tutor_eliminar'                   => ['controllers/tutor_eliminar.php', ['administrador']],
+    'tutores_listar'                      => ['controllers/tutores_listar.php', ['administrador','tutor','estudiante']],
+    'tutor_crear'                         => ['controllers/tutor_crear.php', ['administrador']],
+    'tutor_editar'                        => ['controllers/tutor_editar.php', ['administrador','tutor']],
+    'tutor_eliminar'                      => ['controllers/tutor_eliminar.php', ['administrador']],
     
-    // === TUTOR-MATERIA ===
-    'tutor_materia_listar'             => ['controllers/tutor_materia_listar.php', ['administrador']],
-    'tutor_materia_asignar'            => ['controllers/tutor_materia_asignar.php', ['administrador']],
-    'tutor_materia_quitar'             => ['controllers/tutor_materia_quitar.php', ['administrador']],
+    // === TUTOR-MATERIA — ✅ COMPLETO: Asignar + Decidir ===
+    'tutor_materia_listar'                => ['controllers/tutor_materia_listar.php', ['administrador']],
+    'tutor_materia_asignar'               => ['controllers/tutor_materia_asignar.php', ['administrador']],
+    'tutor_materia_guardar'                => ['controllers/tutor_materia_guardar.php', ['administrador']],
+    'tutor_materia_eliminar'              => ['controllers/tutor_materia_eliminar.php', ['administrador']],
+    'mis_materias'                        => ['controllers/tutor_aceptar_materia.php', ['tutor']],
     
     // === ESTUDIANTES ===
-    'estudiantes_listar'                => ['controllers/estudiantes_listar.php', ['administrador','tutor']],
-    'estudiante_crear'                  => ['controllers/estudiante_crear.php', ['administrador']],
-    'estudiante_editar'                 => ['controllers/estudiante_editar.php', ['administrador','estudiante']],
-    'estudiante_eliminar'               => ['controllers/estudiante_eliminar.php', ['administrador']],
+    'estudiantes_listar'                  => ['controllers/estudiantes_listar.php', ['administrador','tutor']],
+    'estudiante_crear'                    => ['controllers/estudiante_crear.php', ['administrador']],
+    'estudiante_editar'                   => ['controllers/estudiante_editar.php', ['administrador','estudiante']],
+    'estudiante_eliminar'                 => ['controllers/estudiante_eliminar.php', ['administrador']],
     
     // === DISPONIBILIDAD ===
-    'disponibilidad_listar'             => ['controllers/disponibilidad_listar.php', ['administrador','tutor','estudiante']],
-    'disponibilidad_crear'              => ['controllers/disponibilidad_crear.php', ['administrador','tutor']],
-    'disponibilidad_editar'             => ['controllers/disponibilidad_editar.php', ['administrador','tutor']],
-    'disponibilidad_eliminar'           => ['controllers/disponibilidad_eliminar.php', ['administrador','tutor']],
+    'disponibilidad_listar'                => ['controllers/disponibilidad_listar.php', ['administrador','tutor','estudiante']],
+    'disponibilidad_crear'                 => ['controllers/disponibilidad_crear.php', ['administrador','tutor']],
+    'disponibilidad_editar'                => ['controllers/disponibilidad_editar.php', ['administrador','tutor']],
+    'disponibilidad_eliminar'              => ['controllers/disponibilidad_eliminar.php', ['administrador','tutor']],
     
     // === TUTORÍAS ===
-    'tutorias_listar'                   => ['controllers/tutorias_listar.php', ['administrador','tutor','estudiante']],
-    'tutoria_crear'                      => ['controllers/tutoria_crear.php', ['administrador','estudiante']],
-    'tutoria_editar'                     => ['controllers/tutoria_editar.php', ['administrador','tutor']],
-    'tutoria_eliminar'                   => ['controllers/tutoria_eliminar.php', ['administrador']],
+    'tutorias_listar'                      => ['controllers/tutorias_listar.php', ['administrador','tutor','estudiante']],
+    'tutoria_crear'                        => ['controllers/tutoria_crear.php', ['administrador','estudiante']],
+    'tutoria_editar'                       => ['controllers/tutoria_editar.php', ['administrador','tutor']],
+    'tutoria_eliminar'                     => ['controllers/tutoria_eliminar.php', ['administrador']],
     
     // === EVALUACIONES ===
-    'evaluaciones_listar'               => ['controllers/evaluaciones_listar.php', ['administrador','tutor','estudiante']],
-    'evaluacion_crear'                   => ['controllers/evaluacion_crear.php', ['administrador','estudiante']],
-    'evaluacion_editar'                  => ['controllers/evaluacion_editar.php', ['administrador']],
-    'evaluacion_eliminar'                => ['controllers/evaluacion_eliminar.php', ['administrador']],
+    'evaluaciones_listar'                  => ['controllers/evaluaciones_listar.php', ['administrador','tutor','estudiante']],
+    'evaluacion_crear'                      => ['controllers/evaluacion_crear.php', ['administrador','estudiante']],
+    'evaluacion_editar'                     => ['controllers/evaluacion_editar.php', ['administrador']],
+    'evaluacion_eliminar'                   => ['controllers/evaluacion_eliminar.php', ['administrador']],
     
     // === ACCESOS ===
-    'accesos_listar'                     => ['controllers/accesos_listar.php', ['administrador']],
+    'accesos_listar'                       => ['controllers/accesos_listar.php', ['administrador']],
     
     // === NOTIFICACIONES ===
-    'notificaciones_listar'              => ['controllers/notificaciones_listar.php', ['administrador','tutor','estudiante']],
-    'notificacion_crear'                  => ['controllers/notificacion_crear.php', ['administrador']],
-    'notificacion_eliminar'              => ['controllers/notificacion_eliminar.php', ['administrador']],
+    'notificaciones_listar'                 => ['controllers/notificaciones_listar.php', ['administrador','tutor','estudiante']],
+    'notificacion_crear'                    => ['controllers/notificacion_crear.php', ['administrador']],
+    'notificacion_eliminar'                 => ['controllers/notificacion_eliminar.php', ['administrador']],
     
     // === PERIODOS ===
-    'periodos_listar'                    => ['controllers/periodos_listar.php', ['administrador','tutor','estudiante']],
-    'periodo_crear'                       => ['controllers/periodo_crear.php', ['administrador']],
-    'periodo_editar'                      => ['controllers/periodo_editar.php', ['administrador']],
-    'periodo_eliminar'                    => ['controllers/periodo_eliminar.php', ['administrador']],
+    'periodos_listar'                       => ['controllers/periodos_listar.php', ['administrador','tutor','estudiante']],
+    'periodo_crear'                         => ['controllers/periodo_crear.php', ['administrador']],
+    'periodo_editar'                        => ['controllers/periodo_editar.php', ['administrador']],
+    'periodo_eliminar'                      => ['controllers/periodo_eliminar.php', ['administrador']],
     
     // === BLOQUES HORARIOS ===
-    'bloques_listar'                     => ['controllers/bloques_listar.php', ['administrador','tutor','estudiante']],
-    'bloque_crear'                        => ['controllers/bloque_crear.php', ['administrador']],
-    'bloque_editar'                       => ['controllers/bloque_editar.php', ['administrador']],
-    'bloque_eliminar'                     => ['controllers/bloque_eliminar.php', ['administrador']],
+    'bloques_listar'                        => ['controllers/bloques_listar.php', ['administrador','tutor','estudiante']],
+    'bloque_crear'                          => ['controllers/bloque_crear.php', ['administrador']],
+    'bloque_editar'                         => ['controllers/bloque_editar.php', ['administrador']],
+    'bloque_eliminar'                       => ['controllers/bloque_eliminar.php', ['administrador']],
     
     // === SEGUIMIENTO DE SESIÓN ===
-    'seguimientos_listar'                 => ['controllers/seguimientos_listar.php', ['administrador','tutor','estudiante']],
-    'seguimiento_crear'                   => ['controllers/seguimiento_crear.php', ['administrador','tutor']],
-    'seguimiento_editar'                  => ['controllers/seguimiento_editar.php', ['administrador','tutor']],
-    'seguimiento_eliminar'                => ['controllers/seguimiento_eliminar.php', ['administrador','tutor']],
-    
-    // === EXPEDIENTES DE MODALIDADES DE GRADO ===
-    'mg_expedientes_listar'              => ['controllers/mg_expedientes_listar.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
-    'mg_expediente_crear'                 => ['controllers/mg_expediente_crear.php', ['administrador','coordinador_mg','auxiliar_mg']],
-    'mg_expediente_ver'                   => ['controllers/mg_expediente_ver.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
-    'mg_expediente_editar'                => ['controllers/mg_expediente_editar.php', ['administrador','coordinador_mg','auxiliar_mg']],
-    'mg_expediente_eliminar'              => ['controllers/mg_expediente_eliminar.php', ['administrador','coordinador_mg']],
+    'seguimientos_listar'                   => ['controllers/seguimientos_listar.php', ['administrador','tutor','estudiante']],
+    'seguimiento_crear'                     => ['controllers/seguimiento_crear.php', ['administrador','tutor']],
+    'seguimiento_editar'                    => ['controllers/seguimiento_editar.php', ['administrador','tutor']],
+    'seguimiento_eliminar'                  => ['controllers/seguimiento_eliminar.php', ['administrador','tutor']],
     
     // === MODALIDADES DE GRADO ===
-    'mg_parametros'                       => ['controllers/mg_parametros_listar.php', ['administrador','coordinador_mg']],
-    'mg_modalidades'                      => ['controllers/mg_modalidades_listar.php', ['administrador','coordinador_mg','auxiliar_mg']],
-    'mg_cohortes'                         => ['controllers/mg_cohortes_listar.php', ['administrador','coordinador_mg','auxiliar_mg']],
-    'mg_cohorte_crear'                    => ['controllers/mg_cohorte_crear.php', ['administrador','coordinador_mg']],
-    'mg_cohorte_editar'                   => ['controllers/mg_cohorte_editar.php', ['administrador','coordinador_mg']],
+    'mg_parametros'                         => ['controllers/mg_parametros_listar.php', ['administrador','coordinador_mg']],
+    'mg_modalidades'                        => ['controllers/mg_modalidades_listar.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_cohortes'                           => ['controllers/mg_cohortes_listar.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_cohorte_crear'                      => ['controllers/mg_cohorte_crear.php', ['administrador','coordinador_mg']],
+    'mg_cohorte_editar'                     => ['controllers/mg_cohorte_editar.php', ['administrador','coordinador_mg']],
+    'mg_cohorte_eliminar'                   => ['controllers/mg_cohorte_eliminar.php', ['administrador','coordinador_mg']],
+    'mg_expedientes_listar'                 => ['controllers/mg_expedientes_listar.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
+    'mg_expediente_crear'                   => ['controllers/mg_expediente_crear.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_expediente_ver'                     => ['controllers/mg_expediente_ver.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
+    'mg_expediente_editar'                  => ['controllers/mg_expediente_editar.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_expediente_eliminar'                => ['controllers/mg_expediente_eliminar.php', ['administrador','coordinador_mg']],
+    'mg_tribunales_listar'                  => ['controllers/mg_tribunales_listar.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
+    'mg_tribunal_crear'                     => ['controllers/mg_tribunal_crear.php', ['administrador','coordinador_mg']],
+    'mg_tribunal_editar'                    => ['controllers/mg_tribunal_editar.php', ['administrador','coordinador_mg']],
+    'mg_tribunal_eliminar'                  => ['controllers/mg_tribunal_eliminar.php', ['administrador','coordinador_mg']],
+    'mg_defensas_listar'                    => ['controllers/mg_defensas_listar.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
+    'mg_defensa_crear'                      => ['controllers/mg_defensa_crear.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_defensa_editar'                     => ['controllers/mg_defensa_editar.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_defensa_eliminar'                   => ['controllers/mg_defensa_eliminar.php', ['administrador','coordinador_mg']],
+    'mg_reporte_cohorte_listar'             => ['controllers/mg_reporte_cohorte_listar.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    'mg_reporte_cohorte_crear'              => ['controllers/mg_reporte_cohorte_crear.php', ['administrador','coordinador_mg']],
+    'mg_reporte_cohorte_editar'             => ['controllers/mg_reporte_cohorte_editar.php', ['administrador','coordinador_mg']],
+    'mg_reporte_cohorte_eliminar'           => ['controllers/mg_reporte_cohorte_eliminar.php', ['administrador','coordinador_mg']],
     
-    // === DEFENSAS, TRIBUNALES, REPORTES ===
-    'mg_tribunales_listar'                => ['controllers/mg_tribunales_listar.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
-    'mg_tribunal_crear'                   => ['controllers/mg_tribunal_crear.php', ['administrador','coordinador_mg']],
-    'mg_tribunal_editar'                  => ['controllers/mg_tribunal_editar.php', ['administrador','coordinador_mg']],
-    'mg_tribunal_eliminar'                => ['controllers/mg_tribunal_eliminar.php', ['administrador','coordinador_mg']],
+    // === REUNIONES ===
+    'reuniones_listar'                       => ['controllers/reuniones_listar.php', ['administrador','tutor','estudiante']],
+    'reunion_crear'                          => ['controllers/reunion_crear.php', ['administrador','tutor']],
+    'reunion_editar'                         => ['controllers/reunion_editar.php', ['administrador','tutor']],
+    'reunion_eliminar'                       => ['controllers/reunion_eliminar.php', ['administrador','tutor']],
     
-    'mg_defensas_listar'                  => ['controllers/mg_defensas_listar.php', ['administrador','coordinador_mg','auxiliar_mg','tutor','estudiante']],
-    'mg_defensa_crear'                    => ['controllers/mg_defensa_crear.php', ['administrador','coordinador_mg','auxiliar_mg']],
-    'mg_defensa_editar'                   => ['controllers/mg_defensa_editar.php', ['administrador','coordinador_mg','auxiliar_mg']],
-    'mg_defensa_eliminar'                 => ['controllers/mg_defensa_eliminar.php', ['administrador','coordinador_mg']],
+    // === INFORMES ===
+    'informes_listar'                        => ['controllers/informes_listar.php', ['administrador','tutor','estudiante']],
+    'informe_crear'                          => ['controllers/informe_crear.php', ['administrador','estudiante']],
+    'informe_editar'                         => ['controllers/informe_editar.php', ['administrador','estudiante']],
+    'informe_enviar'                         => ['controllers/informe_enviar.php', ['administrador','estudiante']],
+    'informe_revisar'                        => ['controllers/informe_revisar.php', ['administrador','tutor']],
+    'informe_eliminar'                       => ['controllers/informe_eliminar.php', ['administrador','estudiante']],
     
-    'mg_reporte_cohorte_listar'           => ['controllers/mg_reporte_cohorte_listar.php', ['administrador','coordinador_mg','auxiliar_mg']],
+    // === ALERTAS ===
+    'alertas_listar'                         => ['controllers/alertas_listar.php', ['administrador','tutor','estudiante']],
+    'alerta_marcar_leida'                    => ['controllers/alerta_marcar_leida.php', ['administrador','tutor','estudiante']],
     
-    // === REUNIONES DE SEGUIMIENTO ===
-    'reuniones_listar'                    => ['controllers/reuniones_listar.php', ['administrador','tutor','estudiante']],
-    'reunion_crear'                       => ['controllers/reunion_crear.php', ['administrador','tutor']],
-    'reunion_editar'                      => ['controllers/reunion_editar.php', ['administrador','tutor']],
-    'reunion_eliminar'                    => ['controllers/reunion_eliminar.php', ['administrador','tutor']],
-    
-    // === INFORMES DE AVANCE ===
-    'informes_listar'                     => ['controllers/informes_listar.php', ['administrador','tutor','estudiante']],
-    'informe_crear'                       => ['controllers/informe_crear.php', ['administrador','estudiante']],
-    'informe_editar'                      => ['controllers/informe_editar.php', ['administrador','estudiante']],
-    'informe_enviar'                      => ['controllers/informe_enviar.php', ['administrador','estudiante']],
-    'informe_revisar'                     => ['controllers/informe_revisar.php', ['administrador','tutor']],
-    'informe_eliminar'                    => ['controllers/informe_eliminar.php', ['administrador','estudiante']],
-    
-    // === ALERTAS DE SEGUIMIENTO ===
-    'alertas_listar'                      => ['controllers/alertas_listar.php', ['administrador','tutor','estudiante']],
-    'alerta_marcar_leida'                 => ['controllers/alerta_marcar_leida.php', ['administrador','tutor','estudiante']],
-    
-    // === DASHBOARD SEGUIMIENTO ===
-    'dashboard_seguimiento'               => ['controllers/dashboard_seguimiento.php', ['administrador','coordinador_mg','tutor']]
+    // === DASHBOARD ===
+    'dashboard_seguimiento'                  => ['controllers/dashboard_seguimiento.php', ['administrador','coordinador_mg','tutor']]
 ];
 
 // === PROCESAR RUTAS ===
@@ -178,12 +177,10 @@ if (isset($rutas_publicas[$accion])) {
     require_once $rutas_publicas[$accion];
     exit;
 }
-
 if (!estaAutenticado()) {
     header('Location: index.php?accion=login');
     exit;
 }
-
 if (isset($rutas_privadas[$accion])) {
     list($archivo, $roles_permitidos) = $rutas_privadas[$accion];
     
@@ -407,6 +404,7 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=materias_listar">📚 Materias</a>
                 <a href="index.php?accion=tutores_listar">👨‍🏫 Tutores</a>
                 <a href="index.php?accion=tutor_materia_listar">🔗 Tutor-Materia</a>
+                <a href="index.php?accion=tutor_materia_asignar">➕ Asignar Materia</a>
                 <a href="index.php?accion=estudiantes_listar">🎓 Estudiantes</a>
                 <a href="index.php?accion=disponibilidad_listar">📅 Disponibilidad</a>
                 <a href="index.php?accion=bloques_listar">🕐 Bloques Horarios</a>
@@ -497,6 +495,7 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=carreras_listar">🎓 Carreras</a>
                 <a href="index.php?accion=materias_listar">📚 Materias</a>
                 <a href="index.php?accion=tutores_listar">👤 Mi Perfil</a>
+                <a href="index.php?accion=mis_materias">📚 Mis Materias</a>
                 <a href="index.php?accion=disponibilidad_listar">📅 Mi Disponibilidad</a>
                 <a href="index.php?accion=tutorias_listar">📝 Mis Tutorías</a>
                 <a href="index.php?accion=seguimientos_listar">📝 Seguimiento Sesión</a>
@@ -570,6 +569,7 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <a href="index.php?accion=carreras_listar" class="tarjeta">Carreras</a>
                 <a href="index.php?accion=materias_listar" class="tarjeta">Materias</a>
                 <a href="index.php?accion=tutores_listar" class="tarjeta">Tutores</a>
+                <a href="index.php?accion=tutor_materia_asignar" class="tarjeta">➕ Asignar Materia</a>
                 <a href="index.php?accion=estudiantes_listar" class="tarjeta">Estudiantes</a>
                 <a href="index.php?accion=tutorias_listar" class="tarjeta">Tutorías</a>
                 <a href="index.php?accion=dashboard_seguimiento" class="tarjeta sp5">📊 Dashboard Seguimiento</a>
@@ -589,6 +589,7 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
             <?php endif; ?>
             
             <?php if ($rol_actual === 'tutor'): ?>
+                <a href="index.php?accion=mis_materias" class="tarjeta">📚 Mis Materias</a>
                 <a href="index.php?accion=tutorias_listar" class="tarjeta">Mis Tutorías</a>
                 <a href="index.php?accion=dashboard_seguimiento" class="tarjeta sp5">📊 Mi Avance</a>
                 <a href="index.php?accion=reuniones_listar" class="tarjeta sp5">📅 Reuniones</a>

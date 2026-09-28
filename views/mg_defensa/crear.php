@@ -1,89 +1,70 @@
-if (!isset($error)) $error = '';
+ <?php
 if (!isset($tribunales)) $tribunales = [];
 if (!isset($expedientes)) $expedientes = [];
+if (!isset($error)) $error = '';
+
 $titulo_pagina = 'Programar Nueva Defensa';
 ob_start();
 ?>
 <h1>Programar Nueva Defensa</h1>
 
+<!-- ✅ Mensaje de error profesional -->
 <?php if (!empty($error)): ?>
-<div style="background:#ffdddd; color:#c00; padding:12px; margin:15px 0; border-radius:6px;">
-    <?= htmlspecialchars($error) ?>
+<div style="background:#fff3cd; color:#856404; padding:15px; border-radius:8px; border-left:4px solid #ffc107; margin-bottom:20px;">
+    <?= $error ?>
 </div>
 <?php endif; ?>
 
-<form method="POST" action="" style="max-width:650px; margin:25px auto; background:#fff; padding:30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-    
-    <div style="margin-bottom:18px;">
-        <label style="display:block; font-weight:bold; margin-bottom:6px;">Tribunal / Jurado *</label>
-        <select name="id_tribunal" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-            <option value="">Seleccione un tribunal...</option>
-            <?php foreach ($tribunales as $t): ?>
-            <option value="<?= $t['id_tribunal'] ?>"><?= htmlspecialchars($t['nombre_completo']) ?></option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+<form method="POST" action="index.php?accion=mg_defensa_crear">
+    <input type="hidden" name="csrf_token" value="<?= csrf_generar() ?>">
 
-    <div style="margin-bottom:18px;">
-        <label style="display:block; font-weight:bold; margin-bottom:6px;">Expediente / Estudiante *</label>
-        <select name="id_expediente" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-            <option value="">Seleccione un expediente...</option>
-            <?php foreach ($expedientes as $e): ?>
-            <option value="<?= $e['id_expediente'] ?>">
-                <?= htmlspecialchars($e['nombre_estudiante'] ?? $e['titulo'] ?? 'Expediente '.$e['id_expediente']) ?>
+    <label>Expediente *</label>
+    <select name="id_expediente" required>
+        <option value="">Seleccione expediente</option>
+        <?php if (!empty($expedientes)): ?>
+            <?php foreach ($expedientes as $exp): ?>
+            <option value="<?= (int)$exp['id_expediente'] ?>">
+                <?= htmlspecialchars(($exp['codigo_expediente'] ?? '') . ' - ' . ($exp['estudiante_nombre'] ?? 'Estudiante')) ?>
             </option>
             <?php endforeach; ?>
-        </select>
-    </div>
+        <?php endif; ?>
+    </select>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:18px;">
-        <div>
-            <label style="display:block; font-weight:bold; margin-bottom:6px;">Fecha Defensa *</label>
-            <input type="date" name="fecha_defensa" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-        </div>
-        <div>
-            <label style="display:block; font-weight:bold; margin-bottom:6px;">Hora *</label>
-            <input type="time" name="hora_defensa" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-        </div>
-    </div>
+    <label>Tribunal / Jurado *</label>
+    <select name="id_tribunal" required>
+        <option value="">Seleccione tribunal</option>
+        <?php if (!empty($tribunales)): ?>
+            <?php foreach ($tribunales as $trib): ?>
+            <option value="<?= (int)$trib['id_tribunal'] ?>">
+                <?= htmlspecialchars($trib['nombre_completo'] ?? '') ?>
+            </option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </select>
 
-    <div style="margin-bottom:18px;">
-        <label style="display:block; font-weight:bold; margin-bottom:6px;">Lugar / Aula *</label>
-        <select name="lugar" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-            <option value="">Seleccione un aula o lugar...</option>
-            <option value="Aula 101 - Edificio Principal">Aula 101 - Edificio Principal</option>
-            <option value="Aula 102 - Edificio Principal">Aula 102 - Edificio Principal</option>
-            <option value="Aula 201 - Edificio Académico">Aula 201 - Edificio Académico</option>
-            <option value="Aula 202 - Edificio Académico">Aula 202 - Edificio Académico</option>
-            <option value="Aula 301 - Sala de Grados">Aula 301 - Sala de Grados</option>
-            <option value="Aula Magna">Aula Magna</option>
-            <option value="Auditorio Principal">Auditorio Principal</option>
-            <option value="Laboratorio de Computación">Laboratorio de Computación</option>
-            <option value="Virtual - Plataforma">Virtual - Plataforma</option>
-            <option value="Otro">Otro (especificar en observaciones)</option>
-        </select>
-    </div>
+    <label>Fecha de Defensa *</label>
+    <input type="date" name="fecha_defensa" required>
 
-    <div style="margin-bottom:18px;">
-        <label style="display:block; font-weight:bold; margin-bottom:6px;">Estado</label>
-        <select name="estado_defensa" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-            <option value="programada" selected>Programada</option>
-            <option value="realizada">Realizada</option>
-            <option value="cancelada">Cancelada</option>
-            <option value="aplazada">Aplazada</option>
-        </select>
-    </div>
+    <label>Hora de Defensa *</label>
+    <input type="time" name="hora_defensa" required>
 
-    <div style="margin-bottom:20px;">
-        <label style="display:block; font-weight:bold; margin-bottom:6px;">Observaciones</label>
-        <textarea name="observaciones_programacion" rows="4" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></textarea>
-    </div>
+    <label>Lugar / Aula *</label>
+    <input type="text" name="lugar" placeholder="Ej: Aula 302 - Edificio Principal" required>
 
-    <div style="display:flex; gap:12px;">
-        <a href="index.php?accion=mg_defensas_listar" style="flex:1; padding:12px; text-align:center; background:#e0e0e0; color:#333; border-radius:6px; text-decoration:none; font-weight:bold;">← Volver</a>
-        <button type="submit" style="flex:1; padding:12px; background:#0066cc; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">💾 Guardar Defensa</button>
-    </div>
+    <label>Estado</label>
+    <select name="estado_defensa">
+        <option value="programada" selected>Programada</option>
+        <option value="confirmada">Confirmada</option>
+        <option value="realizada">Realizada</option>
+        <option value="cancelada">Cancelada</option>
+    </select>
+
+    <label>Observaciones / Detalles</label>
+    <textarea name="observaciones_programacion" rows="3" placeholder="Notas, indicaciones o detalles adicionales..."></textarea>
+
+    <button type="submit" class="btn btn-primario">Guardar Programación</button>
+    <a href="index.php?accion=mg_defensas_listar" class="btn btn-volver">Volver</a>
 </form>
 <?php
 $contenido = ob_get_clean();
-require_once __DIR__ . '/../layout.php';
+require_once __DIR__ . '/../../config/plantilla.php';

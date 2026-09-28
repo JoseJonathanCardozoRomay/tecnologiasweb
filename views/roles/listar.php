@@ -1,4 +1,4 @@
-<?php
+ <?php
 if (!isset($roles)) $roles = [];
 if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
@@ -102,11 +102,9 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
         <a href="index.php" class="volver">← Volver al inicio</a>
         
         <h1>📋 Listado de Roles</h1>
-
         <?php if ($rol_actual === 'administrador'): ?>
             <a href="index.php?accion=rol_crear" class="btn-nuevo">+ Nuevo Rol</a>
         <?php endif; ?>
-
         <table>
             <thead>
                 <tr>
@@ -125,12 +123,15 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <?php else: ?>
                     <?php foreach ($roles as $rol): ?>
                     <tr>
-                        <td><?= $rol['id_rol'] ?></td>
+                        <!-- ✅ Protegido -->
+                        <td><?= htmlspecialchars($rol['id_rol']) ?></td>
+                        <!-- ✅ Ya lo tenías bien -->
                         <td><strong><?= htmlspecialchars($rol['nombre_rol']) ?></strong></td>
                         <td>
                             <?php if ($rol_actual === 'administrador'): ?>
-                                <a href="index.php?accion=rol_editar&id=<?= $rol['id_rol'] ?>" class="editar">Editar</a>
-                                <a href="index.php?accion=rol_eliminar&id=<?= $rol['id_rol'] ?>" 
+                                <!-- ✅ ID protegido en el enlace -->
+                                <a href="index.php?accion=rol_editar&id=<?= (int)$rol['id_rol'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=rol_eliminar&id=<?= (int)$rol['id_rol'] ?>" 
                                    class="eliminar"
                                    onclick="return confirm('¿Seguro que quieres eliminar este rol? ⚠️ Los usuarios con este rol no podrán entrar')">Eliminar</a>
                             <?php else: ?>

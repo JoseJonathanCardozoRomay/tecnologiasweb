@@ -3,9 +3,7 @@
  * Editar Materia — SOLO ADMINISTRADOR
  */
 require_once __DIR__ . '/../config/sesion.php';
-requerirRol(['administrador'])
-
-require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador']);  // ✅ CORREGIDO: agregué paréntesis y punto y coma
 require_once __DIR__ . '/../models/MateriaModel.php';
 
 $rol_actual = $_SESSION['rol_nombre'] ?? '';
@@ -29,8 +27,8 @@ if (!$materia) {
 require_once __DIR__ . '/../models/CarreraModel.php';
 $modeloCarrera = new CarreraModel();
 $carreras = $modeloCarrera->listarTodas();
-$error = '';
 
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $datos = [
         'nombre_materia' => trim($_POST['nombre_materia'] ?? ''),

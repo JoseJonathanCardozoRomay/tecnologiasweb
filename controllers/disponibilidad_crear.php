@@ -1,67 +1,72 @@
 <?php
 /**
- * Registrar Disponibilidad Horaria
- * Tutor puede elegir varios días a la vez
+ * Crear Disponibilidad Horaria
+ * Tabla: disponibilidad_tutor
  */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../config/sesion.php';
-requerirRol(['administrador','tutor']);
-
-require_once __DIR__ . '/../config/sesion.php';
-require_once __DIR__ . '/../models/DisponibilidadModel.php';
+requerirRol(['administrador', 'tutor']);
+require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 
-// Verificar permisos
-if (!tieneRol(['tutor','administrador'])) {
-    echo "<script>alert('No tienes permiso');history.back();</script>";
-    exit;
-}
-
-$rol_actual = $_SESSION['rol_nombre'] ?? ''; // ✅ Corregido: definir la variable
-$tutorModel = new TutorModel();
-$tutores = $tutorModel->listarTodos();
+$modeloTutor = new TutorModel();
 $error = '';
-$exito = '';
+$tutores = $modeloTutor->listarTodos();
 
-// Si es tutor, obtiene su propio id automáticamente
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
 $id_tutor_actual = null;
+
 if ($rol_actual === 'tutor') {
-    foreach ($tutores as $t) {
-        if (($t['id_usuario'] ?? 0) == ($_SESSION['id_usuario'] ?? 0)) {
-            $id_tutor_actual = $t['id_tutor'];
-            break;
-        }
+    global $conexion;
+    $stmt = $conexion->prepare("SELECT id_tutor FROM tutores WHERE id_usuario = :id_usuario");
+    $stmt->bindParam(':id_usuario', $_SESSION['id_usuario']);
+    $stmt->execute();
+    $fila = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($fila) {
+        $id_tutor_actual = $fila['id_tutor'];
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id_tutor = (int)($_POST['id_tutor'] ?? 0);
-    $dias = $_POST['dias'] ?? [];
-    $hora_inicio = $_POST['hora_inicio'] ?? '';
-    $hora_fin = $_POST['hora_fin'] ?? '';
-
-    if (empty($id_tutor)) {
-        $error = 'Selecciona un tutor';
-    } elseif (empty($dias)) {
-        $error = 'Selecciona al menos un día';
-    } elseif (empty($hora_inicio) || empty($hora_fin)) {
-        $error = 'Completa las horas';
-    } elseif ($hora_inicio >= $hora_fin) {
-        $error = 'Hora de fin debe ser mayor a la de inicio';
+    if (!isset($_POST['csrf_token']) || !csrf_validar($_POST['csrf_token'])) {
+        $error = 'Token inválido, recarga la página';
     } else {
-        $modelo = new DisponibilidadModel();
-        $guardados = 0;
-        foreach ($dias as $dia) {
-            $datos = [
-                'id_tutor' => $id_tutor,
-                'dia_semana' => $dia,
-                'hora_inicio' => $hora_inicio,
-                'hora_fin' => $hora_fin
-            ];
-            if ($modelo->crear($datos)) {
-                $guardados++;
+        $id_tutor = (int)($_POST['id_tutor'] ?? 0);
+        $dia_semana = trim($_POST['dia_semana'] ?? '');
+        $hora_inicio = trim($_POST['hora_inicio'] ?? '');
+        $hora_fin = trim($_POST['hora_fin'] ?? '');
+
+        if ($id_tutor <= 0) {
+            $error = 'Seleccione un tutor';
+        } elseif (empty($dia_semana)) {
+            $error = 'Seleccione al menos un día';
+        } elseif (empty($hora_inicio)) {
+            $error = 'Ingrese la hora de inicio';
+        } elseif (empty($hora_fin)) {
+            $error = 'Ingrese la hora de fin';
+        } elseif ($hora_inicio >= $hora_fin) {
+            $error = 'La hora de fin debe ser posterior a la de inicio';
+        } else {
+            global $conexion;
+            $stmt = $conexion->prepare("
+                INSERT INTO disponibilidad_tutor 
+                (id_tutor, dia_semana, hora_inicio, hora_fin)
+                VALUES (:id_tutor, :dia_semana, :hora_inicio, :hora_fin)
+            ");
+            $stmt->bindParam(':id_tutor', $id_tutor);
+            $stmt->bindParam(':dia_semana', $dia_semana);
+            $stmt->bindParam(':hora_inicio', $hora_inicio);
+            $stmt->bindParam(':hora_fin', $hora_fin);
+
+            if ($stmt->execute()) {
+                header('Location: index.php?accion=disponibilidad_listar');
+                exit;
+            } else {
+                $error = 'Error al guardar la disponibilidad';
             }
         }
-        $exito = "✅ Se registraron {$guardados} días correctamente";
     }
 }
 

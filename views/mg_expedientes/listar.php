@@ -1,13 +1,5 @@
 <?php
-if (!isset($expedientes)) $expedientes = [
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Graduación por Excelencia', 'cohorte_codigo' => 'ana', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 1],
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Trabajo Dirigido', 'cohorte_codigo' => 'ana', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 2],
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Examen de Grado', 'cohorte_codigo' => 'ana', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 3],
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Graduación por Excelencia', 'cohorte_codigo' => 'anai', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 4],
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Trabajo Dirigido', 'cohorte_codigo' => 'anai', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 5],
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Examen de Grado', 'cohorte_codigo' => 'anai', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 6],
-    ['estudiante_nombre' => 'Maria', 'estudiante_apellido' => 'Estudiante', 'modalidad_nombre' => 'Tesis', 'cohorte_codigo' => 'ana', 'etapa_actual' => 'previa', 'estado' => 'activo', 'id_expediente' => 7],
-];
+if (!isset($expedientes)) $expedientes = [];
 if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
 <!DOCTYPE html>
@@ -17,191 +9,129 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expedientes — Modalidades de Grado</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
         body {
-            background: linear-gradient(rgba(0, 38, 77, 0.88), rgba(0, 38, 77, 0.88)),
-                        url('https://www.upds.edu.bo/wp-content/uploads/2023/07/4.jpg') center/cover no-repeat fixed;
-            min-height: 100vh;
-            padding: 30px;
+            background: linear-gradient(rgba(0,38,77,0.85), rgba(0,38,77,0.85)),
+                        url('https://www.unir.net/wp-content/uploads/2021/04/la-universidad-que-necesitamos_c-2-1.jpg') center/cover no-repeat fixed;
+            min-height: 100vh; padding: 30px;
         }
-        .volver {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-block;
-            margin-bottom: 20px;
+        .contenedor { max-width: 1100px; margin: 0 auto; }
+        .btn-volver {
+            display: inline-block; background: rgba(255,255,255,0.2); color: white;
+            padding: 10px 20px; border-radius: 8px; text-decoration: none;
+            font-weight: bold; margin-bottom: 20px; transition: all 0.2s ease;
         }
-        .volver:hover { text-decoration: underline; }
-        .contenedor {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        .btn-volver:hover { background: rgba(255,255,255,0.3); }
+        
+        .tarjeta {
+            background: white; border-radius: 14px; padding: 30px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
         }
-        h1 {
-            text-align: center;
-            color: #003366;
-            margin-bottom: 25px;
-            font-size: 22px;
+        .encabezado {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px; flex-wrap: wrap; gap: 15px;
         }
-        .boton-nuevo {
-            background: #0066cc;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin-bottom: 25px;
+        h1 { font-size: 22px; color: #003366; }
+        
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+            border-radius: 8px; text-decoration: none; font-weight: 600;
+            font-size: 14px; border: none; cursor: pointer;
+            transition: all 0.25s ease;
         }
-        .boton-nuevo:hover { background: #0052b3; }
-        .filtros {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            align-items: center;
-            background: #f5f7fa;
-            padding: 15px;
-            border-radius: 8px;
+        .btn-primario { background: #0066cc; color: white; }
+        .btn-primario:hover { background: #0052a3; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,102,204,0.3); }
+        
+        /* Botones de Acción — Diseño Mejorado */
+        .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-ver { background: #e3f2fd; color: #0d47a1; }
+        .btn-ver:hover { background: #bbdefb; transform: scale(1.05); }
+        .btn-editar { background: #fff3e0; color: #e65100; }
+        .btn-editar:hover { background: #ffe0b2; transform: scale(1.05); }
+        .btn-eliminar { background: #ffebee; color: #c62828; }
+        .btn-eliminar:hover { background: #ffcdd2; transform: scale(1.05); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #f0f2f5; }
+        th { background: #003366; color: white; font-weight: 600; font-size: 14px; }
+        tr:hover { background: #f8fafc; }
+        
+        .etiqueta {
+            display: inline-block; padding: 6px 14px; border-radius: 20px;
+            font-size: 13px; font-weight: 600;
         }
-        .filtros select,
-        .filtros input {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
-        }
-        .boton-filtrar {
-            background: #0066cc;
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            background: #003366;
-            color: white;
-            padding: 12px 15px;
-            text-align: left;
-            font-weight: 600;
-        }
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            color: #333;
-        }
-        tr:hover { background: #f9fbfc; }
-        .etapa-tag {
-            background: #e6f0fa;
-            color: #004080;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            display: inline-block;
-        }
-        .estado-tag {
-            background: #e6f9e6;
-            color: #006600;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            display: inline-block;
-        }
-        .boton-ver {
-            color: #0066cc;
-            text-decoration: none;
-            font-weight: 500;
-            margin-right: 5px;
-        }
-        .boton-editar {
-            background: #ff9900;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 13px;
-            margin: 0 3px;
-        }
-        .boton-editar:hover { background: #e68a00; }
-        .boton-eliminar {
-            background: #cc0000;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-size: 13px;
-        }
-        .boton-eliminar:hover { background: #b30000; }
+        .etapa { background: #e3f2fd; color: #01579b; }
+        .estado { background: #e8f5e9; color: #2e7d32; }
+        
+        .sin-datos { color: #999; font-style: italic; }
+        .vacio { text-align: center; padding: 50px; color: #666; }
     </style>
 </head>
 <body>
-    <a href="index.php" class="volver">← Volver al Menú</a>
-
     <div class="contenedor">
-        <h1>📚 Expedientes — Modalidades de Grado</h1>
-
-        <?php if (tieneRol(['administrador'])): ?>
-        <a href="index.php?accion=mg_expediente_crear" class="boton-nuevo">+ Nuevo Expediente</a>
-        <?php endif; ?>
-
-        <form method="get" action="index.php" class="filtros">
-            <input type="hidden" name="accion" value="mg_expedientes_listar">
-            <select name="id_cohorte">
-                <option value="">2026 — anai</option>
-            </select>
-            <select name="id_modalidad">
-                <option value="">Proyecto de Grado</option>
-            </select>
-            <select name="etapa_actual">
-                <option value="">MG2</option>
-            </select>
-            <input type="text" name="buscar" placeholder="Buscar estudiante...">
-            <button type="submit" class="boton-filtrar">Filtrar</button>
-        </form>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Estudiante</th>
-                    <th>Modalidad</th>
-                    <th>Cohorte</th>
-                    <th>Etapa</th>
-                    <th>Estado</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($expedientes as $exp): ?>
-                <tr>
-                    <td><?= htmlspecialchars(($exp['estudiante_nombre'] ?? '') . ' ' . ($exp['estudiante_apellido'] ?? '')) ?></td>
-                    <td><?= htmlspecialchars($exp['modalidad_nombre'] ?? '') ?></td>
-                    <td><?= htmlspecialchars($exp['cohorte_codigo'] ?? '') ?></td>
-                    <td><span class="etapa-tag"><?= htmlspecialchars(ucfirst($exp['etapa_actual'] ?? 'Previa')) ?></span></td>
-                    <td><span class="estado-tag"><?= htmlspecialchars(ucfirst($exp['estado'] ?? 'Activo')) ?></span></td>
-                    <td>
-                        <a href="index.php?accion=mg_expediente_ver&id=<?= $exp['id_expediente'] ?>" class="boton-ver">Ver →</a>
-                        <?php if (tieneRol(['administrador'])): ?>
-                        <a href="index.php?accion=mg_expediente_editar&id=<?= $exp['id_expediente'] ?>" class="boton-editar">Editar</a>
-                        <a href="index.php?accion=mg_expediente_eliminar&id=<?= $exp['id_expediente'] ?>" class="boton-eliminar" onclick="return confirm('¿Eliminar este expediente?')">Eliminar</a>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <a href="index.php" class="btn-volver">← Volver al Menú</a>
+        
+        <div class="tarjeta">
+            <div class="encabezado">
+                <h1>📋 Expedientes — Modalidades de Grado</h1>
+                <?php if (tieneRol(['administrador','coordinador_mg','auxiliar_mg'])): ?>
+                <a href="index.php?accion=mg_expediente_crear" class="btn btn-primario">+ Nuevo Expediente</a>
+                <?php endif; ?>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Modalidad</th>
+                        <th>Cohorte</th>
+                        <th>Etapa</th>
+                        <th>Estado</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($expedientes)): ?>
+                        <?php foreach ($expedientes as $exp): ?>
+                        <tr>
+                            <td>
+                                <?php if (!empty($exp['nombre']) || !empty($exp['apellido'])): ?>
+                                    <strong style="color: #003366; font-size: 15px;">
+                                        <?= htmlspecialchars(($exp['nombre'] ?? '') . ' ' . ($exp['apellido'] ?? '')) ?>
+                                    </strong>
+                                    <br>
+                                    <small style="color:#777; font-size:12px;">
+                                        <?= htmlspecialchars($exp['codigo_estudiante'] ?? '') ?>
+                                    </small>
+                                <?php else: ?>
+                                    <span class="sin-datos">Sin datos</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= htmlspecialchars($exp['modalidad_nombre'] ?? '') ?></td>
+                            <td><?= htmlspecialchars(($exp['cohorte_codigo'] ?? '') . ' — ' . ($exp['cohorte_nombre'] ?? '')) ?></td>
+                            <td><span class="etiqueta etapa">Previa</span></td>
+                            <td><span class="etiqueta estado">Activo</span></td>
+                            <td>
+                                <div class="acciones">
+                                    <a href="index.php?accion=mg_expediente_ver&id=<?= (int)($exp['id_expediente'] ?? 0) ?>" class="btn btn-ver">👁 Ver</a>
+                                    <?php if (tieneRol(['administrador','coordinador_mg','auxiliar_mg'])): ?>
+                                    <a href="index.php?accion=mg_expediente_editar&id=<?= (int)($exp['id_expediente'] ?? 0) ?>" class="btn btn-editar">✏ Editar</a>
+                                    <a href="index.php?accion=mg_expediente_eliminar&id=<?= (int)($exp['id_expediente'] ?? 0) ?>" 
+                                       class="btn btn-eliminar" 
+                                       onclick="return confirm('¿Eliminar este expediente? Esta acción no se puede deshacer.')">🗑 Eliminar</a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="6" class="vacio">No hay expedientes registrados aún.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>

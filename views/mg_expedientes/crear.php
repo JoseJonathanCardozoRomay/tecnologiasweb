@@ -37,8 +37,7 @@
         <a href="index.php?accion=mg_expedientes_listar" class="btn-atras">← Volver a Expedientes</a>
         <div class="tarjeta">
             <h1>📝 Nuevo Expediente</h1>
-
-            <?php if ($error): ?>
+            <?php if (!empty($error)): ?>
             <div class="error"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
@@ -47,12 +46,14 @@
                     <label>Estudiante *</label>
                     <select name="id_estudiante" required>
                         <option value="">Seleccione un estudiante</option>
-                        <?php foreach ($estudiantes as $e): ?>
-                        <option value="<?= $e['id_estudiante'] ?>">
-                            <?= htmlspecialchars($e['nombre'] . ' ' . $e['apellido']) ?>
-                            — <?= htmlspecialchars($e['codigo_estudiante']) ?>
-                        </option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($estudiantes)): ?>
+                            <?php foreach ($estudiantes as $e): ?>
+                            <option value="<?= (int)($e['id_estudiante'] ?? 0) ?>">
+                                <?= htmlspecialchars(($e['nombre'] ?? '') . ' ' . ($e['apellido'] ?? '')) ?>
+                                — <?= htmlspecialchars($e['codigo_estudiante'] ?? '') ?>
+                            </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                 </div>
 
@@ -60,11 +61,13 @@
                     <label>Modalidad *</label>
                     <select name="id_modalidad" required>
                         <option value="">Seleccione una modalidad</option>
-                        <?php foreach ($modalidades as $m): ?>
-                        <option value="<?= $m['id_modalidad'] ?>">
-                            <?= htmlspecialchars($m['nombre']) ?>
-                        </option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($modalidades)): ?>
+                            <?php foreach ($modalidades as $m): ?>
+                            <option value="<?= (int)($m['id_modalidad'] ?? 0) ?>">
+                                <?= htmlspecialchars($m['nombre'] ?? '') ?>
+                            </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                 </div>
 
@@ -72,11 +75,13 @@
                     <label>Cohorte / Promoción *</label>
                     <select name="id_cohorte" required>
                         <option value="">Seleccione una cohorte</option>
-                        <?php foreach ($cohortes as $c): ?>
-                        <option value="<?= $c['id_cohorte'] ?>">
-                            <?= htmlspecialchars($c['codigo'] . ' — ' . $c['nombre']) ?>
-                        </option>
-                        <?php endforeach; ?>
+                        <?php if (!empty($cohortes)): ?>
+                            <?php foreach ($cohortes as $c): ?>
+                            <option value="<?= (int)($c['id_cohorte'] ?? 0) ?>">
+                                <?= htmlspecialchars(($c['codigo'] ?? '') . ' — ' . ($c['nombre'] ?? '')) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                 </div>
 
@@ -100,4 +105,4 @@
         </div>
     </div>
 </body>
-</html>s
+</html>

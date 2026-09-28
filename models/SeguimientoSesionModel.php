@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../config/conexion.php';
-
 class SeguimientoSesionModel {
     private $conexion;
     private $tabla = 'seguimiento_sesion';
@@ -10,9 +9,12 @@ class SeguimientoSesionModel {
         $this->conexion = $conexion;
     }
 
-    /**
-     * Tutor: solo sus seguimientos
-     */
+    public function listarTutoriasDisponibles() {
+        require_once __DIR__ . '/TutoriaModel.php';
+        $modeloTutoria = new TutoriaModel();
+        return $modeloTutoria->listarTodasCompletas();
+    }
+
     public function listarPorTutor($id_usuario_tutor) {
         $sql = "SELECT s.*, 
                        tu.fecha, tu.hora_inicio, tu.hora_fin,
@@ -35,9 +37,6 @@ class SeguimientoSesionModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Estudiante: solo sus seguimientos
-     */
     public function listarPorEstudiante($id_usuario_estudiante) {
         $sql = "SELECT s.*, 
                        tu.fecha, tu.hora_inicio, tu.hora_fin,
@@ -60,9 +59,6 @@ class SeguimientoSesionModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Administrador: todos
-     */
     public function listarTodos() {
         $sql = "SELECT s.*, 
                        tu.fecha, tu.hora_inicio, tu.hora_fin,
@@ -83,9 +79,6 @@ class SeguimientoSesionModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Obtener por ID
-     */
     public function obtenerPorId($id) {
         $sql = "SELECT s.*, 
                        tu.fecha, tu.hora_inicio, tu.hora_fin,
@@ -109,9 +102,6 @@ class SeguimientoSesionModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Listar tutorías asignadas al Tutor (para crear seguimiento)
-     */
     public function listarTutoriasParaTutor($id_usuario_tutor) {
         $sql = "SELECT DISTINCT tu.id_tutoria, tu.fecha, tu.hora_inicio,
                        CONCAT(e_nombre.nombre, ' ', e_nombre.apellido) AS estudiante_nombre,
@@ -130,28 +120,27 @@ class SeguimientoSesionModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Crear
-     */
     public function crear($datos) {
         $sql = "INSERT INTO {$this->tabla} (id_tutoria, asistio, temas_tratados, avance, recomendaciones)
                 VALUES (:id_tutoria, :asistio, :temas_tratados, :avance, :recomendaciones)";
         
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':id_tutoria', $datos['id_tutoria'], PDO::PARAM_INT);
-        $stmt->bindParam(':asistio', $datos['asistio']);
-        $temas = $datos['temas_tratados'] ?? '';
-        $stmt->bindParam(':temas_tratados', $temas);
+        
+        $id_tutoria = $datos['id_tutoria'];
+        $asistio = $datos['asistio'];
+        $temas_tratados = $datos['temas_tratados'] ?? '';
         $avance = $datos['avance'] ?? 'sin_avance';
-        $stmt->bindParam(':avance', $avance);
         $recomendaciones = $datos['recomendaciones'] ?? '';
+        
+        $stmt->bindParam(':id_tutoria', $id_tutoria, PDO::PARAM_INT);
+        $stmt->bindParam(':asistio', $asistio);
+        $stmt->bindParam(':temas_tratados', $temas_tratados);
+        $stmt->bindParam(':avance', $avance);
         $stmt->bindParam(':recomendaciones', $recomendaciones);
+        
         return $stmt->execute();
     }
 
-    /**
-     * Editar
-     */
     public function editar($id, $datos) {
         $sql = "UPDATE {$this->tabla} SET
                     id_tutoria = :id_tutoria,
@@ -162,18 +151,23 @@ class SeguimientoSesionModel {
                 WHERE id_seguimiento = :id";
         
         $stmt = $this->conexion->prepare($sql);
-        $stmt->bindParam(':id_tutoria', $datos['id_tutoria'], PDO::PARAM_INT);
-        $stmt->bindParam(':asistio', $datos['asistio']);
-        $stmt->bindParam(':temas_tratados', $datos['temas_tratados'] ?? '');
-        $stmt->bindParam(':avance', $datos['avance'] ?? 'sin_avance');
-        $stmt->bindParam(':recomendaciones', $datos['recomendaciones'] ?? '');
+        
+        $id_tutoria = $datos['id_tutoria'];
+        $asistio = $datos['asistio'];
+        $temas_tratados = $datos['temas_tratados'] ?? '';
+        $avance = $datos['avance'] ?? 'sin_avance';
+        $recomendaciones = $datos['recomendaciones'] ?? '';
+        
+        $stmt->bindParam(':id_tutoria', $id_tutoria, PDO::PARAM_INT);
+        $stmt->bindParam(':asistio', $asistio);
+        $stmt->bindParam(':temas_tratados', $temas_tratados);
+        $stmt->bindParam(':avance', $avance);
+        $stmt->bindParam(':recomendaciones', $recomendaciones);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        
         return $stmt->execute();
     }
 
-    /**
-     * Eliminar
-     */
     public function eliminar($id) {
         $sql = "DELETE FROM {$this->tabla} WHERE id_seguimiento = :id";
         $stmt = $this->conexion->prepare($sql);

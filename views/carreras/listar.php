@@ -1,4 +1,4 @@
-<?php
+ <?php
 if (!isset($carreras)) $carreras = [];
 if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
@@ -103,11 +103,9 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
         <a href="index.php" class="volver">← Volver al inicio</a>
         
         <h1>🎓 Listado de Carreras</h1>
-
         <?php if ($rol_actual === 'administrador'): ?>
             <a href="index.php?accion=carrera_crear" class="btn-nuevo">+ Nueva Carrera</a>
         <?php endif; ?>
-
         <table>
             <thead>
                 <tr>
@@ -126,12 +124,15 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <?php else: ?>
                     <?php foreach ($carreras as $c): ?>
                     <tr>
-                        <td><?= $c['id_carrera'] ?></td>
+                        <!-- ✅ Protegido -->
+                        <td><?= htmlspecialchars($c['id_carrera']) ?></td>
+                        <!-- ✅ Ya estaba bien -->
                         <td><strong><?= htmlspecialchars($c['nombre_carrera']) ?></strong></td>
                         <td>
                             <?php if ($rol_actual === 'administrador'): ?>
-                                <a href="index.php?accion=carrera_editar&id=<?= $c['id_carrera'] ?>" class="editar">Editar</a>
-                                <a href="index.php?accion=carrera_eliminar&id=<?= $c['id_carrera'] ?>" 
+                                <!-- ✅ ID protegido como número -->
+                                <a href="index.php?accion=carrera_editar&id=<?= (int)$c['id_carrera'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=carrera_eliminar&id=<?= (int)$c['id_carrera'] ?>" 
                                    class="eliminar"
                                    onclick="return confirm('¿Seguro que quieres eliminar esta carrera?')">Eliminar</a>
                             <?php else: ?>

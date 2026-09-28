@@ -1,21 +1,19 @@
 <?php
 /**
- * Listar Evaluaciones — Permisos por rol
- * Estudiante: solo las suyas | Tutor: las que le dejaron | Admin: TODAS
+ * Listado de Evaluaciones — Coincide con modelo y vista
  */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../config/sesion.php';
-requerirRol(['administrador','tutor','estudiante']);
-
-require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador', 'tutor', 'estudiante']);
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/EvaluacionModel.php';
 
 $modelo = new EvaluacionModel();
-$usuario_actual = $_SESSION['usuario'] ?? [];
-$rol_actual = $usuario_actual['nombre_rol'] ?? '';
-$id_usuario_actual = (int)($usuario_actual['id_usuario'] ?? 0);
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
+$id_usuario_actual = (int)($_SESSION['id_usuario'] ?? 0);
 
-// ✅ Filtrar según rol
 $evaluaciones = [];
 if ($rol_actual === 'administrador') {
     $evaluaciones = $modelo->listarTodas();

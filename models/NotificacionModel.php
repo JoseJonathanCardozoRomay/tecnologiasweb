@@ -4,7 +4,6 @@
  * Permisos: Admin=ver todas / Tutor=las suyas / Estudiante=las suyas
  */
 require_once __DIR__ . '/../config/conexion.php';
-
 class NotificacionModel {
     private $conexion;
     private $tabla = 'notificaciones';
@@ -40,7 +39,7 @@ class NotificacionModel {
     }
 
     /**
-     * Marcar como leída
+     * Marcar como leída una sola
      */
     public function marcarLeida($id_notificacion, $id_usuario) {
         $sql = "UPDATE {$this->tabla} 
@@ -71,9 +70,9 @@ class NotificacionModel {
         $stmt = $this->conexion->prepare($sql);
         $stmt->execute([
             ':id_usuario' => $datos['id_usuario'],
-            ':tipo' => $datos['tipo'],
-            ':mensaje' => $datos['mensaje'],
-            ':url' => $datos['url'] ?? null
+            ':tipo'       => $datos['tipo'],
+            ':mensaje'    => $datos['mensaje'],
+            ':url'        => $datos['url'] ?? null
         ]);
         return $this->conexion->lastInsertId();
     }

@@ -1,13 +1,13 @@
 <?php
 if (!isset($estudiantes)) $estudiantes = [];
-$rol_actual = $_SESSION['rol_nombre'] ?? '';
+if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estudiantes</title>
+    <title>Listado de Estudiantes</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
         body {
@@ -19,7 +19,7 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
         .contenedor {
             max-width: 1100px;
             margin: 0 auto;
-            background: #fff;
+            background: #ffffff;
             padding: 35px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
@@ -68,18 +68,29 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
         }
         tr:nth-child(even) { background: #f0f5ff; }
         tr:hover { background: #e6f0ff; }
-        .btn-accion {
+        .editar {
             display: inline-block;
-            padding: 6px 12px;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
             border-radius: 6px;
             text-decoration: none;
             font-weight: bold;
-            margin-right: 5px;
-            font-size: 13px;
+            margin-right: 8px;
         }
-        .editar { background: #ffc107; color: #000; }
-        .eliminar { background: #dc3545; color: white; }
-        .solo-lectura { color: #666; font-style: italic; }
+        .editar:hover { background: #218838; }
+        .eliminar {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .eliminar:hover { background: #c82333; }
         .vacio {
             text-align: center;
             padding: 40px;
@@ -90,21 +101,19 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
 <body>
     <div class="contenedor">
         <a href="index.php" class="volver">← Volver al inicio</a>
-
-        <h1>🎓 Estudiantes</h1>
-
+        
+        <h1>🎓 Listado de Estudiantes</h1>
         <?php if ($rol_actual === 'administrador'): ?>
             <a href="index.php?accion=estudiante_crear" class="btn-nuevo">+ Nuevo Estudiante</a>
         <?php endif; ?>
-
         <table>
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Nombre Completo</th>
                     <th>Carrera</th>
                     <th>Semestre</th>
                     <th>Registro Universitario</th>
-                    <th>Teléfono</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -112,32 +121,27 @@ $rol_actual = $_SESSION['rol_nombre'] ?? '';
                 <?php if (empty($estudiantes)): ?>
                     <tr>
                         <td colspan="6" class="vacio">
-                            <?php if ($rol_actual === 'estudiante'): ?>
-                                No tienes datos registrados.
-                            <?php else: ?>
-                                No hay estudiantes registrados.
-                                <?php if ($rol_actual === 'administrador'): ?>
-                                    <br><strong>Usa "Nuevo Estudiante" para agregar.</strong>
-                                <?php endif; ?>
-                            <?php endif; ?>
+                            No hay estudiantes registrados.
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($estudiantes as $e): ?>
                     <tr>
-                        <td><strong><?= htmlspecialchars($e['nombre'] . ' ' . $e['apellido']) ?></strong></td>
-                        <td><?= htmlspecialchars($e['nombre_carrera']) ?></td>
-                        <td><?= $e['semestre'] ?></td>
-                        <td><?= htmlspecialchars($e['registro_universitario'] ?? '-') ?></td>
-                        <td><?= htmlspecialchars($e['telefono'] ?? '-') ?></td>
+                        <!-- ✅ Protegido -->
+                        <td><?= htmlspecialchars($e['id_estudiante']) ?></td>
+                        <td><strong><?= htmlspecialchars(($e['nombre'] ?? '') . ' ' . ($e['apellido'] ?? '')) ?></strong></td>
+                        <td><?= htmlspecialchars($e['nombre_carrera'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($e['semestre']) ?></td>
+                        <td><?= htmlspecialchars($e['registro_universitario'] ?? '—') ?></td>
                         <td>
                             <?php if ($rol_actual === 'administrador'): ?>
-                                <a href="index.php?accion=estudiante_editar&id=<?= $e['id_estudiante'] ?>" class="btn-accion editar">Editar</a>
-                                <a href="index.php?accion=estudiante_eliminar&id=<?= $e['id_estudiante'] ?>" 
-                                   class="btn-accion eliminar"
-                                   onclick="return confirm('¿Eliminar este estudiante?')">Eliminar</a>
+                                <!-- ✅ ID protegido como número -->
+                                <a href="index.php?accion=estudiante_editar&id=<?= (int)$e['id_estudiante'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=estudiante_eliminar&id=<?= (int)$e['id_estudiante'] ?>" 
+                                   class="eliminar"
+                                   onclick="return confirm('¿Seguro que quieres eliminar este estudiante?')">Eliminar</a>
                             <?php else: ?>
-                                <span class="solo-lectura">Solo lectura</span>
+                                <em>Solo lectura</em>
                             <?php endif; ?>
                         </td>
                     </tr>

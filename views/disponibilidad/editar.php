@@ -1,68 +1,62 @@
 <?php
-$titulo_pagina = 'Editar Disponibilidad Horaria';
+if (!isset($disponibilidad)) $disponibilidad = [];
+if (!isset($tutores)) $tutores = [];
+if (!isset($error)) $error = '';
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
+
+$titulo_pagina = 'Editar Disponibilidad';
 ob_start();
 ?>
-
 <h1>Editar Disponibilidad Horaria</h1>
-
 <?php if (!empty($error)): ?>
-<div style="background:#ffdddd; color:#cc0000; padding:10px; margin:10px 0; border-radius:4px;">
+<div class="alerta alerta-error">
     <?= htmlspecialchars($error) ?>
 </div>
 <?php endif; ?>
 
-<?php 
-// Asegurar que la variable exista
-$disp = $disp ?? [];
-$tutores = $tutores ?? [];
-?>
+<form method="POST" action="index.php?accion=disponibilidad_editar&id=<?= (int)($disponibilidad['id_disponibilidad'] ?? 0) ?>">
+    <input type="hidden" name="csrf_token" value="<?= csrf_generar() ?>">
 
-<form method="POST" action="index.php?accion=disponibilidad_editar&id=<?= (int)($disp['id_disponibilidad'] ?? 0) ?>" style="max-width:500px; margin:20px auto;">
+    <?php if ($rol_actual === 'administrador'): ?>
+    <label>Tutor:</label>
+    <select name="id_tutor" required>
+        <option value="">Seleccione tutor</option>
+        <?php foreach ($tutores as $t): ?>
+        <option value="<?= (int)$t['id_tutor'] ?>" 
+            <?= ($t['id_tutor'] == ($disponibilidad['id_tutor'] ?? 0)) ? 'selected' : '' ?>>
+            <?= htmlspecialchars(($t['nombre'] ?? '') . ' ' . ($t['apellido'] ?? '')) ?>
+        </option>
+        <?php endforeach; ?>
+    </select>
+    <?php else: ?>
+    <input type="hidden" name="id_tutor" value="<?= (int)($disponibilidad['id_tutor'] ?? 0) ?>">
+    <?php endif; ?>
 
-    <div style="margin-bottom:15px;">
-        <label>Tutor:</label>
-        <select name="id_tutor" required style="width:100%; padding:8px; margin-top:5px;">
-            <option value="">Seleccione</option>
-            <?php foreach ($tutores as $t): ?>
-            <option value="<?= $t['id_tutor'] ?>" 
-                <?= (isset($disp['id_tutor']) && $disp['id_tutor'] == $t['id_tutor']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($t['nombre'] . ' ' . $t['apellido']) ?>
-            </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+    <label>Día de la Semana:</label>
+    <select name="dia_semana" required>
+        <option value="">Seleccione día</option>
+        <?php 
+        $dias = ['lunes','martes','miércoles','jueves','viernes','sábado'];
+        foreach ($dias as $d): 
+        ?>
+        <option value="<?= htmlspecialchars($d) ?>" 
+            <?= (($disponibilidad['dia_semana'] ?? '') === $d) ? 'selected' : '' ?>>
+            <?= htmlspecialchars(ucfirst($d)) ?>
+        </option>
+        <?php endforeach; ?>
+    </select>
 
-    <div style="margin-bottom:15px;">
-        <label>Día de la Semana:</label>
-        <select name="dia_semana" required style="width:100%; padding:8px; margin-top:5px;">
-            <?php $dias = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado']; ?>
-            <?php foreach ($dias as $d): ?>
-            <option value="<?= $d ?>" 
-                <?= (isset($disp['dia_semana']) && $disp['dia_semana'] == $d) ? 'selected' : '' ?>>
-                <?= $d ?>
-            </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
+    <label>Hora de Inicio:</label>
+    <input type="time" name="hora_inicio" 
+        value="<?= htmlspecialchars($disponibilidad['hora_inicio'] ?? '') ?>" required>
 
-    <div style="margin-bottom:15px;">
-        <label>Hora de Inicio:</label>
-        <input type="time" name="hora_inicio" 
-               value="<?= htmlspecialchars($disp['hora_inicio'] ?? '') ?>" required
-               style="width:100%; padding:8px; margin-top:5px;">
-    </div>
+    <label>Hora de Fin:</label>
+    <input type="time" name="hora_fin" 
+        value="<?= htmlspecialchars($disponibilidad['hora_fin'] ?? '') ?>" required>
 
-    <div style="margin-bottom:15px;">
-        <label>Hora de Fin:</label>
-        <input type="time" name="hora_fin" 
-               value="<?= htmlspecialchars($disp['hora_fin'] ?? '') ?>" required
-               style="width:100%; padding:8px; margin-top:5px;">
-    </div>
-
-    <button type="submit" style="background:#0066cc; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-size:16px;">Actualizar</button>
-    <a href="index.php?accion=disponibilidades_listar" style="margin-left:10px; color:#666;">Volver</a>
+    <button type="submit" class="btn btn-exito">Guardar Cambios</button>
+    <a href="index.php?accion=disponibilidad_listar" class="btn btn-volver">Volver</a>
 </form>
-
 <?php
 $contenido = ob_get_clean();
 require_once __DIR__ . '/../../config/plantilla.php';

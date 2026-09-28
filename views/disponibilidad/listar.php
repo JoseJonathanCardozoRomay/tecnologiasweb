@@ -1,3 +1,7 @@
+<?php
+if (!isset($disponibilidades)) $disponibilidades = [];
+if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,18 +11,18 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
         body {
-            background: linear-gradient(rgba(0, 38, 77, 0.82), rgba(0, 38, 77, 0.82)),
-                        url('https://www.unir.net/wp-content/uploads/2021/04/la-universidad-que-necesitamos_c-2-1.jpg') center/cover no-repeat fixed;
+            background: linear-gradient(rgba(0, 38, 77, 0.88), rgba(0, 38, 77, 0.88)),
+                        url('https://www.upds.edu.bo/wp-content/uploads/2023/07/4.jpg') center/cover no-repeat fixed;
             min-height: 100vh;
             padding: 40px 20px;
         }
         .contenedor {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: rgba(255,255,255,0.95);
+            background: #ffffff;
             padding: 35px;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
         }
         .volver {
             display: inline-block;
@@ -28,20 +32,20 @@
             border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         h1 {
             color: #003366;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 2px solid #ffc107;
         }
         .btn-nuevo {
             display: inline-block;
-            background: #28a745;
+            background: #0066cc;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 22px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
@@ -55,32 +59,53 @@
         th {
             background: #004080;
             color: white;
-            padding: 14px 12px;
+            padding: 14px 10px;
             text-align: left;
         }
         td {
-            padding: 14px 12px;
+            padding: 14px 10px;
             border-bottom: 1px solid #ddd;
-            color: #333;
         }
-        tr:hover { background: #f0f7ff; }
-        .acciones a {
-            margin-right: 8px;
+        tr:nth-child(even) { background: #f0f5ff; }
+        tr:hover { background: #e6f0ff; }
+        .editar {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
             text-decoration: none;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .editar:hover { background: #218838; }
+        .eliminar {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .eliminar:hover { background: #c82333; }
+        .vacio {
+            text-align: center;
+            padding: 40px;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="contenedor">
-        <a href="index.php" class="volver">← Volver al Menú</a>
-
+        <a href="index.php" class="volver">← Volver al inicio</a>
+        
         <h1>📅 Disponibilidad Horaria</h1>
-
-        <!-- BOTÓN NUEVA DISPONIBILIDAD → SOLO TUTOR Y ADMIN -->
-        <?php if (!empty($rol_actual) && ($rol_actual === 'tutor' || $rol_actual === 'administrador')): ?>
-            <a href="index.php?accion=disponibilidad_crear" class="btn-nuevo">➕ Nueva Disponibilidad</a>
+        <?php if ($rol_actual === 'administrador' || $rol_actual === 'tutor'): ?>
+            <a href="index.php?accion=disponibilidad_crear" class="btn-nuevo">+ Registrar Disponibilidad</a>
         <?php endif; ?>
-
         <table>
             <thead>
                 <tr>
@@ -95,32 +120,27 @@
             <tbody>
                 <?php if (empty($disponibilidades)): ?>
                     <tr>
-                        <td colspan="6" style="text-align:center; padding:25px; color:#666;">
-                            No hay horarios registrados.
-                            <?php if (!empty($rol_actual) && $rol_actual === 'tutor'): ?>
-                                <br><strong>Agrega tus horarios disponibles con el botón de arriba.</strong>
-                            <?php endif; ?>
+                        <td colspan="6" class="vacio">
+                            No hay disponibilidad registrada.
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($disponibilidades as $d): ?>
                     <tr>
-                        <td><?= $d['id_disponibilidad'] ?></td>
-                        <td><?= htmlspecialchars($d['tutor_nombre'] ?? 'Sin nombre') ?></td>
-                        <td><?= $d['dia_semana'] ?></td>
-                        <td><?= $d['hora_inicio'] ?></td>
-                        <td><?= $d['hora_fin'] ?></td>
-                        <td class="acciones">
-                            <!-- EDITAR/ELIMINAR → SOLO ADMIN O EL PROPIO TUTOR -->
-                            <?php 
-                            $id_usuario_tutor = $d['id_usuario'] ?? 0;
-                            $id_sesion = $_SESSION['id_usuario'] ?? 0;
-                            if (!empty($rol_actual) && ($rol_actual === 'administrador' || 
-                               ($rol_actual === 'tutor' && $id_usuario_tutor == $id_sesion))): 
-                            ?>
-                                <a href="index.php?accion=disponibilidad_editar&id=<?= $d['id_disponibilidad'] ?>">✏️ Editar</a>
-                                <a href="index.php?accion=disponibilidad_eliminar&id=<?= $d['id_disponibilidad'] ?>" 
-                                   onclick="return confirm('¿Eliminar este horario?')">🗑️ Eliminar</a>
+                        <td><?= htmlspecialchars($d['id_disponibilidad']) ?></td>
+                        <!-- ✅ CORREGIDO: nombre y apellido directos -->
+                        <td><strong><?= htmlspecialchars(($d['nombre'] ?? '') . ' ' . ($d['apellido'] ?? '')) ?></strong></td>
+                        <td><?= htmlspecialchars($d['dia_semana'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($d['hora_inicio'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($d['hora_fin'] ?? '') ?></td>
+                        <td>
+                            <?php if ($rol_actual === 'administrador' || $rol_actual === 'tutor'): ?>
+                                <a href="index.php?accion=disponibilidad_editar&id=<?= (int)$d['id_disponibilidad'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=disponibilidad_eliminar&id=<?= (int)$d['id_disponibilidad'] ?>" 
+                                   class="eliminar"
+                                   onclick="return confirm('¿Seguro que quieres eliminar esta disponibilidad?')">Eliminar</a>
+                            <?php else: ?>
+                                <em>Solo lectura</em>
                             <?php endif; ?>
                         </td>
                     </tr>

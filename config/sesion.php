@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// === TUS FUNCIONES EXISTENTES — NO BORRAR ===
+// === TUS FUNCIONES EXISTENTES — NO BORRAR NADA ===
 function estaAutenticado() {
     return isset($_SESSION['id_usuario']);
 }
@@ -20,7 +20,7 @@ function iniciarSesion($datos) {
 }
 
 // ==============================================
-// ✅ NUEVAS FUNCIONES DE SEGURIDAD — AGREGAR AQUÍ
+// ✅ FUNCIONES DE SEGURIDAD — COMPLETAS
 // ==============================================
 
 // 1. Bloquear por rol
@@ -57,10 +57,12 @@ function csrf_generar() {
     return $_SESSION['csrf_token'];
 }
 
-// 4. Validar token CSRF
-function csrf_validar() {
-    $token = $_POST['csrf_token'] ?? '';
-    if (empty($token) || $token !== ($_SESSION['csrf_token'] ?? '')) {
+// 4. ✅ CORREGIDA: Validar token CSRF — recibe el token como parámetro
+function csrf_validar($token = null) {
+    if ($token === null) {
+        $token = $_POST['csrf_token'] ?? '';
+    }
+    if (empty($token) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
         $_SESSION['mensaje'] = ['tipo' => 'error', 'texto' => 'Solicitud inválida. Inténtalo de nuevo.'];
         header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
         exit;

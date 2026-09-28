@@ -1,5 +1,5 @@
 <?php
-if (!isset($carreras)) $carreras = [];
+if (!isset($accesos)) $accesos = [];
 if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 ?>
 <!DOCTYPE html>
@@ -7,7 +7,7 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listado de Carreras</title>
+    <title>Registro de Accesos</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
         body {
@@ -41,16 +41,6 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
             padding-bottom: 15px;
             border-bottom: 2px solid #ffc107;
         }
-        .btn-nuevo {
-            display: inline-block;
-            background: #0066cc;
-            color: white;
-            padding: 12px 22px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -68,33 +58,8 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
         }
         tr:nth-child(even) { background: #f0f5ff; }
         tr:hover { background: #e6f0ff; }
-        .editar {
-            display: inline-block;
-            background: #28a745;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-right: 8px;
-        }
-        .editar:hover { background: #218838; }
-        .eliminar {
-            display: inline-block;
-            background: #dc3545;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        .eliminar:hover { background: #c82333; }
-        .solo-lectura {
-            color: #666;
-            font-style: italic;
-        }
+        .exito { color: #2f855a; font-weight: bold; }
+        .fallido { color: #c53030; font-weight: bold; }
         .vacio {
             text-align: center;
             padding: 40px;
@@ -106,44 +71,33 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
     <div class="contenedor">
         <a href="index.php" class="volver">← Volver al inicio</a>
         
-        <h1>🎓 Listado de Carreras</h1>
-
-        <?php if ($rol_actual === 'administrador'): ?>
-            <a href="index.php?accion=carrera_crear" class="btn-nuevo">+ Nueva Carrera</a>
-        <?php endif; ?>
-
+        <h1>📊 Registro de Accesos</h1>
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Nombre de la Carrera</th>
-                    <th>Acciones</th>
+                    <th>Usuario</th>
+                    <th>Fecha y Hora</th>
+                    <th>IP de Origen</th>
+                    <th>Resultado</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($carreras)): ?>
+                <?php if (empty($accesos)): ?>
                     <tr>
-                        <td colspan="3" class="vacio">
-                            No hay carreras registradas.
-                            <?php if ($rol_actual === 'administrador'): ?>
-                                <br><strong>Usa el botón "Nueva Carrera" para agregar una.</strong>
-                            <?php endif; ?>
+                        <td colspan="5" class="vacio">
+                            No hay registros de acceso.
                         </td>
                     </tr>
                 <?php else: ?>
-                    <?php foreach ($carreras as $c): ?>
+                    <?php foreach ($accesos as $a): ?>
                     <tr>
-                        <td><?= $c['id_carrera'] ?></td>
-                        <td><strong><?= htmlspecialchars($c['nombre_carrera']) ?></strong></td>
-                        <td>
-                            <?php if ($rol_actual === 'administrador'): ?>
-                                <a href="index.php?accion=carrera_editar&id=<?= $c['id_carrera'] ?>" class="editar">Editar</a>
-                                <a href="index.php?accion=carrera_eliminar&id=<?= $c['id_carrera'] ?>" 
-                                   class="eliminar"
-                                   onclick="return confirm('¿Seguro que quieres eliminar esta carrera? ⚠️ Los estudiantes vinculados dejarán de verla')">Eliminar</a>
-                            <?php else: ?>
-                                <span class="solo-lectura">Solo consulta</span>
-                            <?php endif; ?>
+                        <td><?= htmlspecialchars($a['id_acceso'] ?? '') ?></td>
+                        <td><strong><?= htmlspecialchars(($a['nombre'] ?? '') . ' ' . ($a['apellido'] ?? '')) ?></strong></td>
+                        <td><?= htmlspecialchars($a['fecha_hora'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($a['ip_origen'] ?? '—') ?></td>
+                        <td class="<?= ($a['resultado'] ?? '') === 'exitoso' ? 'exito' : 'fallido' ?>">
+                            <?= htmlspecialchars(ucfirst($a['resultado'] ?? 'desconocido')) ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

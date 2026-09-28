@@ -1,10 +1,14 @@
-<?php
+ <?php
+/**
+ * Panel de Métricas de Seguimiento
+ */
 require_once __DIR__ . '/../config/sesion.php';
-if (!tieneRol(['administrador','coordinador_mg','tutor'])) {
-    echo "<script>alert('No tienes permiso');history.back();</script>";
-    exit;
-}
+requerirRol(['administrador']);
+require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/MetricaSeguimientoModel.php';
+
 $modelo = new MetricaSeguimientoModel();
 $metricas = $modelo->obtenerDashboard();
-require_once __DIR__ . '/../views/seguimiento/dashboard_seguimiento.php';
+
+// ✅ RUTA CORRECTA: subir un nivel y entrar a views
+require_once __DIR__ . '/../views/seguimiento/dashboard.php';

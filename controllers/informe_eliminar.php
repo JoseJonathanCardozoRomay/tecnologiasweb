@@ -1,17 +1,48 @@
 <?php
+/**
+ * Eliminar Informe de Avance
+ */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../config/sesion.php';
-if (!tieneRol(['administrador','estudiante'])) {
-    echo "<script>alert('No tienes permiso');history.back();</script>";
-    exit;
-}
-require_once __DIR__ . '/../models/InformeAvanceModel.php';
-$modelo = new InformeAvanceModel();
+requerirRol(['administrador', 'estudiante']);
+require_once __DIR__ . '/../config/conexion.php';
+
 $id = (int)($_GET['id'] ?? 0);
-$informe = $modelo->obtenerPorId($id);
-if ($informe['estado'] !== 'borrador' && $_SESSION['rol_nombre'] !== 'administrador') {
-    echo "<script>alert('Solo se pueden eliminar informes en borrador');history.back();</script>";
+
+if ($id <= 0) {
+    header('Location: index.php?accion=informes_listar');
     exit;
 }
-$modelo->eliminar($id);
-header('Location: informes_listar.php');
-exit;
+
+global $conexion;
+
+// Verificar que existe
+$stmt = $conexion->prepare("SELECT * FROM informes_avance WHERE id_informe = :id");
+$stmt->bindParam(':id', $id);
+$stmt->execute();
+$informe = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$informe) {
+    header('Location: index.php?accion=informes_listar');
+    exit;
+}
+
+// Estudiante solo elimina los suyos
+$rol_actual = $_SESSION['rol_nombre'] ?? '';
+if ($rol_actual === 'estudiante' && (int)($informe['id_usuario_crea'] ?? 0) !== (int)($_SESSION['id_usuario'] ?? 0)) {
+    echo "<script>alert('No tienes permiso para eliminar este informe'); window.location='index.php?accion=informes_listar';</script>";
+    exit;
+}
+
+// Eliminar
+$stmt = $conexion->prepare("DELETE FROM informes_avance WHERE id_informe = :id");
+$stmt->bindParam(':id', $id);
+
+if ($stmt->execute()) {
+    header('Location: index.php?accion=informes_listar');
+    exit;
+} else {
+    echo "<script>alert('Error al eliminar el informe'); window.history.back();</script>";
+}

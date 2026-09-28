@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../config/conexion.php';
-
 class RegistroAccesosModel {
     private $conexion;
     private $tabla = 'registro_accesos';
@@ -39,6 +38,14 @@ class RegistroAccesosModel {
         } catch (PDOException $e) {
             return false;
         }
+    }
+
+    public function registrarAcceso($id_usuario, $resultado) {
+        return $this->crear([
+            'id_usuario' => $id_usuario,
+            'ip_origen'  => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+            'resultado'  => $resultado
+        ]);
     }
 
     public function actualizar($id, $datos) {

@@ -52,7 +52,6 @@ if (isset($_SESSION['id_usuario'])) {
   </style>
 </head>
 <body>
-
 <div class="login-card p-4 p-md-5">
   <div class="text-center mb-4">
     <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 68px; height: 68px;">
@@ -61,7 +60,6 @@ if (isset($_SESSION['id_usuario'])) {
     <h3 class="fw-bold text-dark mb-1">Sistema de Tutorías</h3>
     <p class="text-muted small">Universidad Privada Domingo Savio</p>
   </div>
-
   <?php if (isset($_SESSION['login_error'])): ?>
     <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 rounded-3" role="alert" style="font-size: 0.9rem;">
       <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
@@ -69,28 +67,26 @@ if (isset($_SESSION['id_usuario'])) {
     </div>
     <?php unset($_SESSION['login_error']); ?>
   <?php endif; ?>
-
   <form action="../../controllers/login_procesar.php" method="POST" autocomplete="off">
+    <!-- ✅ LÍNEA NUEVA DE SEGURIDAD -->
+    <input type="hidden" name="csrf_token" value="<?= csrf_generar() ?>">
+    
     <div class="form-floating mb-3">
       <input type="text" class="form-control rounded-3" id="usuarioInput" name="usuario" placeholder="Usuario o Correo" required autofocus>
       <label for="usuarioInput"><i class="bi bi-person me-1"></i>Usuario o Correo</label>
     </div>
-
     <div class="form-floating mb-4">
       <input type="password" class="form-control rounded-3" id="passwordInput" name="contrasena" placeholder="Contraseña" required>
       <label for="passwordInput"><i class="bi bi-lock me-1"></i>Contraseña</label>
     </div>
-
     <button type="submit" class="btn btn-login btn-primary w-100 py-3 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
       <span>Ingresar al Sistema</span>
       <i class="bi bi-arrow-right"></i>
     </button>
   </form>
-
   <div class="mt-4 pt-3 border-top text-center">
     <small class="text-muted">Universidad Privada Domingo Savio &bull; Tecnologías Web</small>
   </div>
 </div>
-
 </body>
 </html>

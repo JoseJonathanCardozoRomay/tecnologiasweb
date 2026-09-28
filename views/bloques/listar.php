@@ -7,7 +7,7 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listado de Bloques Horarios</title>
+    <title>Bloques Horarios</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
         body {
@@ -76,7 +76,6 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
             border-radius: 6px;
             text-decoration: none;
             font-weight: bold;
-            margin-right: 8px;
         }
         .editar:hover { background: #218838; }
         .eliminar {
@@ -87,8 +86,7 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
             border-radius: 6px;
             text-decoration: none;
             font-weight: bold;
-            border: none;
-            cursor: pointer;
+            margin-left: 8px;
         }
         .eliminar:hover { background: #c82333; }
         .vacio {
@@ -102,19 +100,16 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
     <div class="contenedor">
         <a href="index.php" class="volver">← Volver al inicio</a>
         
-        <h1>🕐 Listado de Bloques Horarios</h1>
-
+        <h1>⏰ Bloques Horarios</h1>
         <?php if ($rol_actual === 'administrador'): ?>
             <a href="index.php?accion=bloque_crear" class="btn-nuevo">+ Nuevo Bloque</a>
         <?php endif; ?>
-
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Nombre del Bloque</th>
-                    <th>Hora Inicio</th>
-                    <th>Hora Fin</th>
+                    <th>Hora de Inicio</th>
+                    <th>Hora de Fin</th>
                     <th>Descripción</th>
                     <th>Acciones</th>
                 </tr>
@@ -122,22 +117,21 @@ if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
             <tbody>
                 <?php if (empty($bloques)): ?>
                     <tr>
-                        <td colspan="6" class="vacio">
-                            No hay bloques horarios registrados.
+                        <td colspan="5" class="vacio">
+                            No hay bloques registrados.
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($bloques as $b): ?>
                     <tr>
-                        <td><?= $b['id_bloque'] ?></td>
-                        <td><strong><?= htmlspecialchars($b['nombre_bloque']) ?></strong></td>
-                        <td><?= date('H:i', strtotime($b['hora_inicio'])) ?></td>
-                        <td><?= date('H:i', strtotime($b['hora_fin'])) ?></td>
+                        <td><strong><?= htmlspecialchars($b['nombre_bloque'] ?? '') ?></strong></td>
+                        <td><?= htmlspecialchars($b['hora_inicio'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($b['hora_fin'] ?? '') ?></td>
                         <td><?= htmlspecialchars($b['descripcion'] ?? '—') ?></td>
                         <td>
                             <?php if ($rol_actual === 'administrador'): ?>
-                                <a href="index.php?accion=bloque_editar&id=<?= $b['id_bloque'] ?>" class="editar">Editar</a>
-                                <a href="index.php?accion=bloque_eliminar&id=<?= $b['id_bloque'] ?>" 
+                                <a href="index.php?accion=bloque_editar&id=<?= (int)$b['id_bloque'] ?>" class="editar">Editar</a>
+                                <a href="index.php?accion=bloque_eliminar&id=<?= (int)$b['id_bloque'] ?>" 
                                    class="eliminar"
                                    onclick="return confirm('¿Seguro que quieres eliminar este bloque?')">Eliminar</a>
                             <?php else: ?>

@@ -1,3 +1,7 @@
+<?php
+if (!isset($cohortes)) $cohortes = [];
+if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -30,9 +34,11 @@
         th { background: #003366; color: white; }
         .btn { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; }
         .editar { background: #ffc107; color: #000; margin-right: 5px; }
+        .eliminar { background: #dc3545; color: white; }
         .etiqueta { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .activa { background: #d4edda; color: #155724; }
         .inactiva { background: #e2e3e5; color: #555; }
+        .vacio { text-align: center; padding: 30px; color: #666; }
     </style>
 </head>
 <body>
@@ -40,9 +46,14 @@
         <a href="index.php" class="btn-atras">← Volver al Inicio</a>
         <div class="tarjeta">
             <h1>📅 Cohortes de Ingreso</h1>
+            
             <?php if (tieneRol(['administrador','coordinador_mg'])): ?>
             <a href="index.php?accion=mg_cohorte_crear" class="btn-nuevo">+ Nueva Cohorte</a>
             <?php endif; ?>
+            
+            <?php if (empty($cohortes)): ?>
+            <p class="vacio">No hay cohortes registradas aún.</p>
+            <?php else: ?>
             <table>
                 <tr>
                     <th>Código</th>
@@ -57,20 +68,22 @@
                     <td><strong><?= htmlspecialchars($c['codigo']) ?></strong></td>
                     <td><?= htmlspecialchars($c['nombre']) ?></td>
                     <td><?= htmlspecialchars($c['fecha_inicio']) ?></td>
-                    <td><?= htmlspecialchars($c['fecha_fin'] ?? '—') ?></td>
+                    <td><?= !empty($c['fecha_fin']) ? htmlspecialchars($c['fecha_fin']) : '—' ?></td>
                     <td>
-                        <span class="etiqueta <?= $c['activa'] ? 'activa' : 'inactiva' ?>">
-                            <?= $c['activa'] ? 'Activa' : 'Inactiva' ?>
+                        <span class="etiqueta <?= $c['activo'] ? 'activa' : 'inactiva' ?>">
+                            <?= $c['activo'] ? 'Activa' : 'Inactiva' ?>
                         </span>
                     </td>
                     <td>
                         <?php if (tieneRol(['administrador','coordinador_mg'])): ?>
                         <a href="index.php?accion=mg_cohorte_editar&id=<?= $c['id_cohorte'] ?>" class="btn editar">Editar</a>
+                        <a href="index.php?accion=mg_cohorte_eliminar&id=<?= $c['id_cohorte'] ?>" class="btn eliminar" onclick="return confirm('¿Eliminar esta cohorte?')">Eliminar</a>
                         <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </table>
+            <?php endif; ?>
         </div>
     </div>
 </body>

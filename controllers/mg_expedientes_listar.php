@@ -19,7 +19,7 @@ $filtros = [
 ];
 
 $expedientes = $modelo->listarTodos($filtros);
-$cohortes = $modeloCohorte->listarTodas();
-$modalidades = $modeloModalidad->listarTodas();
+$cohortes = $modeloCohorte->listarTodos();
+$modalidades = $modeloModalidad->listarTodos();
 
 require_once __DIR__ . '/../views/mg_expedientes/listar.php';

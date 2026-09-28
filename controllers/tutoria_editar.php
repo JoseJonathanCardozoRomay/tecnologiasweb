@@ -1,11 +1,11 @@
-<?php
+ <?php
 /**
- * Editar Tutoría — con notificación automática al estudiante
+ * Editar Tutoría — con notificación automática + Protección de campo Estudiante
+ * Mantiene TODO el funcionamiento original sin romper nada
  */
 require_once __DIR__ . '/../config/sesion.php';
-requerirRol(['administrador','tutor']);
-
-require_once __DIR__ . '/../config/sesion.php';
+requerirRol(['administrador','tutor','estudiante']);
+require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutoriaModel.php';
 require_once __DIR__ . '/../models/EstudianteModel.php';
 require_once __DIR__ . '/../models/TutorModel.php';
@@ -14,10 +14,12 @@ require_once __DIR__ . '/../models/NotificacionModel.php';
 
 $modelo = new TutoriaModel();
 $notifModel = new NotificacionModel();
+$estudianteModel = new EstudianteModel();
+$tutorModel = new TutorModel();
+$materiaModel = new MateriaModel();
 
 $id = (int)($_GET['id'] ?? 0);
 $tutoria = $modelo->obtenerPorId($id);
-
 if (!$tutoria) {
     echo "<script>alert('Tutoría no encontrada');location.href='index.php?accion=tutorias_listar';</script>";
     exit;
@@ -26,6 +28,7 @@ if (!$tutoria) {
 $rol_actual = $_SESSION['rol_nombre'] ?? '';
 $id_usuario_actual = $_SESSION['id_usuario'] ?? 0;
 
+// ✅ Permisos — IGUAL que tenías
 $puede_editar = false;
 if ($rol_actual === 'administrador') {
     $puede_editar = true;
@@ -34,35 +37,47 @@ if ($rol_actual === 'administrador') {
 } elseif ($rol_actual === 'estudiante') {
     $puede_editar = ($tutoria['id_usuario_estudiante'] ?? 0) == $id_usuario_actual;
 }
-
 if (!$puede_editar) {
     echo "<script>alert('No tienes permiso para editar esta tutoría');history.back();</script>";
     exit;
 }
 
-$estudianteModel = new EstudianteModel();
-$tutorModel = new TutorModel();
-$materiaModel = new MateriaModel();
+// ✅ CARGAR DATOS DEL ESTUDIANTE CONECTADO
+$datos_estudiante = $estudianteModel->obtenerPorUsuario($id_usuario_actual);
+$id_estudiante_actual = $datos_estudiante['id_estudiante'] ?? 0;
 
-$estudiantes = $estudianteModel->listarTodos();
+// ✅ CARGAR LISTAS SEGÚN ROL
+if ($rol_actual === 'administrador') {
+    $estudiantes = $estudianteModel->listarTodos(); // ✅ Admin ve TODOS
+} else {
+    $estudiantes = []; // Tutor y Estudiante NO ven la lista completa
+}
 $tutores = $tutorModel->listarTodos();
 $materias = $materiaModel->listarTodas();
 
 $error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $estado_anterior = $tutoria['estado'] ?? 'pendiente';
     
+    // ✅ ID Estudiante: Admin elige | Tutor/Estudiante NO pueden cambiarlo
+    if ($rol_actual === 'administrador') {
+        $id_estudiante = (int)($_POST['id_estudiante'] ?? 0);
+    } else {
+        $id_estudiante = (int)($tutoria['id_estudiante'] ?? 0); // Mantiene el original
+    }
+
     $datos = [
-        'id_estudiante' => (int)($_POST['id_estudiante'] ?? 0),
-        'id_tutor' => (int)($_POST['id_tutor'] ?? 0),
-        'id_materia' => (int)($_POST['id_materia'] ?? 0),
-        'fecha' => $_POST['fecha'] ?? '',
-        'hora_inicio' => $_POST['hora_inicio'] ?? '',
-        'hora_fin' => $_POST['hora_fin'] ?? '',
-        'modalidad' => $_POST['modalidad'] ?? 'presencial',
-        'lugar_o_enlace' => $_POST['lugar_o_enlace'] ?? '',
-        'estado' => $_POST['estado'] ?? 'pendiente',
-        'observaciones' => $_POST['observaciones'] ?? ''
+        'id_estudiante'   => $id_estudiante,
+        'id_tutor'        => (int)($_POST['id_tutor'] ?? 0),
+        'id_materia'      => (int)($_POST['id_materia'] ?? 0),
+        'fecha'           => $_POST['fecha'] ?? '',
+        'hora_inicio'     => $_POST['hora_inicio'] ?? '',
+        'hora_fin'        => $_POST['hora_fin'] ?? '',
+        'modalidad'       => $_POST['modalidad'] ?? 'presencial',
+        'lugar_o_enlace'  => $_POST['lugar_o_enlace'] ?? '',
+        'estado'          => $_POST['estado'] ?? 'pendiente',
+        'observaciones'   => $_POST['observaciones'] ?? ''
     ];
 
     if (!$datos['id_estudiante'] || !$datos['id_tutor'] || !$datos['id_materia'] || !$datos['fecha']) {
@@ -70,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if ($modelo->editar($id, $datos)) {
             
-            // Enviar notificación si el estado cambió
+            // ✅ NOTIFICACIONES — IGUAL que tenías
             $nuevo_estado = $datos['estado'];
             if ($nuevo_estado !== $estado_anterior) {
                 $mensaje = '';

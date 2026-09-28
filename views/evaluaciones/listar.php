@@ -1,3 +1,9 @@
+<?php
+if (!isset($evaluaciones)) $evaluaciones = [];
+if (!isset($rol_actual)) $rol_actual = $_SESSION['rol_nombre'] ?? '';
+$titulo_pagina = 'Evaluaciones de Tutorías';
+ob_start();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,154 +19,130 @@
             padding: 40px 20px;
         }
         .contenedor {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
         }
         .volver {
             display: inline-block;
             background: #6c757d;
             color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 10px 20px;
+            border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         h1 {
             color: #003366;
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
             border-bottom: 2px solid #ffc107;
-            font-size: 22px;
         }
-        .mensaje {
-            background: #d1e7dd;
-            color: #0f5132;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
+        .btn-nuevo {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
-        .info-rol {
-            background: #e7f3ff;
-            color: #004085;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 13px;
-        }
+        .btn-nuevo:hover { background: #218838; }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
+            margin-top: 15px;
         }
         th {
             background: #003366;
             color: white;
+            padding: 12px 10px;
+            text-align: left;
         }
-        .nota {
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .nota-5 { color: #28a745; }
-        .nota-4 { color: #28a745; }
-        .nota-3 { color: #ffc107; }
-        .nota-2 { color: #fd7e14; }
-        .nota-1 { color: #dc3545; }
-        .btn-eliminar {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #ddd;
         }
         .vacio {
             text-align: center;
+            padding: 40px;
             color: #666;
-            padding: 20px;
+        }
+        .btn-editar {
+            background: #0066cc;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 13px;
+            margin-right: 5px;
+        }
+        .btn-eliminar {
+            background: #dc3545;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
     <div class="contenedor">
-        <a href="index.php" class="volver">← Volver</a>
-        
-        <h1>📋 Evaluaciones de Tutorías</h1>
+        <a href="index.php" class="volver">← Volver al inicio</a>
+        <h1>⭐ Evaluaciones de Tutorías</h1>
 
-        <div class="info-rol">
-            👤 Tú ves: 
-            <strong>
-                <?php 
-                $r = $_SESSION['usuario']['nombre_rol'] ?? '';
-                echo match($r) {
-                    'administrador' => 'TODAS las evaluaciones del sistema',
-                    'tutor' => 'Las evaluaciones que te dejaron a ti',
-                    'estudiante' => 'Tus propias evaluaciones enviadas',
-                    default => ''
-                };
-                ?>
-            </strong>
-        </div>
-
-        <?php if (isset($_GET['mensaje']) && $_GET['mensaje'] === 'gracias'): ?>
-            <div class="mensaje">✅ ¡Gracias por tu evaluación!</div>
+        <?php if ($rol_actual === 'administrador' || $rol_actual === 'estudiante'): ?>
+        <a href="index.php?accion=evaluacion_crear" class="btn-nuevo">+ Nueva Evaluación</a>
         <?php endif; ?>
 
         <?php if (empty($evaluaciones)): ?>
-            <p class="vacio">No hay evaluaciones registradas.</p>
+        <div class="vacio">
+            <p>No hay evaluaciones registradas.</p>
+            <p style="margin-top:10px; font-size:14px; color:#888;">
+                Haz clic en "+ Nueva Evaluación" para agregar la primera.
+            </p>
+        </div>
         <?php else: ?>
-            <table>
+        <table>
+            <thead>
                 <tr>
-                    <th>Fecha</th>
-                    <th>Materia / Tutoría</th>
+                    <th>ID</th>
+                    <th>ID Tutoría</th>
                     <th>Calificación</th>
                     <th>Comentario</th>
-                    <?php if (($usuario_actual['nombre_rol'] ?? '') === 'administrador'): ?>
-                        <th>Acción</th>
-                    <?php endif; ?>
+                    <th>Acciones</th>
                 </tr>
+            </thead>
+            <tbody>
                 <?php foreach ($evaluaciones as $e): ?>
-                    <tr>
-                        <td><?= date('d/m/Y', strtotime($e['fecha_evaluacion'])) ?></td>
-                        <td>
-                            <strong><?= htmlspecialchars($e['nombre_materia'] ?? '') ?></strong><br>
-                            <small>
-                                <?php 
-                                $r = $_SESSION['usuario']['nombre_rol'] ?? '';
-                                if ($r === 'estudiante') {
-                                    echo 'Tutor: ' . htmlspecialchars(($e['tut_nombre'] ?? '') . ' ' . ($e['tut_apellido'] ?? ''));
-                                } else {
-                                    echo 'Estudiante: ' . htmlspecialchars(($e['est_nombre'] ?? '') . ' ' . ($e['est_apellido'] ?? ''));
-                                }
-                                ?>
-                            </small>
-                        </td>
-                        <td class="nota nota-<?= $e['calificacion'] ?>">
-                            <?= $e['calificacion'] ?> ⭐
-                        </td>
-                        <td style="max-width: 250px;"><?= htmlspecialchars($e['comentario'] ?? '-') ?></td>
-                        <?php if (($usuario_actual['nombre_rol'] ?? '') === 'administrador'): ?>
-                            <td>
-                                <a href="index.php?accion=evaluacion_eliminar&id=<?= $e['id_evaluacion'] ?>" 
-                                   class="btn-eliminar"
-                                   onclick="return confirm('¿Eliminar esta evaluación?')">Eliminar</a>
-                            </td>
+                <tr>
+                    <td>#<?= $e['id_evaluacion'] ?? '-' ?></td>
+                    <td>#<?= $e['id_tutoria'] ?? '-' ?></td>
+                    <td><strong><?= htmlspecialchars($e['calificacion'] ?? '-') ?></strong></td>
+                    <td><?= htmlspecialchars(substr($e['comentario'] ?? '-', 0, 30)) ?>...</td>
+                    <td>
+                        <?php if ($rol_actual === 'administrador' || $rol_actual === 'estudiante'): ?>
+                        <a href="index.php?accion=evaluacion_editar&id=<?= $e['id_evaluacion'] ?>" class="btn-editar">Editar</a>
                         <?php endif; ?>
-                    </tr>
+                        <?php if ($rol_actual === 'administrador'): ?>
+                        <a href="index.php?accion=evaluacion_eliminar&id=<?= $e['id_evaluacion'] ?>" class="btn-eliminar" onclick="return confirm('¿Eliminar?')">Eliminar</a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
                 <?php endforeach; ?>
-            </table>
+            </tbody>
+        </table>
         <?php endif; ?>
     </div>
 </body>
 </html>
+<?php
+$contenido = ob_get_clean();
+require_once __DIR__ . '/../../config/plantilla.php';
