@@ -1,6 +1,12 @@
 (() => {
     const pagina = document.documentElement;
-    const temaGuardado = localStorage.getItem('tema');
+    let temaGuardado = null;
+
+    try {
+        temaGuardado = localStorage.getItem('tema');
+    } catch (error) {
+        // El selector sigue funcionando cuando el navegador bloquea el almacenamiento.
+    }
 
     const sistemaOscuro = window.matchMedia(
         '(prefers-color-scheme: dark)'
@@ -21,20 +27,21 @@
             return;
         }
 
-        // El botón indica el tema que se activará al presionarlo
         const actualizarBoton = (temaActual) => {
             const activarTemaClaro = temaActual === 'dark';
 
             textoTema.textContent = activarTemaClaro
-                ? 'Tema claro'
-                : 'Tema oscuro';
+                ? 'Modo oscuro'
+                : 'Modo claro';
 
             botonTema.setAttribute(
                 'aria-label',
                 activarTemaClaro
-                    ? 'Activar tema claro'
-                    : 'Activar tema oscuro'
+                    ? 'Activar modo claro'
+                    : 'Activar modo oscuro'
             );
+            botonTema.setAttribute('aria-pressed', String(activarTemaClaro));
+            botonTema.title = botonTema.getAttribute('aria-label');
         };
 
         actualizarBoton(temaInicial);
@@ -47,7 +54,11 @@
                 : 'dark';
 
             pagina.setAttribute('data-bs-theme', nuevoTema);
-            localStorage.setItem('tema', nuevoTema);
+            try {
+                localStorage.setItem('tema', nuevoTema);
+            } catch (error) {
+                // La preferencia permanece activa durante esta visita.
+            }
 
             actualizarBoton(nuevoTema);
         });
