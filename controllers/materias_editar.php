@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/MateriaModel.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Solamente el administrador puede modificar materias
 requerirRol(
@@ -15,6 +16,12 @@ $modeloMateria = new MateriaModel($pdo);
 $modeloCarrera = new CarreraModel($pdo);
 
 // El identificador puede llegar por GET o desde el formulario
+// Protegemos también los formularios de los CRUD existentes.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !validarTokenCsrf()) {
+    http_response_code(403);
+    exit('Formulario vencido. Recarga la página e inténtalo de nuevo.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idMateria = filter_input(
         INPUT_POST,

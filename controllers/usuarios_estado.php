@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Solamente el administrador puede cambiar estados
 requerirRol(
@@ -11,6 +12,12 @@ requerirRol(
 );
 
 // El cambio debe enviarse desde el formulario del listado
+// Protegemos también los formularios de los CRUD existentes.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !validarTokenCsrf()) {
+    http_response_code(403);
+    exit('Formulario vencido. Recarga la página e inténtalo de nuevo.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: usuarios_listar.php');
     exit;

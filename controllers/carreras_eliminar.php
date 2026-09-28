@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Solamente el administrador puede eliminar carreras
 requerirRol(
@@ -11,6 +12,12 @@ requerirRol(
 );
 
 // No permitimos ejecutar la eliminación mediante la dirección URL
+// Protegemos también los formularios de los CRUD existentes.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !validarTokenCsrf()) {
+    http_response_code(403);
+    exit('Formulario vencido. Recarga la página e inténtalo de nuevo.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: carreras_listar.php');
     exit;

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/CarreraModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Solamente el administrador puede modificar carreras
 requerirRol(
@@ -13,6 +14,12 @@ requerirRol(
 $modeloCarrera = new CarreraModel($pdo);
 
 // El identificador puede llegar por GET o mediante el formulario
+// Protegemos también los formularios de los CRUD existentes.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !validarTokenCsrf()) {
+    http_response_code(403);
+    exit('Formulario vencido. Recarga la página e inténtalo de nuevo.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idCarrera = filter_input(
         INPUT_POST,

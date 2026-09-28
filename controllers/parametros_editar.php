@@ -2,11 +2,12 @@
 
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/ParametroMgModel.php';
+require_once __DIR__ . '/../models/BitacoraModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
 require_once __DIR__ . '/../includes/permisos.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
-// Solo la administración de Modalidades de Grado puede editar
+// Solo la administración de Modalidades de Grado puede editar.
 requerirRol(
     ['administrador', 'coordinador_mg'],
     '../index.php'
@@ -18,9 +19,10 @@ requerirPermiso(
 );
 
 $modeloParametro = new ParametroMgModel($pdo);
+$modeloBitacora = new BitacoraModel($pdo);
 $usuarioSesion = obtenerUsuarioSesion();
 
-// La clave llega por GET al abrir y por POST al guardar
+// La clave llega por GET al abrir y por POST al guardar.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $claveRecibida = $_POST['clave'] ?? '';
 } else {
@@ -31,7 +33,7 @@ $clave = is_string($claveRecibida)
     ? trim($claveRecibida)
     : '';
 
-// Validamos la clave antes de utilizarla
+// Validamos la clave antes de utilizarla.
 if (
     $clave === ''
     || mb_strlen($clave) > 60
@@ -64,7 +66,7 @@ $estadoEvidencia = $parametro['estado_evidencia'];
 
 $error = '';
 
-// Procesamos la actualización enviada desde el formulario
+// Procesamos la actualización enviada desde el formulario.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $valorRecibido = $_POST['valor'] ?? '';
     $descripcionRecibida = $_POST['descripcion'] ?? '';
@@ -126,7 +128,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Selecciona un estado de evidencia válido.';
     } else {
         try {
-            $modeloParametro->actualizar(
+            $datosAntes = [
+                'clave' => $parametro['clave'],
+                'valor' => $parametro['valor'],
+                'descripcion' => $parametro['descripcion'],
+                'fuente' => $parametro['fuente'],
+                'estado_evidencia'
+                    => $parametro['estado_evidencia']
+            ];
+
+            $datosDespues = [
+                'clave' => $clave,
+                'valor' => $valor !== ''
+                    ? $valor
+                    : null,
+                'descripcion' => $descripcion,
+                'fuente' => $fuente,
+                'estado_evidencia' => $estadoEvidencia
+            ];
+
+            $pdo->beginTransaction();
+
+            $actualizado = $modeloParametro->actualizar(
                 $clave,
                 $valor !== ''
                     ? $valor
@@ -137,17 +160,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $idUsuario
             );
 
+            if (!$actualizado) {
+                throw new RuntimeException(
+                    'No se pudo actualizar el parámetro.'
+                );
+            }
+
+            $registrado = $modeloBitacora->registrar(
+                $idUsuario,
+                'actualizar',
+                'parametros_mg',
+                null,
+                $datosAntes,
+                $datosDespues
+            );
+
+            if (!$registrado) {
+                throw new RuntimeException(
+                    'No se pudo registrar el cambio en la bitácora.'
+                );
+            }
+
+            $pdo->commit();
+
             header(
                 'Location: parametros_listar.php?estado=actualizado'
             );
             exit;
-        } catch (PDOException $e) {
+        } catch (Throwable $errorOperacion) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
             $error = 'No fue posible actualizar el parámetro.';
         }
     }
 }
 
-// Datos utilizados por la vista
+// Datos utilizados por la vista.
 $tituloPagina = 'Editar parámetro';
 $rutaBase = '../';
 

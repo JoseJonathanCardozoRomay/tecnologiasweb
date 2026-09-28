@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/DisponibilidadModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Solamente los tutores pueden registrar su disponibilidad
 requerirRol(
@@ -43,6 +44,12 @@ $horaFin = '';
 $error = '';
 
 // Procesamos el nuevo horario
+// Protegemos también los formularios de los CRUD existentes.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !validarTokenCsrf()) {
+    http_response_code(403);
+    exit('Formulario vencido. Recarga la página e inténtalo de nuevo.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $diaSemana = trim(
         $_POST['dia_semana'] ?? ''

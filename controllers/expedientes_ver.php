@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/ExpedienteMgModel.php';
 require_once __DIR__ . '/../models/ExpedienteEtapaModel.php';
+require_once __DIR__ . '/../models/AsignacionTutorModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
 require_once __DIR__ . '/../includes/permisos.php';
 
@@ -22,6 +23,7 @@ requerirPermiso(
 
 $modeloExpediente = new ExpedienteMgModel($pdo);
 $modeloEtapa = new ExpedienteEtapaModel($pdo);
+$modeloAsignacion = new AsignacionTutorModel($pdo);
 
 $idExpediente = filter_input(
     INPUT_GET,
@@ -47,7 +49,7 @@ if (!$expediente) {
     exit;
 }
 
-// Recuperamos el historial sin modificarlo
+// Recuperamos el historial de etapas sin modificarlo
 $historialEtapas = $modeloEtapa->listarPorExpediente(
     $idExpediente
 );
@@ -55,6 +57,13 @@ $historialEtapas = $modeloEtapa->listarPorExpediente(
 $etapaAbierta = $modeloEtapa->buscarEtapaAbierta(
     $idExpediente
 );
+
+// Recuperamos la asignación actual y todo su historial
+$asignacionTutor = $modeloAsignacion
+    ->buscarVigentePorExpediente($idExpediente);
+
+$historialTutores = $modeloAsignacion
+    ->listarPorExpediente($idExpediente);
 
 // Permisos utilizados por las acciones de la ficha
 $puedeEditar = usuarioTienePermiso(
@@ -69,9 +78,15 @@ $puedeAsignarTutor = usuarioTienePermiso(
     'mg.tutores.asignar'
 );
 
-// Mensajes de acciones futuras de la ficha
+$puedeCambiarTutor = usuarioTienePermiso(
+    'mg.tutores.cambiar'
+);
+
+// Mensajes mostrados después de cada operación
 $mensajes = [
     'actualizado' => 'El expediente fue actualizado correctamente.',
+    'tutor_asignado' => 'El tutor fue asignado correctamente y el expediente ingresó a MG1.',
+    'tutor_cambiado' => 'El tutor fue reemplazado correctamente.',
     'etapa_actualizada' => 'La etapa fue actualizada correctamente.',
     'estado_actualizado' => 'El estado fue actualizado correctamente.',
     'error' => 'No fue posible completar la operación.'

@@ -3,77 +3,123 @@
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/CupoModel.php';
 require_once __DIR__ . '/../models/PeriodoModel.php';
-require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
-// La configuración de cupos corresponde a coordinación
-requerirRol(
-    ['administrador'],
-    '../index.php'
-);
+requerirRol(['administrador'], '../index.php');
 
 $modeloCupo = new CupoModel($pdo);
 $modeloPeriodo = new PeriodoModel($pdo);
 
-$idPeriodo = filter_input(
-    INPUT_GET,
-    'periodo',
-    FILTER_VALIDATE_INT
-);
+$idPeriodo = filter_input(INPUT_GET, 'periodo', FILTER_VALIDATE_INT);
 
-// No se puede administrar cupos sin un periodo válido
-if (!$idPeriodo) {
-    header(
-        'Location: periodos_listar.php?estado=no_encontrado'
-    );
+if (!$idPeriodo || $idPeriodo < 1) {
+    header('Location: periodos_listar.php?estado=no_encontrado');
     exit;
 }
 
 $periodo = $modeloPeriodo->buscarPorId($idPeriodo);
-
 if (!$periodo) {
+    header('Location: periodos_listar.php?estado=no_encontrado');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $estadoResultado = 'datos_invalidos';
+
+    if (!validarTokenCsrf()) {
+        $estadoResultado = 'token_invalido';
+    } else {
+        $idTutor = filter_input(
+            INPUT_POST,
+            'id_tutor',
+            FILTER_VALIDATE_INT
+        );
+        $cupoMaximo = filter_input(
+            INPUT_POST,
+            'cupo_maximo',
+            FILTER_VALIDATE_INT
+        );
+        $valorActivo = $_POST['activo'] ?? null;
+
+        if (
+            !$idTutor
+            || $idTutor < 1
+            || !$modeloCupo->existeTutor($idTutor)
+        ) {
+            $estadoResultado = 'tutor_no_encontrado';
+        } elseif (
+            $cupoMaximo === false
+            || $cupoMaximo < 1
+            || $cupoMaximo > 5
+            || !in_array($valorActivo, ['0', '1'], true)
+        ) {
+            $estadoResultado = 'cupo_fuera_rango';
+        } elseif (
+            $cupoMaximo < $modeloCupo->contarOcupados(
+                $idTutor,
+                $idPeriodo
+            )
+        ) {
+            $estadoResultado = 'cupo_inferior';
+        } else {
+            try {
+                $guardado = $modeloCupo->guardar(
+                    $idTutor,
+                    $idPeriodo,
+                    $cupoMaximo,
+                    $valorActivo === '1'
+                );
+                $estadoResultado = $guardado
+                    ? 'guardado'
+                    : 'error';
+            } catch (Throwable $error) {
+                $estadoResultado = 'error';
+            }
+        }
+    }
+
     header(
-        'Location: periodos_listar.php?estado=no_encontrado'
+        'Location: cupos_listar.php?periodo='
+        . $idPeriodo
+        . '&estado='
+        . rawurlencode($estadoResultado)
     );
     exit;
 }
 
-// Limitamos la búsqueda para evitar entradas demasiado extensas
-$busqueda = trim($_GET['buscar'] ?? '');
-$busqueda = mb_substr($busqueda, 0, 100);
+$busqueda = $_GET['buscar'] ?? '';
+$busqueda = is_string($busqueda)
+    ? mb_substr(trim($busqueda), 0, 100)
+    : '';
 
-$tutores = $modeloCupo->listarPorPeriodo(
-    $idPeriodo,
-    $busqueda
-);
-
+$tutores = $modeloCupo->listarPorPeriodo($idPeriodo, $busqueda);
 $resumen = $modeloCupo->obtenerResumen($idPeriodo);
 
-// Mensajes mostrados después de guardar una configuración
 $mensajes = [
-    'guardado' => 'La configuración de cupos fue actualizada correctamente.',
-    'datos_invalidos' => 'Los datos enviados no son válidos.',
+    'guardado' => 'La configuración de cupos se guardó correctamente.',
+    'datos_invalidos' => 'Revisa los datos enviados.',
+    'token_invalido' => 'El formulario venció. Recarga la página e inténtalo otra vez.',
     'tutor_no_encontrado' => 'No se encontró el tutor seleccionado.',
-    'periodo_no_encontrado' => 'No se encontró el periodo solicitado.',
-    'cupo_inferior' => 'El cupo máximo no puede ser menor que los procesos actualmente asignados.',
-    'error' => 'No fue posible actualizar la configuración de cupos.'
+    'cupo_fuera_rango' => 'El cupo debe estar entre 1 y 5 estudiantes.',
+    'cupo_inferior' => 'El cupo no puede ser menor que los estudiantes ya inscritos.',
+    'error' => 'No fue posible guardar la configuración.'
 ];
 
 $estado = $_GET['estado'] ?? '';
 $mensaje = $mensajes[$estado] ?? '';
-
 $tipoMensaje = in_array(
     $estado,
     [
         'datos_invalidos',
+        'token_invalido',
         'tutor_no_encontrado',
-        'periodo_no_encontrado',
+        'cupo_fuera_rango',
         'cupo_inferior',
         'error'
     ],
     true
 ) ? 'danger' : 'success';
 
-// Datos utilizados por la vista
 $tituloPagina = 'Cupos por tutor';
 $rutaBase = '../';
 

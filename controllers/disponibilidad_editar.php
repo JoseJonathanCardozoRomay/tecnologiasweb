@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/TutorModel.php';
 require_once __DIR__ . '/../models/DisponibilidadModel.php';
 require_once __DIR__ . '/../includes/sesion.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 // Solamente los tutores pueden modificar su disponibilidad
 requerirRol(
@@ -30,6 +31,12 @@ if (!$tutor) {
 
 // El identificador llega por GET al abrir la página
 // y por POST al guardar los cambios.
+// Protegemos también los formularios de los CRUD existentes.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !validarTokenCsrf()) {
+    http_response_code(403);
+    exit('Formulario vencido. Recarga la página e inténtalo de nuevo.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idDisponibilidad = filter_input(
         INPUT_POST,
