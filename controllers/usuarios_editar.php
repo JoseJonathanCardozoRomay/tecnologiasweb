@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/verificar_sesion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/RolModel.php';
@@ -22,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'correo'   => trim($_POST['correo'] ?? ''),
         'usuario'  => trim($_POST['usuario'] ?? ''),
         'estado'   => $_POST['estado'] ?? 'activo',
+        'clave'    => $_POST['clave'] ?? '',
     ];
 
     if (in_array('', [$datos['nombre'], $datos['apellido'], $datos['correo'], $datos['usuario']], true)) {

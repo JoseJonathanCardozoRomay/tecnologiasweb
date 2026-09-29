@@ -1,85 +1,88 @@
-<?php
-class UsuarioModel
-{
+﻿<?php
+// models/UsuarioModel.php
+require_once __DIR__ . '/../config/conexion.php';
+
+class UsuarioModel {
     private $pdo;
 
-    public function __construct($pdo)
-    {
+    public function __construct($pdo = null) {
+        global $pdo;
         $this->pdo = $pdo;
     }
 
-    public function obtenerTodos()
-    {
-        $sql = "SELECT u.id_usuario, u.nombre, u.apellido, u.correo, u.usuario,
-                       r.nombre_rol, u.estado, u.fecha_registro
-                FROM usuarios u
-                INNER JOIN roles r ON u.id_rol = r.id_rol
-                ORDER BY u.id_usuario DESC";
-        return $this->pdo->query($sql)->fetchAll();
-    }
-
-    public function obtenerPorId($id)
-    {
-        $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE id_usuario = :id");
-        $stmt->execute([':id' => $id]);
+    public function obtenerPorEmailOUser($identificador) {
+        $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE email = ? OR usuario = ? OR correo = ? OR nombre = ?");
+        $stmt->execute([$identificador, $identificador, $identificador, $identificador]);
         return $stmt->fetch();
     }
 
-    public function crear($datos)
-    {
-        // password_hash genera un hash seguro (bcrypt) — NUNCA guardar la contraseña en texto plano
-        $hash = password_hash($datos['clave'], PASSWORD_DEFAULT);
+    public function obtenerPorId($id) {
+        $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE id = ? OR id_usuario = ?");
+        $stmt->execute([$id, $id]);
+        return $stmt->fetch();
+    }
 
-        $sql = "INSERT INTO usuarios (id_rol, nombre, apellido, correo, usuario, contrasena_hash)
-                VALUES (:id_rol, :nombre, :apellido, :correo, :usuario, :hash)";
-        $stmt = $this->pdo->prepare($sql);
+    public function obtenerTodos() {
+        $stmt = $this->pdo->query("SELECT * FROM usuarios ORDER BY id DESC");
+        return $stmt->fetchAll();
+    }
 
+    public function crear($datos) {
+        $hash = password_hash($datos['clave'], PASSWORD_BCRYPT);
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO usuarios (nombre, apellido, correo, usuario, password, rol, estado)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        );
         return $stmt->execute([
-            ':id_rol'   => $datos['id_rol'],
-            ':nombre'   => $datos['nombre'],
-            ':apellido' => $datos['apellido'],
-            ':correo'   => $datos['correo'],
-            ':usuario'  => $datos['usuario'],
-            ':hash'     => $hash,
+            $datos['nombre'],
+            $datos['apellido'] ?? '',
+            $datos['correo'],
+            $datos['usuario'],
+            $hash,
+            $datos['id_rol'] ?? 1,
+            $datos['estado'] ?? 'activo',
         ]);
     }
 
-    public function actualizar($id, $datos)
-    {
-        $sql = "UPDATE usuarios
-                SET id_rol = :id_rol, nombre = :nombre, apellido = :apellido,
-                    correo = :correo, usuario = :usuario, estado = :estado
-                WHERE id_usuario = :id";
-        $stmt = $this->pdo->prepare($sql);
+    public function actualizar($id, $datos) {
+        $hash = !empty($datos['clave']) ? password_hash($datos['clave'], PASSWORD_BCRYPT) : null;
 
-        return $stmt->execute([
-            ':id_rol'   => $datos['id_rol'],
-            ':nombre'   => $datos['nombre'],
-            ':apellido' => $datos['apellido'],
-            ':correo'   => $datos['correo'],
-            ':usuario'  => $datos['usuario'],
-            ':estado'   => $datos['estado'],
-            ':id'       => $id,
-        ]);
+        if ($hash) {
+            $stmt = $this->pdo->prepare(
+                "UPDATE usuarios SET nombre = ?, apellido = ?, correo = ?, usuario = ?, password = ?, id_rol = ?, estado = ?
+                 WHERE id = ? OR id_usuario = ?"
+            );
+            return $stmt->execute([
+                $datos['nombre'],
+                $datos['apellido'] ?? '',
+                $datos['correo'],
+                $datos['usuario'],
+                $hash,
+                $datos['id_rol'] ?? 1,
+                $datos['estado'] ?? 'activo',
+                $id,
+                $id,
+            ]);
+        } else {
+            $stmt = $this->pdo->prepare(
+                "UPDATE usuarios SET nombre = ?, apellido = ?, correo = ?, usuario = ?, id_rol = ?, estado = ?
+                 WHERE id = ? OR id_usuario = ?"
+            );
+            return $stmt->execute([
+                $datos['nombre'],
+                $datos['apellido'] ?? '',
+                $datos['correo'],
+                $datos['usuario'],
+                $datos['id_rol'] ?? 1,
+                $datos['estado'] ?? 'activo',
+                $id,
+                $id,
+            ]);
+        }
     }
 
-    public function eliminar($id)
-    {
-        $stmt = $this->pdo->prepare("DELETE FROM usuarios WHERE id_usuario = :id");
-        return $stmt->execute([':id' => $id]);
+    public function eliminar($id) {
+        $stmt = $this->pdo->prepare("DELETE FROM usuarios WHERE id = ? OR id_usuario = ?");
+        return $stmt->execute([$id, $id]);
     }
-
-    public function obtenerPorUsuario($usuario) {
-    $sql = "SELECT u.*, r.nombre_rol 
-            FROM usuarios u
-            JOIN roles r ON u.id_rol = r.id_rol
-            WHERE u.usuario = :usuario1 OR u.correo = :usuario2
-            LIMIT 1";
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute([
-        'usuario1' => $usuario,
-        'usuario2' => $usuario
-    ]);
-    return $stmt->fetch();
-}
 }

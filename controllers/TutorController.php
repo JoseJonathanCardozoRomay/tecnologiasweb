@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../config/Response.php';
 require_once __DIR__ . '/../includes/verificar_sesion.php';
