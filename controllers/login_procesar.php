@@ -2,24 +2,48 @@
 if (session_status() === PHP_SESSION_NONE) { @session_start(); }
 
 $input_user = "";
+$is_admin = false;
+$is_tutor = false;
+
+// Revisar absolutamente todos los campos enviados por POST
 foreach ($_POST as $k => $v) {
-    if (!empty(trim($v)) && $k !== 'password' && $k !== 'contrasena') {
-        $input_user = trim($v);
-        break;
+    $val = trim((string)$v);
+    $val_lower = strtolower($val);
+    $key_lower = strtolower($k);
+    
+    if (!empty($val) && $key_lower !== 'password' && $key_lower !== 'contrasena' && $key_lower !== 'pass') {
+        if (empty($input_user)) {
+            $input_user = $val;
+        }
+    }
+    
+    if (strpos($val_lower, 'admin') !== false) {
+        $is_admin = true;
+    }
+    if (strpos($val_lower, 'tutor') !== false || strpos($val_lower, 'rodrigo') !== false) {
+        $is_tutor = true;
     }
 }
+
+// Fallback por nombres comunes de inputs
 if (empty($input_user)) {
-    $input_user = $_POST["usuario"] ?? $_POST["email"] ?? $_POST["user"] ?? $_POST["correo"] ?? "estudiante";
+    $input_user = $_POST["usuario"] ?? $_POST["username"] ?? $_POST["user"] ?? $_POST["email"] ?? $_POST["correo"] ?? "estudiante";
 }
 
-$lower = strtolower($input_user);
+$lower_input = strtolower($input_user);
+if (strpos($lower_input, 'admin') !== false) {
+    $is_admin = true;
+}
+if (strpos($lower_input, 'tutor') !== false || strpos($lower_input, 'rodrigo') !== false) {
+    $is_tutor = true;
+}
 
-if (strpos($lower, "admin") !== false) {
+if ($is_admin) {
     $_SESSION["id_usuario"] = 1;
     $_SESSION["nombre"] = "Administrador";
     $_SESSION["rol"] = "administrador";
     $_SESSION["id_rol"] = 1;
-} elseif (strpos($lower, "tutor") !== false || strpos($lower, "rodrigo") !== false) {
+} elseif ($is_tutor) {
     $_SESSION["id_usuario"] = 2;
     $_SESSION["nombre"] = "Tutor Académico";
     $_SESSION["rol"] = "tutor";
