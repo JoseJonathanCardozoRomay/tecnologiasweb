@@ -1,11 +1,11 @@
-﻿<?php
+<?php
+ob_start();
 if (session_status() === PHP_SESSION_NONE) { @session_start(); }
 
 $input_user = "";
 $is_admin = false;
 $is_tutor = false;
 
-// Revisar absolutamente todos los campos enviados por POST
 foreach ($_POST as $k => $v) {
     $val = trim((string)$v);
     $val_lower = strtolower($val);
@@ -25,7 +25,6 @@ foreach ($_POST as $k => $v) {
     }
 }
 
-// Fallback por nombres comunes de inputs
 if (empty($input_user)) {
     $input_user = $_POST["usuario"] ?? $_POST["username"] ?? $_POST["user"] ?? $_POST["email"] ?? $_POST["correo"] ?? "estudiante";
 }
