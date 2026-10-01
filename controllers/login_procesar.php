@@ -1,8 +1,18 @@
 ﻿<?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { @session_start(); }
 
-$input_user = $_POST["usuario"] ?? $_POST["email"] ?? $_POST["correo"] ?? "estudiante";
-$lower = strtolower(trim($input_user));
+$input_user = "";
+foreach ($_POST as $k => $v) {
+    if (!empty(trim($v)) && $k !== 'password' && $k !== 'contrasena') {
+        $input_user = trim($v);
+        break;
+    }
+}
+if (empty($input_user)) {
+    $input_user = $_POST["usuario"] ?? $_POST["email"] ?? $_POST["user"] ?? $_POST["correo"] ?? "estudiante";
+}
+
+$lower = strtolower($input_user);
 
 if (strpos($lower, "admin") !== false) {
     $_SESSION["id_usuario"] = 1;
@@ -25,5 +35,5 @@ $_SESSION["usuario"] = $input_user;
 $_SESSION["usuario_nombre"] = $_SESSION["nombre"];
 $_SESSION["usuario_rol"] = $_SESSION["rol"];
 
-header("Location: ../../panel.php");
+header("Location: ../panel.php");
 exit();

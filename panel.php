@@ -1,5 +1,5 @@
 ﻿<?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { @session_start(); }
 $rol = $_SESSION["rol"] ?? $_SESSION["usuario_rol"] ?? "estudiante";
 $nombre = $_SESSION["nombre"] ?? $_SESSION["usuario_nombre"] ?? "Usuario";
 ?>
