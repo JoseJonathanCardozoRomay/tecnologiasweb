@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = null;
         $logged_in = false;
 
-        // Autenticación directa y garantizada para la defensa
+        // AutenticaciÃ³n directa y garantizada para la defensa
         if ($lower_user === 'admin' || $lower_user === 'admin@upds.edu.bo') {
             $user = ['id' => 1, 'nombre' => 'Admin', 'apellido' => 'Sistema', 'id_rol' => 1, 'usuario' => 'admin', 'rol' => 'administrador'];
             $logged_in = true;
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Tutorías Académicas - UPDS Tarija</title>
+    <title>Sistema de TutorÃ­as AcadÃ©micas - UPDS Tarija</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -90,16 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h6 class="fw-bold mb-4">SEDE TARIJA</h6>
             </div>
             <div>
-                <h1 class="display-5 fw-bold mb-3">Sistema de Tutorías Académicas</h1>
-                <p class="lead text-light opacity-87 mb-4">Un espacio institucional para conectar estudiantes y tutores con acompañamiento académico oportuno.</p>
+                <h1 class="display-5 fw-bold mb-3">Sistema de TutorÃ­as AcadÃ©micas</h1>
+                <p class="lead text-light opacity-87 mb-4">Un espacio institucional para conectar estudiantes y tutores con acompaÃ±amiento acadÃ©mico oportuno.</p>
                 <ul class="list-unstyled opacity-85">
-                    <li class="mb-2"><i class="fas fa-calendar-check me-2"></i> Agenda tutorías en pocos pasos.</li>
+                    <li class="mb-2"><i class="fas fa-calendar-check me-2"></i> Agenda tutorÃ­as en pocos pasos.</li>
                     <li class="mb-2"><i class="fas fa-chart-line me-2"></i> Da seguimiento a cada solicitud.</li>
-                    <li class="mb-2"><i class="fas fa-file-alt me-2"></i> Consulta reportes académicos claros.</li>
+                    <li class="mb-2"><i class="fas fa-file-alt me-2"></i> Consulta reportes acadÃ©micos claros.</li>
                 </ul>
             </div>
             <div class="small opacity-50">
-                Tecnologías Web • Sede Tarija
+                TecnologÃ­as Web â€¢ Sede Tarija
             </div>
         </div>
 
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="text-center mb-4">
                     <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
                     <h4 class="fw-bold text-dark">Bienvenido de nuevo</h4>
-                    <p class="text-muted small">Inicia sesión para acceder a tu plataforma de tutorías</p>
+                    <p class="text-muted small">Inicia sesiÃ³n para acceder a tu plataforma de tutorÃ­as</p>
                 </div>
 
                 <?php 
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 ?>
 
-                <form action="" method="POST">
+                <form action="../../controllers/login_procesar.php" method="POST">
                     <div class="mb-3">
                         <label class="form-label small text-muted">Usuario</label>
                         <div class="input-group">
@@ -127,14 +127,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small text-muted">Contraseña</label>
+                        <label class="form-label small text-muted">ContraseÃ±a</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fas fa-lock text-muted"></i></span>
-                            <input type="password" name="password" class="form-control" placeholder="Ingresa tu contraseña">
+                            <input type="password" name="password" class="form-control" placeholder="Ingresa tu contraseÃ±a">
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
-                        <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
+                        <i class="fas fa-sign-in-alt me-2"></i> Iniciar SesiÃ³n
                     </button>
                 </form>
 
