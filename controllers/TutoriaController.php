@@ -28,7 +28,7 @@ try {
 
             $stmt = $pdo->prepare(
                 "INSERT INTO tutorias (id_estudiante, id_tutor, id_materia, fecha, hora_inicio, hora_fin, modalidad, estado, observaciones)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)"
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente de Confirmación', ?)"
             );
             $stmt->execute([$id_estudiante, $id_tutor, $id_materia, $fecha, $hora_inicio, $hora_fin, $modalidad, $observaciones]);
 
@@ -40,10 +40,10 @@ try {
             $id_estudiante = $_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? null;
 
             $stmt = $pdo->prepare(
-                "SELECT t.*, m.nombre_materia, u.nombre AS tutor_nombre, u.apellido AS tutor_apellido
+                "SELECT t.*, m.nombre AS materia_nombre, u.nombre AS tutor_nombre 
                  FROM tutorias t
-                 LEFT JOIN materias m ON t.id_materia = m.id_materia
-                 LEFT JOIN tutores tu ON t.id_tutor = tu.id_tutor
+                 LEFT JOIN materias m ON t.id_materia = m.id
+                 LEFT JOIN tutores tu ON t.id_tutor = tu.id
                  LEFT JOIN usuarios u ON tu.id_usuario = u.id
                  WHERE t.id_estudiante = ?
                  ORDER BY t.fecha DESC"
@@ -60,62 +60,19 @@ try {
             $nuevo_estado = $datos['nuevo_estado'] ?? null;
 
             if (!$id_tutoria || !$nuevo_estado) {
-                Response::error('id_tutoria y nuevo_estado son obligatorios.', 422);
+                Response::error('ID de tutoría y nuevo estado son obligatorios.', 422);
             }
 
-            $stmt = $pdo->prepare("UPDATE tutorias SET estado = ? WHERE id_tutoria = ?");
+            $stmt = $pdo->prepare("UPDATE tutorias SET estado = ? WHERE id = ?");
             $stmt->execute([$nuevo_estado, $id_tutoria]);
 
-            Response::json(['id_tutoria' => (int) $id_tutoria, 'estado' => $nuevo_estado], 200, 'Estado actualizado.');
-            break;
-
-        case 'todas':
-            verificar_rol(['administrador']);
-
-            $estado = $_GET['estado'] ?? null;
-            $fecha_desde = $_GET['fecha_desde'] ?? null;
-            $fecha_hasta = $_GET['fecha_hasta'] ?? null;
-
-            $sql = "SELECT t.*, m.nombre_materia,
-                           u.nombre AS tutor_nombre, u.apellido AS tutor_apellido,
-                           e.nombre AS estudiante_nombre, e.apellido AS estudiante_apellido
-                    FROM tutorias t
-                    LEFT JOIN materias m ON t.id_materia = m.id_materia
-                    LEFT JOIN tutores tu ON t.id_tutor = tu.id_tutor
-                    LEFT JOIN usuarios u ON tu.id_usuario = u.id
-                    LEFT JOIN estudiantes est ON t.id_estudiante = est.id_estudiante
-                    LEFT JOIN usuarios e ON est.id_usuario = e.id";
-
-            $conditions = [];
-            $params = [];
-
-            if ($estado) {
-                $conditions[] = "t.estado = ?";
-                $params[] = $estado;
-            }
-            if ($fecha_desde) {
-                $conditions[] = "t.fecha >= ?";
-                $params[] = $fecha_desde;
-            }
-            if ($fecha_hasta) {
-                $conditions[] = "t.fecha <= ?";
-                $params[] = $fecha_hasta;
-            }
-
-            if (!empty($conditions)) {
-                $sql .= " WHERE " . implode(" AND ", $conditions);
-            }
-
-            $sql .= " ORDER BY t.fecha DESC";
-
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            Response::json($stmt->fetchAll(), 200, 'Tutorías obtenidas.');
+            Response::json(null, 200, 'Estado de la tutoría actualizado correctamente.');
             break;
 
         default:
-            Response::error('Acción no válida.', 404);
+            Response::error('Acción no válida o no especificada.', 400);
+            break;
     }
 } catch (PDOException $e) {
-    Response::error('Error interno del servidor.', 500);
+    Response::error('Error en la base de datos: ' . $e->getMessage(), 500);
 }
